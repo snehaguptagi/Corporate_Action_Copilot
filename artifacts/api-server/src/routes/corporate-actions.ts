@@ -47,7 +47,7 @@ import {
   simulateInstruction,
   toSummary,
 } from "../lib/corporate-actions-v2";
-import { getAuthenticatedActor, requireActor, signInDemoActor } from "../lib/actor-context";
+import { getAuthenticatedActor, isPocEnvironment, requireActor, signInDemoActor } from "../lib/actor-context";
 
 const router: IRouter = Router();
 
@@ -88,6 +88,10 @@ router.get("/session", (req, res): void => {
 });
 
 router.post("/session", async (req, res): Promise<void> => {
+  if (!isPocEnvironment()) {
+    res.status(404).json({ error: "Demo operator sessions are unavailable outside the POC environment." });
+    return;
+  }
   const body = parse(SignInSessionBody, req.body, res);
   if (!body) return;
   const actor = signInDemoActor(res, body.actorId);

@@ -1,38 +1,46 @@
 import { ReactNode, useEffect, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload } from "lucide-react"
-import { getDemoRole, setDemoRole, signInDemoRole, demoRoles } from "@/lib/demo-role"
+import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload, LogIn, LogOut } from "lucide-react"
+import { useAuth } from "@workspace/replit-auth-web"
+import { getOperationalSession, type OperationalSession } from "@/lib/demo-role"
 
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation()
-  const [activeRole, setActiveRole] = useState(getDemoRole)
-  const [sessionReady, setSessionReady] = useState(false)
+  const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth()
+  const [activeRole, setActiveRole] = useState<OperationalSession | null>(null)
+  const [roleLoading, setRoleLoading] = useState(false)
+  const [roleError, setRoleError] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    const establishSession = async () => {
+    if (authLoading || !isAuthenticated) {
+      setActiveRole(null)
+      setRoleError(false)
+      setRoleLoading(false)
+      return () => { mounted = false }
+    }
+
+    const loadOperationalRole = async () => {
+      setRoleLoading(true)
       try {
-        const session = await signInDemoRole(getDemoRole().id)
+        const session = await getOperationalSession()
         if (mounted) {
-          setActiveRole(setDemoRole(session.id))
-          setSessionReady(true)
+          setActiveRole(session)
+          setRoleError(false)
         }
       } catch {
-        if (mounted) setSessionReady(false)
+        if (mounted) {
+          setActiveRole(null)
+          setRoleError(true)
+        }
+      } finally {
+        if (mounted) setRoleLoading(false)
       }
     }
-    void establishSession()
-    return () => { mounted = false }
-  }, [])
 
-  const changeRole = async (id: string) => {
-    try {
-      const session = await signInDemoRole(id)
-      setActiveRole(setDemoRole(session.id))
-    } catch {
-      setActiveRole(getDemoRole())
-    }
-  }
+    void loadOperationalRole()
+    return () => { mounted = false }
+  }, [authLoading, isAuthenticated])
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -48,6 +56,36 @@ export function Shell({ children }: { children: ReactNode }) {
     return location.startsWith(href)
   }
   
+  if (authLoading) {
+    return <AuthMessage title="Checking your identity…" detail="Connecting to the enterprise sign-in service." />
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AuthMessage
+        title="Sign in to Impact Copilot"
+        detail="Use your approved enterprise identity to access corporate-actions operations."
+        action={<button onClick={login} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"><LogIn className="h-4 w-4" /> Sign in</button>}
+      />
+    )
+  }
+
+  if (roleLoading) {
+    return <AuthMessage title="Loading your operations permissions…" detail="Checking the authoritative role directory." />
+  }
+
+  if (roleError || !activeRole) {
+    return (
+      <AuthMessage
+        title="Operational access is not assigned"
+        detail={`Your identity${user?.email ? ` (${user.email})` : ""} is authenticated, but no maker, checker, or manager role is assigned.`}
+        action={<button onClick={logout} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium"><LogOut className="h-4 w-4" /> Sign out</button>}
+      />
+    )
+  }
+
+  const initials = activeRole.name.split(" ").map((name) => name[0]).join("")
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
@@ -86,24 +124,13 @@ export function Shell({ children }: { children: ReactNode }) {
         
         <div className="mx-3 mb-3 rounded border border-sidebar-border/80 bg-sidebar-accent/50 px-3 py-2">
           <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">Signed-in operator</div>
-          <select
-            className="mt-1 w-full bg-transparent text-xs text-sidebar-foreground outline-none"
-            value={activeRole.id}
-            onChange={(event) => void changeRole(event.target.value)}
-            disabled={!sessionReady}
-            aria-label="Select demo role"
-          >
-            {demoRoles.map((role) => (
-              <option key={role.id} value={role.id} className="text-slate-900">
-                {role.name} · {role.role}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1 truncate text-xs text-sidebar-foreground">{activeRole.name}</div>
+          <div className="mt-0.5 text-[11px] text-sidebar-foreground/60">{activeRole.role}</div>
         </div>
         <div className="p-4 border-t border-sidebar-border/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-medium">
-              {activeRole.name.split(" ").map((name) => name[0]).join("")}
+              {initials}
             </div>
             <div className="flex flex-col text-sm">
               <span className="font-medium leading-none">{activeRole.name}</span>
@@ -123,7 +150,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
               <span>Impact Copilot</span>
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">Demo mode</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">Enterprise access</span>
           </div>
           <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
             {navItems.map((item) => {
@@ -147,6 +174,21 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         {children}
       </main>
+    </div>
+  )
+}
+
+function AuthMessage({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+          <ShieldAlert className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{detail}</p>
+        {action ? <div className="mt-6">{action}</div> : null}
+      </div>
     </div>
   )
 }

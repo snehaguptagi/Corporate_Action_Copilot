@@ -19,7 +19,8 @@ export const GetSessionResponse = zod.object({
 
 
 /**
- * @summary Sign in as an allowlisted POC operational operator
+ * Available only when the server is running in its non-production POC environment.
+ * @summary Establish an allowlisted POC demo operator session
  */
 export const SignInSessionBody = zod.object({
   "actorId": zod.string()
@@ -1696,3 +1697,77 @@ export const ListAuditResponseItem = zod.object({
 export const ListAuditResponse = zod.array(ListAuditResponseItem)
 
 
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutBrowserSessionQueryParams = zod.object({
+  "returnTo": zod.coerce.string().default(logoutBrowserSessionQueryReturnToDefault)
+})
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  "token": zod.string()
+})
+
+export const LogoutMobileSessionResponse = zod.object({
+  "success": zod.literal(true)
+})
+
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+/**
+ * @summary Delete a mobile session token
+ */
+export const LogoutMobileSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+/**
+ * @summary Clear the session and begin OIDC logout
+ */
+export const logoutBrowserSessionQueryReturnToDefault = `/`;
+
+/**
+ * @summary Start the browser OIDC login flow
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional().describe('Relative path to redirect to after login (must start with `\/`). Defaults to `\/`.')
+})
+
+export const HandleBrowserLoginCallbackResponse = zod.void()
+
+/**
+ * @summary Complete the browser OIDC login flow
+ */
+export const HandleBrowserLoginCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string().optional(),
+  "iss": zod.coerce.string().optional()
+})
+
+export const LogoutBrowserSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutBrowserSessionResponse = zod.void()
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "code_verifier": zod.string().min(1),
+  "redirect_uri": zod.string().min(1),
+  "state": zod.string().min(1),
+  "nonce": zod.string().min(1).optional()
+})
+
+export const BeginBrowserLoginResponse = zod.void()

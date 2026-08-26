@@ -8,8 +8,23 @@ An internal operations workbench for validating corporate-action notices, calcul
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run push` — push DB schema changes in development; Publish applies the schema diff to production.
 - Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `SESSION_SECRET` — protects the POC session cookie
+
+## Enterprise authentication and operations access
+
+- Browser sign-in uses the workspace OIDC identity flow; application sessions are stored in the `sessions` database table.
+- In production, configure `CORPORATE_ACTIONS_ROLE_DIRECTORY` as JSON from the approved role directory. Entries can match an OIDC user `id` or normalized `email` and must assign exactly one operational role:
+  ```json
+  [
+    { "id": "enterprise-subject-id", "role": "Operations Analyst" },
+    { "email": "checker@company.example", "name": "Corporate Actions Checker", "role": "Reviewer" },
+    { "email": "manager@company.example", "role": "Operations Manager" }
+  ]
+  ```
+- Set `CORPORATE_ACTIONS_POC=true` only in the isolated demo environment. Demo operator sessions are disabled by default and in production; identities missing from the role directory receive no operational access.
+- The API only accepts browser requests from its own origin by default. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of trusted additional app origins only when a separate approved client needs access.
 
 ## Stack
 

@@ -1,0 +1,1 @@
+- [Orval integer schema compatibility](orval-integer-zod.md) — Use OpenAPI number for counters until the generator/runtime versions are aligned.

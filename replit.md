@@ -1,6 +1,6 @@
-# [Project name]
+# Corporate Actions Impact Copilot
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An internal operations workbench for validating corporate-action notices, calculating account impacts, managing controlled elections, tracking simulated instructions, reconciling settlement, and preserving audit evidence.
 
 ## Run & Operate
 
@@ -22,15 +22,22 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source of truth for the API contract and generated clients.
+- `artifacts/corporate-actions-copilot/` — analyst-facing React workbench.
+- `artifacts/api-server/src/routes/corporate-actions.ts` — operations API routes.
+- `artifacts/api-server/src/lib/corporate-actions.ts` — synthetic POC scenarios and workflow logic.
+- `lib/db/src/schema/corporate-actions.ts` — persisted event records.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The POC stores each controlled event case as a persisted JSON document so evidence, impacts, tasks, elections, instructions, reconciliation, and audit entries change together.
+- The UI operates only on synthetic data and every instruction state is explicitly simulated or marked as DRAFT.
+- AI-style extracted terms are visible as evidence-led inputs, while business calculations and status transitions remain deterministic server-side logic.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Dashboard and event inbox across mandatory and voluntary corporate actions.
+- Evidence review, impact calculation, election, maker-checker approval, draft instruction simulation, reconciliation, tasks, and audit history.
 
 ## User preferences
 
@@ -38,7 +45,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After changing the OpenAPI spec, run `pnpm --filter @workspace/api-spec run codegen` before using generated client or Zod types.
+- The frontend displays operational deadline strings with their market time zones rather than re-parsing them as browser-local dates.
 
 ## Pointers
 

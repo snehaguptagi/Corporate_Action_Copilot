@@ -1,33 +1,29 @@
-import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { cva, type VariantProps } from 'class-variance-authority';
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  // @replit
-  // Whitespace-nowrap: Badges should never wrap.
-  'whitespace-nowrap inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2' +
-    ' hover-elevate ',
+  "inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          // @replit shadow-xs instead of shadow, no hover because we use hover-elevate
-          'border-transparent bg-primary text-primary-foreground shadow-xs',
+          "border-transparent bg-primary text-primary-foreground shadow-2xs",
         secondary:
-          // @replit no hover because we use hover-elevate
-          'border-transparent bg-secondary text-secondary-foreground',
+          "border-transparent bg-secondary text-secondary-foreground",
         destructive:
-          // @replit shadow-xs instead of shadow, no hover because we use hover-elevate
-          'border-transparent bg-destructive text-destructive-foreground shadow-xs',
-        // @replit shadow-xs" - use badge outline variable
-        outline: 'text-foreground border [border-color:var(--badge-outline)]',
+          "border-transparent bg-destructive text-destructive-foreground shadow-2xs",
+        outline: "text-foreground",
+        success: "border-transparent bg-success/10 text-success border-success/20",
+        warning: "border-transparent bg-warning/10 text-warning-foreground border-warning/20 text-yellow-700",
+        blue: "border-transparent bg-blue-100 text-blue-700 border-blue-200",
       },
     },
     defaultVariants: {
-      variant: 'default',
+      variant: "default",
     },
-  },
-);
+  }
+)
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
@@ -36,7 +32,7 @@ export interface BadgeProps
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
     <div className={cn(badgeVariants({ variant }), className)} {...props} />
-  );
+  )
 }
 
-export { Badge, badgeVariants };
+export { Badge, badgeVariants }

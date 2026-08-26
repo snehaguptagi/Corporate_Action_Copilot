@@ -21,11 +21,11 @@ export const HealthCheckResponse = zod.object({
  * @summary Get operations dashboard summary
  */
 export const GetDashboardResponse = zod.object({
-  "totalEvents": zod.int(),
-  "needsReview": zod.int(),
-  "dueToday": zod.int(),
-  "openTasks": zod.int(),
-  "breaks": zod.int(),
+  "totalEvents": zod.number(),
+  "needsReview": zod.number(),
+  "dueToday": zod.number(),
+  "openTasks": zod.number(),
+  "breaks": zod.number(),
   "recentActivity": zod.array(zod.object({
   "id": zod.string(),
   "eventId": zod.string(),
@@ -57,7 +57,7 @@ export const ListEventsResponseItem = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 })
@@ -82,7 +82,7 @@ export const GetEventResponse = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 }).and(zod.object({
@@ -184,7 +184,7 @@ export const UpdateEventResponse = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 }).and(zod.object({
@@ -284,7 +284,7 @@ export const SaveElectionResponse = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 }).and(zod.object({
@@ -384,7 +384,7 @@ export const ApproveEventResponse = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 }).and(zod.object({
@@ -483,7 +483,7 @@ export const UpdateInstructionResponse = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 }).and(zod.object({
@@ -583,7 +583,7 @@ export const SaveReconciliationResponse = zod.object({
   "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
-  "affectedAccounts": zod.int(),
+  "affectedAccounts": zod.number(),
   "amount": zod.number(),
   "currency": zod.string()
 }).and(zod.object({

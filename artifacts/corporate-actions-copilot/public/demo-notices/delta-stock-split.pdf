@@ -1,0 +1,51 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 479 >>
+stream
+BT
+/F1 16 Tf
+50 760 Td
+(DELTA GRID TECHNOLOGIES | STOCK SPLIT) Tj
+/F1 10 Tf
+0 -22 Td
+(Corporate action notice: CA-2026-0809-DL) Tj
+0 -22 Td
+(Event type: Mandatory forward stock split) Tj
+0 -22 Td
+(Ratio: 4 new shares for each existing share) Tj
+0 -22 Td
+(Effective date: 28 August 2026) Tj
+0 -22 Td
+(Fractional entitlements: round down) Tj
+0 -22 Td
+(Source channel: Synthetic agent feed) Tj
+0 -22 Td
+(This notice is synthetic data for the operations copilot demonstration.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+841
+%%EOF

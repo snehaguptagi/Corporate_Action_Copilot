@@ -1,0 +1,7 @@
+account_id,fund_id,custodian,account_currency,market,account_status,assigned_analyst
+CUST-6632,FUND-101,Demo Custodian A,EUR,France,Open,Aisha Mehta
+CUST-7741,FUND-102,Demo Custodian A,EUR,France,Open,Aisha Mehta
+CUST-8101,FUND-201,Demo Custodian B,GBP,United Kingdom,Open,Aisha Mehta
+CUST-9227,FUND-202,Demo Custodian B,GBP,United Kingdom,Open,Aisha Mehta
+CUST-1138,FUND-301,Demo Custodian C,USD,United States,Open,Aisha Mehta
+CUST-0000,FUND-101,Demo Custodian A,EUR,France,Closed,Aisha Mehta

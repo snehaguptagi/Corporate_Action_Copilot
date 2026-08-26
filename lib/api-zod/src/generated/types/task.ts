@@ -16,4 +16,8 @@ export interface Task {
   due: string;
   status: string;
   category: string;
+  dependency?: string;
+  sourceRule?: string;
+  escalationPath?: string;
+  eventReference?: string;
 }

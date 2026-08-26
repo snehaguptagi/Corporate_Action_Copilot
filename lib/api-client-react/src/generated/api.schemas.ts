@@ -16,6 +16,12 @@ export interface AuditEntry {
   actor: string;
   timestamp: string;
   detail: string;
+  actorType?: string;
+  previousValue?: string;
+  newValue?: string;
+  reason?: string;
+  evidenceId?: string;
+  workflowStatus?: string;
 }
 
 export interface Dashboard {
@@ -41,6 +47,14 @@ export interface EventSummary {
   affectedAccounts: number;
   amount: number;
   currency: string;
+  isHero?: boolean;
+  noticeReference?: string;
+  settlementStage?: string;
+}
+
+export interface NoticePage {
+  page: number;
+  text: string;
 }
 
 export interface Notice {
@@ -50,6 +64,9 @@ export interface Notice {
   version: string;
   role: string;
   excerpt: string;
+  pages?: NoticePage[];
+  uploadState?: string;
+  sourceDocumentId?: string;
 }
 
 export interface Term {
@@ -60,7 +77,27 @@ export interface Term {
   evidence: string;
   confidence: number;
   reviewStatus: string;
+  sourceType?: string;
+  manuallyCorrected?: boolean;
+  oldValue?: string;
+  correctionReason?: string;
 }
+
+export interface Position {
+  id: string;
+  fund: string;
+  account: string;
+  isin: string;
+  securityId?: string;
+  settledQuantity?: number;
+  unsettledQuantity?: number;
+  eligibleQuantity: number;
+  positionDate: string;
+  eligibilityStatus: string;
+  dataQualityWarning?: string;
+}
+
+export type ImpactElectionDecision = { [key: string]: unknown };
 
 export interface Impact {
   id: string;
@@ -74,6 +111,15 @@ export interface Impact {
   /** @nullable */
   election?: string | null;
   approval?: string;
+  expectedCash?: number;
+  expectedSecurityQuantity?: number;
+  entitlement?: number;
+  securityMovement?: string;
+  positionDate?: string;
+  securityId?: string;
+  eligibilityStatus?: string;
+  dataQualityWarning?: string;
+  electionDecision?: ImpactElectionDecision;
 }
 
 export interface Option {
@@ -82,6 +128,7 @@ export interface Option {
   description: string;
   result: string;
   default: boolean;
+  fundingFormula?: string;
 }
 
 export interface Instruction {
@@ -90,6 +137,8 @@ export interface Instruction {
   reference: string;
   generatedAt: string;
   content: string;
+  approvalActor?: string;
+  simulated?: boolean;
 }
 
 export interface Reconciliation {
@@ -99,6 +148,18 @@ export interface Reconciliation {
   tolerance: number;
   status: string;
   note: string;
+  expectedCash?: number;
+  actualCash?: number;
+  expectedSecurityQuantity?: number;
+  actualSecurityQuantity?: number;
+  expectedCurrency?: string;
+  actualCurrency?: string;
+  expectedSettlementDate?: string;
+  actualSettlementDate?: string;
+  expectedAccount?: string;
+  actualAccount?: string;
+  classification?: string;
+  investigationSteps?: string[];
 }
 
 export interface Task {
@@ -111,51 +172,115 @@ export interface Task {
   due: string;
   status: string;
   category: string;
+  dependency?: string;
+  sourceRule?: string;
+  escalationPath?: string;
+  eventReference?: string;
+}
+
+export interface Validation {
+  missingTerms: string[];
+  isReady: boolean;
+}
+
+export interface Calculation {
+  calculationRunAt?: string;
+  rounding: string;
+  assumptions: string;
+  sourceRule: string;
+}
+
+export interface SecurityMaster {
+  securityId: string;
+  isin: string;
+  ticker: string;
+  securityName: string;
+  issuer?: string;
+  currency: string;
+  market: string;
+  status: string;
+  aliases?: string[];
 }
 
 export type EventDetail = EventSummary & {
   notice: Notice;
   terms: Term[];
+  positions: Position[];
   impacts: Impact[];
   options: Option[];
   instruction: Instruction;
   reconciliation: Reconciliation;
   tasks: Task[];
   audit: AuditEntry[];
+  validation: Validation;
+  calculation: Calculation;
+  securityMaster?: SecurityMaster;
 };
 
 export interface TermUpdate {
   key: string;
   value: string;
+  reason?: string;
 }
 
 export interface EventUpdate {
   terms?: TermUpdate[];
+  actorId?: string;
+  actorRole?: string;
+  reason?: string;
 }
 
 export interface ElectionInput {
   impactId: string;
   optionId: string;
+  quantityElected: number;
+  comment?: string;
+  actorId: string;
+  actorRole: string;
 }
 
 export interface ApprovalInput {
   approved: boolean;
   note: string;
+  actorId: string;
+  actorRole: string;
 }
 
 export interface InstructionInput {
   status: string;
+  actorId: string;
+  actorRole: string;
 }
 
 export interface ReconciliationInput {
   actual: number;
   note: string;
+  actualSecurityQuantity?: number;
+  actualCurrency?: string;
+  actualSettlementDate?: string;
+  actualAccount?: string;
+  actorId: string;
+  actorRole: string;
+}
+
+export interface ActorInput {
+  actorId: string;
+  actorRole: string;
+}
+
+export interface IntakeInput {
+  fileName: string;
+  source: string;
+  noticeText?: string;
+  actorId: string;
+  actorRole: string;
 }
 
 export type ListEventsParams = {
 status?: string;
 risk?: string;
 search?: string;
+eventType?: string;
 };
 
 export type ListAuditParams = {

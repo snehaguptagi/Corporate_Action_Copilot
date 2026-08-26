@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { NoticePage } from './noticePage';
 
 export interface Notice {
   documentName: string;
@@ -13,4 +14,7 @@ export interface Notice {
   version: string;
   role: string;
   excerpt: string;
+  pages?: NoticePage[];
+  uploadState?: string;
+  sourceDocumentId?: string;
 }

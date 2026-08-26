@@ -9,4 +9,5 @@
 export interface TermUpdate {
   key: string;
   value: string;
+  reason?: string;
 }

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ImpactElectionDecision } from './impactElectionDecision';
 
 export interface Impact {
   id: string;
@@ -18,4 +19,13 @@ export interface Impact {
   /** @nullable */
   election?: string | null;
   approval?: string;
+  expectedCash?: number;
+  expectedSecurityQuantity?: number;
+  entitlement?: number;
+  securityMovement?: string;
+  positionDate?: string;
+  securityId?: string;
+  eligibilityStatus?: string;
+  dataQualityWarning?: string;
+  electionDecision?: ImpactElectionDecision;
 }

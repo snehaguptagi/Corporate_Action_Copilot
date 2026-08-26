@@ -12,4 +12,6 @@ export interface Instruction {
   reference: string;
   generatedAt: string;
   content: string;
+  approvalActor?: string;
+  simulated?: boolean;
 }

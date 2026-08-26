@@ -56,6 +56,10 @@ paths:
           name: search
           schema:
             type: string
+        - in: query
+          name: eventType
+          schema:
+            type: string
       responses:
         "200":
           description: Corporate action events
@@ -65,6 +69,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/EventSummary"
+  /intake:
+    post:
+      operationId: createIntake
+      tags: [copilot]
+      summary: Create a corporate-action case from a synthetic notice upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntakeInput"
+      responses:
+        "201":
+          description: Created event case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "400":
+          description: Invalid or duplicate notice
   /events/{eventId}:
     get:
       operationId: getEvent
@@ -79,8 +103,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EventDetail"
-        "404":
-          description: Event not found
     patch:
       operationId: updateEvent
       tags: [copilot]
@@ -100,6 +122,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EventDetail"
+  /events/{eventId}/calculate:
+    post:
+      operationId: calculateEvent
+      tags: [copilot]
+      summary: Run deterministic eligibility and impact calculation
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActorInput"
+      responses:
+        "200":
+          description: Calculated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "409":
+          description: Calculation is blocked by invalid or incomplete terms
+        "404":
+          description: Event not found
   /events/{eventId}/election:
     post:
       operationId: saveElection
@@ -277,11 +323,14 @@ components:
         affectedAccounts: { type: number }
         amount: { type: number }
         currency: { type: string }
+        isHero: { type: boolean }
+        noticeReference: { type: string }
+        settlementStage: { type: string }
     EventDetail:
       allOf:
         - $ref: "#/components/schemas/EventSummary"
         - type: object
-          required: [notice, terms, impacts, options, instruction, reconciliation, tasks, audit]
+          required: [notice, terms, positions, impacts, options, instruction, reconciliation, tasks, audit, validation, calculation]
           properties:
             notice:
               $ref: "#/components/schemas/Notice"
@@ -289,6 +338,10 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Term"
+            positions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Position"
             impacts:
               type: array
               items:
@@ -309,6 +362,12 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/AuditEntry"
+            validation:
+              $ref: "#/components/schemas/Validation"
+            calculation:
+              $ref: "#/components/schemas/Calculation"
+            securityMaster:
+              $ref: "#/components/schemas/SecurityMaster"
     Notice:
       type: object
       required: [documentName, source, receivedAt, version, role, excerpt]
@@ -319,6 +378,18 @@ components:
         version: { type: string }
         role: { type: string }
         excerpt: { type: string }
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/NoticePage"
+        uploadState: { type: string }
+        sourceDocumentId: { type: string }
+    NoticePage:
+      type: object
+      required: [page, text]
+      properties:
+        page: { type: number }
+        text: { type: string }
     Term:
       type: object
       required: [key, label, value, page, evidence, confidence, reviewStatus]
@@ -330,6 +401,56 @@ components:
         evidence: { type: string }
         confidence: { type: number }
         reviewStatus: { type: string }
+        sourceType: { type: string }
+        manuallyCorrected: { type: boolean }
+        oldValue: { type: string }
+        correctionReason: { type: string }
+    Position:
+      type: object
+      required: [id, fund, account, isin, eligibleQuantity, positionDate, eligibilityStatus]
+      properties:
+        id: { type: string }
+        fund: { type: string }
+        account: { type: string }
+        isin: { type: string }
+        securityId: { type: string }
+        settledQuantity: { type: number }
+        unsettledQuantity: { type: number }
+        eligibleQuantity: { type: number }
+        positionDate: { type: string }
+        eligibilityStatus: { type: string }
+        dataQualityWarning: { type: string }
+    Validation:
+      type: object
+      required: [missingTerms, isReady]
+      properties:
+        missingTerms:
+          type: array
+          items: { type: string }
+        isReady: { type: boolean }
+    Calculation:
+      type: object
+      required: [rounding, assumptions, sourceRule]
+      properties:
+        calculationRunAt: { type: string }
+        rounding: { type: string }
+        assumptions: { type: string }
+        sourceRule: { type: string }
+    SecurityMaster:
+      type: object
+      required: [securityId, isin, ticker, securityName, currency, market, status]
+      properties:
+        securityId: { type: string }
+        isin: { type: string }
+        ticker: { type: string }
+        securityName: { type: string }
+        issuer: { type: string }
+        currency: { type: string }
+        market: { type: string }
+        status: { type: string }
+        aliases:
+          type: array
+          items: { type: string }
     Impact:
       type: object
       required: [id, fund, account, eligibleQuantity, formula, expected, currency, status]
@@ -344,6 +465,17 @@ components:
         status: { type: string }
         election: { type: ["string", "null"] }
         approval: { type: string }
+        expectedCash: { type: number }
+        expectedSecurityQuantity: { type: number }
+        entitlement: { type: number }
+        securityMovement: { type: string }
+        positionDate: { type: string }
+        securityId: { type: string }
+        eligibilityStatus: { type: string }
+        dataQualityWarning: { type: string }
+        electionDecision:
+          type: object
+          additionalProperties: true
     Option:
       type: object
       required: [id, label, description, result, default]
@@ -353,6 +485,7 @@ components:
         description: { type: string }
         result: { type: string }
         default: { type: boolean }
+        fundingFormula: { type: string }
     Instruction:
       type: object
       required: [status, destination, reference, generatedAt, content]
@@ -362,6 +495,8 @@ components:
         reference: { type: string }
         generatedAt: { type: string }
         content: { type: string }
+        approvalActor: { type: string }
+        simulated: { type: boolean }
     Reconciliation:
       type: object
       required: [expected, actual, difference, tolerance, status, note]
@@ -372,6 +507,20 @@ components:
         tolerance: { type: number }
         status: { type: string }
         note: { type: string }
+        expectedCash: { type: number }
+        actualCash: { type: number }
+        expectedSecurityQuantity: { type: number }
+        actualSecurityQuantity: { type: number }
+        expectedCurrency: { type: string }
+        actualCurrency: { type: string }
+        expectedSettlementDate: { type: string }
+        actualSettlementDate: { type: string }
+        expectedAccount: { type: string }
+        actualAccount: { type: string }
+        classification: { type: string }
+        investigationSteps:
+          type: array
+          items: { type: string }
     Task:
       type: object
       required: [id, eventId, title, detail, priority, owner, due, status, category]
@@ -385,6 +534,10 @@ components:
         due: { type: string }
         status: { type: string }
         category: { type: string }
+        dependency: { type: string }
+        sourceRule: { type: string }
+        escalationPath: { type: string }
+        eventReference: { type: string }
     AuditEntry:
       type: object
       required: [id, eventId, action, actor, timestamp, detail]
@@ -395,6 +548,12 @@ components:
         actor: { type: string }
         timestamp: { type: string }
         detail: { type: string }
+        actorType: { type: string }
+        previousValue: { type: string }
+        newValue: { type: string }
+        reason: { type: string }
+        evidenceId: { type: string }
+        workflowStatus: { type: string }
     EventUpdate:
       type: object
       properties:
@@ -402,33 +561,66 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TermUpdate"
+        actorId: { type: string }
+        actorRole: { type: string }
+        reason: { type: string }
     TermUpdate:
       type: object
       required: [key, value]
       properties:
         key: { type: string }
         value: { type: string }
+        reason: { type: string }
     ElectionInput:
       type: object
-      required: [impactId, optionId]
+      required: [impactId, optionId, quantityElected, actorId, actorRole]
       properties:
         impactId: { type: string }
         optionId: { type: string }
+        quantityElected: { type: number }
+        comment: { type: string }
+        actorId: { type: string }
+        actorRole: { type: string }
     ApprovalInput:
       type: object
-      required: [approved, note]
+      required: [approved, note, actorId, actorRole]
       properties:
         approved: { type: boolean }
         note: { type: string }
+        actorId: { type: string }
+        actorRole: { type: string }
     InstructionInput:
       type: object
-      required: [status]
+      required: [status, actorId, actorRole]
       properties:
         status: { type: string }
+        actorId: { type: string }
+        actorRole: { type: string }
     ReconciliationInput:
       type: object
-      required: [actual, note]
+      required: [actual, note, actorId, actorRole]
       properties:
         actual: { type: number }
         note: { type: string }
+        actualSecurityQuantity: { type: number }
+        actualCurrency: { type: string }
+        actualSettlementDate: { type: string }
+        actualAccount: { type: string }
+        actorId: { type: string }
+        actorRole: { type: string }
+    ActorInput:
+      type: object
+      required: [actorId, actorRole]
+      properties:
+        actorId: { type: string }
+        actorRole: { type: string }
+    IntakeInput:
+      type: object
+      required: [fileName, source, actorId, actorRole]
+      properties:
+        fileName: { type: string }
+        source: { type: string }
+        noticeText: { type: string }
+        actorId: { type: string }
+        actorRole: { type: string }
 

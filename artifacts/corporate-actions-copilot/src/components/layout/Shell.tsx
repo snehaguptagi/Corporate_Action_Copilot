@@ -1,13 +1,16 @@
-import { ReactNode } from "react"
+import { ReactNode, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert } from "lucide-react"
+import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload } from "lucide-react"
+import { getDemoRole, setDemoRole, demoRoles } from "@/lib/demo-role"
 
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation()
+  const [activeRole, setActiveRole] = useState(getDemoRole)
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/events", label: "Event Inbox", icon: FileText },
+    { href: "/intake", label: "Notice Intake", icon: Upload },
     { href: "/tasks", label: "Tasks & Risk", icon: CheckSquare },
     { href: "/audit", label: "Audit Trail", icon: History },
   ]
@@ -54,14 +57,29 @@ export function Shell({ children }: { children: ReactNode }) {
           })}
         </nav>
         
+        <div className="mx-3 mb-3 rounded border border-sidebar-border/80 bg-sidebar-accent/50 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">Demo role</div>
+          <select
+            className="mt-1 w-full bg-transparent text-xs text-sidebar-foreground outline-none"
+            value={activeRole.id}
+            onChange={(event) => setActiveRole(setDemoRole(event.target.value))}
+            aria-label="Select demo role"
+          >
+            {demoRoles.map((role) => (
+              <option key={role.id} value={role.id} className="text-slate-900">
+                {role.name} · {role.role}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="p-4 border-t border-sidebar-border/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-medium">
-              OP
+              {activeRole.name.split(" ").map((name) => name[0]).join("")}
             </div>
             <div className="flex flex-col text-sm">
-              <span className="font-medium leading-none">Ops Analyst</span>
-              <span className="text-xs text-sidebar-foreground/60 mt-1">London Desk</span>
+              <span className="font-medium leading-none">{activeRole.name}</span>
+              <span className="text-xs text-sidebar-foreground/60 mt-1">{activeRole.role}</span>
             </div>
           </div>
         </div>

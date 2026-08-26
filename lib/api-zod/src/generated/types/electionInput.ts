@@ -9,4 +9,8 @@
 export interface ElectionInput {
   impactId: string;
   optionId: string;
+  quantityElected: number;
+  comment?: string;
+  actorId: string;
+  actorRole: string;
 }

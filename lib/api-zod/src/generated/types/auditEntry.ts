@@ -13,4 +13,10 @@ export interface AuditEntry {
   actor: string;
   timestamp: string;
   detail: string;
+  actorType?: string;
+  previousValue?: string;
+  newValue?: string;
+  reason?: string;
+  evidenceId?: string;
+  workflowStatus?: string;
 }

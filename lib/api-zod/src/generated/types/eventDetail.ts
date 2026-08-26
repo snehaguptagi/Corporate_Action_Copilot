@@ -6,22 +6,30 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AuditEntry } from './auditEntry';
+import type { Calculation } from './calculation';
 import type { EventSummary } from './eventSummary';
 import type { Impact } from './impact';
 import type { Instruction } from './instruction';
 import type { Notice } from './notice';
 import type { Option } from './option';
+import type { Position } from './position';
 import type { Reconciliation } from './reconciliation';
+import type { SecurityMaster } from './securityMaster';
 import type { Task } from './task';
 import type { Term } from './term';
+import type { Validation } from './validation';
 
 export type EventDetail = EventSummary & {
   notice: Notice;
   terms: Term[];
+  positions: Position[];
   impacts: Impact[];
   options: Option[];
   instruction: Instruction;
   reconciliation: Reconciliation;
   tasks: Task[];
   audit: AuditEntry[];
+  validation: Validation;
+  calculation: Calculation;
+  securityMaster?: SecurityMaster;
 };

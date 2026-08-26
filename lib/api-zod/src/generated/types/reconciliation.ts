@@ -13,4 +13,16 @@ export interface Reconciliation {
   tolerance: number;
   status: string;
   note: string;
+  expectedCash?: number;
+  actualCash?: number;
+  expectedSecurityQuantity?: number;
+  actualSecurityQuantity?: number;
+  expectedCurrency?: string;
+  actualCurrency?: string;
+  expectedSettlementDate?: string;
+  actualSettlementDate?: string;
+  expectedAccount?: string;
+  actualAccount?: string;
+  classification?: string;
+  investigationSteps?: string[];
 }

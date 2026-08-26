@@ -20,4 +20,7 @@ export interface EventSummary {
   affectedAccounts: number;
   amount: number;
   currency: string;
+  isHero?: boolean;
+  noticeReference?: string;
+  settlementStage?: string;
 }

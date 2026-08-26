@@ -48,8 +48,13 @@ export default function Dashboard() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto">
       <div className="border-b bg-white px-8 py-6 shrink-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Operations Dashboard</h1>
-        <p className="text-sm text-slate-500 mt-1">High-level risk overview and event inbox.</p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Operations Dashboard</h1>
+            <p className="text-sm text-slate-500 mt-1">High-level risk overview and event inbox. <span className="font-medium text-amber-700">POC — Synthetic Data</span></p>
+          </div>
+          <Link href="/intake"><button className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm">Start hero rights issue</button></Link>
+        </div>
       </div>
 
       <div className="flex-1 p-8 space-y-8 bg-slate-50/50">

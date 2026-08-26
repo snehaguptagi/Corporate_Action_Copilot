@@ -1,0 +1,6 @@
+fund_id,fund_name,base_currency,fund_type,operations_desk,status
+FUND-101,European Opportunities Fund,EUR,UCITS,London Operations,Active
+FUND-102,Sustainable Growth Fund,EUR,UCITS,London Operations,Active
+FUND-201,Northbridge Income Fund,GBP,Open Ended,London Operations,Active
+FUND-202,Northbridge Balanced Fund,GBP,Open Ended,London Operations,Active
+FUND-301,Sovereign Select Mandate,USD,Segregated Mandate,Global Oversight,Active

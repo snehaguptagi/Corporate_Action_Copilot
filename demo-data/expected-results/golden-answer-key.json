@@ -1,0 +1,30 @@
+{
+  "EVT-RIGHTS-001": {
+    "classification": "Voluntary",
+    "security": "FR001400VRN5",
+    "evidence": {
+      "rightsRatio": { "page": 2, "quote": "One new share for every five existing shares" },
+      "subscriptionPrice": { "page": 2, "quote": "EUR 8.50 per new share" },
+      "marketDeadline": { "page": 3, "quote": "29 August 2026 at 10:00 CEST" }
+    },
+    "affectedAccounts": [
+      { "account": "CUST-6632", "eligibleQuantity": 100000, "entitlement": 20000, "fullSubscriptionCost": 170000 },
+      { "account": "CUST-7741", "eligibleQuantity": 50000, "entitlement": 10000, "fullSubscriptionCost": 85000 }
+    ],
+    "electionRequired": true,
+    "approvalRequired": true,
+    "fractionalTreatment": "Round down",
+    "finalWorkflowStatus": "Reconciled"
+  },
+  "CA-2026-0804-HB": {
+    "expectedCash": 191250,
+    "actualCash": 189250,
+    "settlementClassification": "Under-settled",
+    "exceptionTask": "Investigate custodian payment"
+  },
+  "CA-2026-0812-NB": {
+    "expectedSecurityQuantity": 5000,
+    "settlementClassification": "Matched",
+    "finalWorkflowStatus": "Closed"
+  }
+}

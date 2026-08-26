@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActorInput,
   ApprovalInput,
   AuditEntry,
   Dashboard,
@@ -29,6 +30,7 @@ import type {
   EventUpdate,
   HealthStatus,
   InstructionInput,
+  IntakeInput,
   ListAuditParams,
   ListEventsParams,
   ReconciliationInput,
@@ -301,6 +303,77 @@ export function useListEvents<TData = Awaited<ReturnType<typeof listEvents>>, TE
 
 
 
+export const getCreateIntakeUrl = () => {
+
+
+
+
+  return `/api/intake`
+}
+
+/**
+ * @summary Create a corporate-action case from a synthetic notice upload
+ */
+export const createIntake = async (intakeInput: IntakeInput, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
+
+  return customFetch<EventDetail>(getCreateIntakeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(intakeInput)
+  }
+);}
+
+
+
+
+
+export const getCreateIntakeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIntake>>, TError,{data: BodyType<IntakeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createIntake>>, TError,{data: BodyType<IntakeInput>}, TContext> => {
+
+const mutationKey = ['createIntake'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createIntake>>, {data: BodyType<IntakeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createIntake(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateIntakeMutationResult = NonNullable<Awaited<ReturnType<typeof createIntake>>>
+    export type CreateIntakeMutationBody = BodyType<IntakeInput>
+    export type CreateIntakeMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a corporate-action case from a synthetic notice upload
+ */
+export const useCreateIntake = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIntake>>, TError,{data: BodyType<IntakeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createIntake>>,
+        TError,
+        {data: BodyType<IntakeInput>},
+        TContext
+      > => {
+      return useMutation(getCreateIntakeMutationOptions(options));
+    }
+
 export const getGetEventUrl = (eventId: string,) => {
 
 
@@ -334,7 +407,7 @@ export const getGetEventQueryKey = (eventId: string,) => {
     }
 
 
-export const getGetEventQueryOptions = <TData = Awaited<ReturnType<typeof getEvent>>, TError = ErrorType<void>>(eventId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetEventQueryOptions = <TData = Awaited<ReturnType<typeof getEvent>>, TError = ErrorType<unknown>>(eventId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -353,14 +426,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetEventQueryResult = NonNullable<Awaited<ReturnType<typeof getEvent>>>
-export type GetEventQueryError = ErrorType<void>
+export type GetEventQueryError = ErrorType<unknown>
 
 
 /**
  * @summary Get a corporate action event and its workbench data
  */
 
-export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = ErrorType<void>>(
+export function useGetEvent<TData = Awaited<ReturnType<typeof getEvent>>, TError = ErrorType<unknown>>(
  eventId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEvent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -448,6 +521,78 @@ export const useUpdateEvent = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateEventMutationOptions(options));
+    }
+
+export const getCalculateEventUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}/calculate`
+}
+
+/**
+ * @summary Run deterministic eligibility and impact calculation
+ */
+export const calculateEvent = async (eventId: string,
+    actorInput: ActorInput, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
+
+  return customFetch<EventDetail>(getCalculateEventUrl(eventId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(actorInput)
+  }
+);}
+
+
+
+
+
+export const getCalculateEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<ActorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<ActorInput>}, TContext> => {
+
+const mutationKey = ['calculateEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof calculateEvent>>, {eventId: string;data: BodyType<ActorInput>}> = (props) => {
+          const {eventId,data} = props ?? {};
+
+          return  calculateEvent(eventId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CalculateEventMutationResult = NonNullable<Awaited<ReturnType<typeof calculateEvent>>>
+    export type CalculateEventMutationBody = BodyType<ActorInput>
+    export type CalculateEventMutationError = ErrorType<void>
+
+    /**
+ * @summary Run deterministic eligibility and impact calculation
+ */
+export const useCalculateEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<ActorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof calculateEvent>>,
+        TError,
+        {eventId: string;data: BodyType<ActorInput>},
+        TContext
+      > => {
+      return useMutation(getCalculateEventMutationOptions(options));
     }
 
 export const getSaveElectionUrl = (eventId: string,) => {

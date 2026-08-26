@@ -1,0 +1,864 @@
+Redesign and extend the existing Corporate Actions Impact Copilot UI so the complete end-to-end operational flow is obvious, usable and demonstrable.
+
+First inspect the existing application, API, data model and the two recently added demo-requirement documents under `attached_assets/Pasted-*.txt`.
+
+Preserve useful existing functionality. Do not rebuild working components without reason. Extend the current application into a coherent operations workbench.
+
+This task is primarily about product flow and UI behaviour, but update the API and data model wherever required to make every interaction functional and persistent.
+
+CORE UX DECISION
+
+The application should have three levels:
+
+1. Operations Dashboard — what requires attention?
+2. Event Inbox — what corporate-action cases exist?
+3. Event Workbench — what must I do next for this particular case?
+
+Do not make every workflow stage a separate top-level navigation item. The corporate-action lifecycle should live inside the Event Workbench.
+
+The user must always understand:
+
+- What event am I viewing?
+- What stage is it at?
+- What has already been completed?
+- What is blocking progress?
+- What is the next action?
+- What is the deadline?
+- Who owns the next action?
+- Where did each material value come from?
+
+GLOBAL APPLICATION SHELL
+
+Keep a professional institutional-operations layout.
+
+Left navigation:
+
+- Dashboard
+- Event Inbox
+- Tasks & Risk
+- Audit Trail
+
+Add a prominent “New Event” button above or below the navigation.
+
+At the bottom of the navigation show:
+
+- Current demo user
+- Role
+- Operations desk
+- Role switcher
+
+At the top of every screen show a visible banner:
+
+“POC — SYNTHETIC DATA — NO REAL INSTRUCTIONS”
+
+Do not make this look like a retail investment or trading application. Use a restrained navy, white and neutral-grey visual system. Reserve red, amber and green for risk and status.
+
+GLOBAL DEMO FEATURES
+
+Add a simple role switcher:
+
+- Aisha Mehta — Operations Analyst
+- Daniel Reed — Reviewer/Checker
+- Maya Shah — Operations Manager
+
+Permissions should change by role:
+
+- Analyst can review, calculate and prepare.
+- Reviewer can approve or reject.
+- Manager can monitor and escalate.
+
+Add a “Guided Demo” control that takes the presenter through the hero rights-issue case in order.
+
+Do not use a modal containing a long product tour. The guided demo should highlight the next meaningful action inside the real workflow.
+
+SCREEN 1: OPERATIONS DASHBOARD
+
+Purpose:
+
+Give an operations analyst or manager an immediate view of workload, deadlines and risk.
+
+Top summary cards:
+
+- Active events
+- Events requiring review
+- Elections due soon
+- Approvals pending
+- Open tasks
+- Reconciliation breaks
+
+Make each card clickable and use it to filter the Event Inbox or Tasks page.
+
+Add a “Priority Queue” table showing the cases that need action first.
+
+Columns:
+
+- Event reference
+- Issuer/security
+- Event type
+- Mandatory/voluntary
+- Current workflow stage
+- Market deadline
+- Internal deadline
+- Risk
+- Owner
+- Next action
+- Status
+
+Every row must have one clear primary action, such as:
+
+- Review notice
+- Validate terms
+- Review calculation
+- Enter election
+- Approve election
+- Check settlement
+- Investigate break
+
+Do not use vague actions such as “View” when a more specific action is possible.
+
+Add sections for:
+
+- Deadline timeline for the next seven days
+- Events by workflow stage
+- Reconciliation breaks requiring escalation
+
+The dashboard must be derived from actual event and task data. Do not hardcode summary numbers directly into UI components.
+
+SCREEN 2: EVENT INBOX
+
+Purpose:
+
+Show all corporate-action cases in one searchable operational queue.
+
+Add:
+
+- Search by reference, issuer, ISIN, fund or account
+- Filters for event type, classification, status, risk, owner and deadline
+- Sort by internal deadline, market deadline, risk and last update
+- Saved filter for “My Work”
+- Saved filter for “Needs Attention”
+
+Table columns:
+
+- Reference
+- Issuer and security
+- ISIN
+- Event type
+- Classification
+- Workflow stage
+- Internal deadline
+- Market deadline
+- Affected funds
+- Expected exposure
+- Risk
+- Owner
+- Next action
+
+Use clear status labels such as:
+
+- Notice received
+- Terms under review
+- Ready to calculate
+- Election required
+- Awaiting approval
+- Instruction prepared
+- Awaiting settlement
+- Reconciliation break
+- Closed
+
+Add a “New Event” action that opens the notice-intake flow.
+
+SCREEN 3: NEW EVENT / NOTICE INTAKE
+
+Route suggestion:
+
+`/events/new`
+
+Design this as a short, clear intake flow.
+
+Step 1: Select notice
+
+Allow:
+
+- Upload PDF
+- Use sample rights-issue notice
+- Use sample dividend notice
+- Use sample stock-split notice
+
+Show filename, number of pages, file size and upload status.
+
+Step 2: Create event case
+
+Display:
+
+- Generated event ID
+- Source document
+- Receipt timestamp
+- Current user
+- Initial status: Notice received
+
+Step 3: Analyse notice
+
+Show a visible processing sequence:
+
+- Reading document
+- Identifying security
+- Classifying event
+- Extracting dates and terms
+- Finding source evidence
+- Checking required fields
+
+If an AI API key is unavailable, use deterministic seeded extraction for the sample notices. The demo must still work.
+
+When analysis finishes, take the user directly into the Event Workbench at the “Review Terms” stage.
+
+SCREEN 4: EVENT WORKBENCH
+
+This is the most important screen in the application.
+
+Route suggestion:
+
+`/events/:eventId`
+
+Use one persistent event header followed by a workflow stepper and stage content.
+
+EVENT HEADER
+
+Always display:
+
+- Event reference
+- Issuer
+- Security
+- ISIN
+- Event type
+- Mandatory, voluntary or mandatory-with-options
+- Current status
+- Risk level
+- Internal deadline
+- Market deadline
+- Owner
+
+Add:
+
+- “Next action” callout
+- Blocking issues count
+- Open tasks count
+- Last updated timestamp
+- Overflow menu for secondary actions
+
+The event header should stay visible when moving between workflow stages.
+
+WORKFLOW STEPPER
+
+Use the following stages:
+
+1. Notice
+2. Review Terms
+3. Eligibility
+4. Impact
+5. Election
+6. Approval
+7. Instruction
+8. Settlement
+9. Close
+
+Each stage needs one of these states:
+
+- Not started
+- In progress
+- Complete
+- Blocked
+- Skipped
+
+For normal mandatory events, mark Election as “Not required” and skip it.
+
+For a rights issue, tender offer or other voluntary event, Election must be required.
+
+Clicking a completed stage should allow the user to review it. Clicking a future blocked stage should explain what must happen first.
+
+Do not allow invalid workflow jumps.
+
+STAGE 1: NOTICE
+
+Show the source document and its basic metadata.
+
+Layout:
+
+- Left: PDF/document viewer
+- Right: notice summary and document metadata
+
+Show:
+
+- Source filename
+- Source type
+- Custodian or source
+- Received timestamp
+- Document version
+- Processing status
+
+Add “Open Review Terms” as the primary action.
+
+STAGE 2: REVIEW TERMS
+
+Use a two-panel evidence-review layout.
+
+Left side:
+
+- PDF viewer
+- Current page
+- Highlighted source passage
+
+Right side:
+
+- Extracted fields grouped logically
+
+Groups:
+
+- Event identification
+- Security
+- Classification
+- Key dates
+- Rate, ratio or price
+- Options
+- Restrictions
+
+Every extracted field must show:
+
+- Extracted value
+- Confidence: high, medium or low
+- Review state
+- Source page
+- Short source quotation
+- AI-extracted or manually entered indicator
+
+Actions per field:
+
+- Accept
+- Edit
+- Reject
+- View source
+
+Clicking “View source” must move the document viewer to the relevant page and highlight or visually identify the supporting passage.
+
+If a user edits a value, require a correction reason.
+
+Required fields must be visually marked. Missing required fields should block validation.
+
+At the top show:
+
+- Number accepted
+- Number needing review
+- Number missing
+- Number conflicting
+
+Primary action:
+
+“Validate Event Terms”
+
+The action must remain disabled until required fields are complete.
+
+STAGE 3: ELIGIBILITY
+
+Purpose:
+
+Show which holdings are affected and why.
+
+Top section:
+
+- Security match result
+- ISIN used for matching
+- Eligibility or record date
+- Position snapshot date
+- Number of affected funds
+- Number of affected accounts
+
+Holdings table:
+
+- Fund
+- Account
+- Custodian
+- ISIN
+- Position date
+- Settled quantity
+- Unsettled quantity
+- Eligible quantity
+- Eligibility status
+- Warning
+
+Include some non-eligible rows in an expandable “Excluded Positions” section.
+
+Reasons could include:
+
+- Different ISIN
+- Position after eligibility date
+- Closed account
+- Zero position
+- Missing reference data
+
+Primary action:
+
+“Confirm Eligible Positions”
+
+Require a reason if an analyst manually includes or excludes a position.
+
+STAGE 4: IMPACT
+
+Purpose:
+
+Make the financial or security impact understandable and reviewable.
+
+Top cards:
+
+- Affected funds
+- Affected accounts
+- Total expected cash
+- Total expected securities
+- Calculation warnings
+
+Account-level table:
+
+- Fund
+- Account
+- Eligible quantity
+- Formula
+- Rate or ratio
+- Expected cash
+- Expected security quantity
+- Currency
+- Rounding or fraction result
+- Status
+
+Allow each row to expand and show:
+
+- Calculation inputs
+- Calculation formula
+- Calculation steps
+- Output
+- Rounding method
+- Assumptions
+- Source event terms
+
+Example:
+
+“100,000 eligible shares ÷ 5 = 20,000 rights”
+
+The application code must perform the calculation. Do not use AI-generated arithmetic or hardcoded UI totals.
+
+Show a “Calculation version” number. If a validated input changes, rerun the calculation and record a new version in the audit trail.
+
+Primary action:
+
+“Approve Impact Calculation”
+
+For voluntary events, the next stage is Election.
+
+For mandatory events, the next stage is Approval or Instruction depending on the control rules.
+
+STAGE 5: ELECTION
+
+Only show this as required for voluntary or mandatory-with-options events.
+
+At the top explain in simple language:
+
+“An election is the option selected for an eligible holding. The Copilot explains and validates the options but does not select an investment decision.”
+
+Show the event-level options:
+
+- Option name
+- Option code
+- Explanation
+- Default option
+- Funding consequence
+- Deadline
+- Supporting evidence
+
+Account-level election table:
+
+- Fund
+- Account
+- Eligible entitlement
+- Selected option
+- Elected quantity
+- Remaining quantity
+- Funding required
+- Decision status
+- Validation status
+
+Validation rules:
+
+- Elected quantity cannot exceed entitlement.
+- Required funding must be calculated automatically.
+- Unallocated quantity must be explained or assigned to the default option.
+- Past-deadline elections must be blocked.
+- Every submitted election requires a comment or decision reference.
+
+Do not add an AI “recommended option.”
+
+Primary action:
+
+“Submit Election for Approval”
+
+After submission, lock controlled fields unless the election is returned by the reviewer.
+
+STAGE 6: APPROVAL
+
+Purpose:
+
+Provide a maker-checker review screen.
+
+Show a clean approval summary containing:
+
+- Event terms
+- Eligible holdings
+- Impact totals
+- Election by account
+- Required funding
+- Deadline
+- Open warnings
+- Analyst comments
+- Source evidence links
+
+Show:
+
+- Prepared by
+- Prepared timestamp
+- Reviewer
+- Separation-of-duties check
+
+Prevent the analyst who prepared the election from approving it.
+
+Reviewer actions:
+
+- Approve
+- Reject
+- Return for correction
+
+Require a comment for reject or return.
+
+Approval must create an audit entry.
+
+STAGE 7: INSTRUCTION
+
+Generate a structured instruction preview.
+
+Display a highly visible label:
+
+“SIMULATED INSTRUCTION — NOT SENT”
+
+Instruction fields:
+
+- Event reference
+- Custodian
+- Account
+- Security and ISIN
+- Option code
+- Quantity
+- Funding amount
+- Currency
+- Market deadline
+- Approval reference
+- Prepared by
+- Checked by
+
+Actions:
+
+- Generate draft
+- Regenerate after correction
+- Simulate send
+
+Do not include a real send action.
+
+After “Simulate send”:
+
+- Status becomes “SIMULATED — NOT SENT”
+- Create an audit entry
+- Move event to Awaiting Settlement
+
+STAGE 8: SETTLEMENT
+
+Use an expected-versus-actual comparison.
+
+Summary cards:
+
+- Expected cash
+- Actual cash
+- Expected securities
+- Actual securities
+- Settlement date
+- Reconciliation status
+
+Account table:
+
+- Account
+- Expected amount or quantity
+- Actual amount or quantity
+- Difference
+- Currency
+- Expected date
+- Actual date
+- Match status
+
+Statuses:
+
+- Matched
+- Under-settled
+- Over-settled
+- Missing
+- Late
+- Wrong currency
+- Wrong account
+
+For a break, show:
+
+- Break classification
+- Exact difference
+- Suggested investigation steps
+- Task owner
+- Escalation deadline
+
+Add “Create Exception Task” and make it functional.
+
+Do not claim a cause unless the data proves it. Suggested investigation steps must be presented as suggestions.
+
+STAGE 9: CLOSE
+
+Show a closure checklist:
+
+- Terms validated
+- Holdings confirmed
+- Impact approved
+- Election approved if applicable
+- Instruction simulated
+- Settlement reconciled
+- Exceptions resolved
+- Required evidence present
+
+Do not allow closure while a blocking break or task remains open.
+
+Require a closure comment.
+
+SCREEN 5: TASKS & RISK
+
+Improve the existing tasks screen.
+
+Add:
+
+- My Tasks
+- Team Tasks
+- Overdue
+- Due Today
+- High Risk
+- Escalated
+- Completed
+
+Task table:
+
+- Task
+- Related event
+- Event type
+- Owner
+- Due date
+- Priority
+- Status
+- Dependency
+- Escalation
+- Next action
+
+Clicking a task should open the exact stage of the related Event Workbench—not just the general event page.
+
+Add a compact task detail drawer with:
+
+- Task description
+- Why it was created
+- Source SOP rule
+- Related evidence
+- Dependencies
+- Completion comment
+
+SCREEN 6: AUDIT TRAIL
+
+Show a chronological operational history across all events.
+
+Filters:
+
+- Event
+- User
+- Action
+- Date range
+- Workflow stage
+- System versus manual action
+
+Audit entry display:
+
+- Timestamp
+- Actor
+- Action
+- Event
+- Previous value
+- New value
+- Reason
+- Evidence
+- Related calculation or instruction version
+
+For event-specific audit history, also provide an audit drawer or tab accessible from the Event Workbench.
+
+IMPORTANT INTERACTION RULES
+
+Every primary button must do something real and persist the result.
+
+Examples:
+
+- Accepting a field changes its review state.
+- Editing a field requires a reason and writes an audit record.
+- Validating terms changes the event status.
+- Confirming eligibility persists the eligible positions.
+- Running calculation creates a calculation version.
+- Submitting an election changes its status.
+- Approval records the checker.
+- Simulated send creates an instruction record.
+- Settlement comparison creates a reconciliation result.
+- Closing an event requires all blocking controls to pass.
+
+Use clear success and error messages.
+
+When an action is blocked, explain exactly why:
+
+“Cannot calculate impact: subscription price has not been validated.”
+
+Do not merely disable buttons without explanation.
+
+DEMO DATA AND UI STATES
+
+Use the synthetic data defined in the recently added demo-requirement document.
+
+Preload at least six cases:
+
+1. Cash dividend needing review
+2. Stock split ready for settlement
+3. Rights issue requiring an election
+4. Tender offer awaiting approval
+5. Event with a reconciliation break
+6. Completed event
+
+The hero rights-issue case must support the complete workflow.
+
+Ensure the dashboard numbers, inbox rows, tasks, calculations, approval records, settlement results and audit entries all come from the same underlying event records.
+
+VISUAL DESIGN
+
+Design for desktop operations users first.
+
+Use:
+
+- Clear hierarchy
+- Compact but readable tables
+- Sticky event header
+- Sticky workflow stepper when useful
+- Side-by-side evidence review
+- Drawers for supporting detail
+- Tooltips for specialised terms
+- Consistent badges and status language
+- Accessible colour contrast
+- Keyboard-accessible controls
+- Loading, empty, validation and failure states
+
+Avoid:
+
+- Oversized marketing cards
+- Decorative gradients
+- Retail-investing graphics
+- Excessive animations
+- Generic chatbot-first layout
+- Dead buttons
+- Repeated information across multiple screens
+- Long pages without clear sections or navigation
+
+The Copilot should appear through contextual assistance:
+
+- Notice summary
+- Extraction confidence
+- Source evidence
+- Missing-field alerts
+- Explanation of options
+- Suggested task list
+- Suggested investigation steps
+
+Do not make a generic chat window the centre of the product.
+
+TECHNICAL REQUIREMENTS
+
+Continue using the existing stack:
+
+- React
+- Vite
+- TypeScript
+- Tailwind
+- React Query
+- Express
+- PostgreSQL
+- Drizzle
+- Zod
+- OpenAPI-generated API client
+
+Keep business calculations on the server or in a deterministic shared calculation module.
+
+Do not hardcode event results into page components.
+
+Update the database schema and API routes where needed.
+
+Make data persist after refresh.
+
+Add reusable components for:
+
+- Event status
+- Risk badge
+- Workflow stepper
+- Evidence field
+- Calculation explanation
+- Task state
+- Approval panel
+- Expected-versus-actual comparison
+- Audit timeline
+
+Add unit tests for:
+
+- Workflow-stage transitions
+- Conditional election stage
+- Rights calculations
+- Dividend calculations
+- Stock-split calculations
+- Deadline validation
+- Election quantity validation
+- Maker-checker separation
+- Reconciliation classification
+
+DEFINITION OF DONE
+
+The UI redesign is complete only when:
+
+1. A user can upload the sample rights-issue notice.
+2. The user can review extracted terms beside source evidence.
+3. The user can validate the terms.
+4. The system identifies eligible holdings.
+5. The system calculates entitlements and funding.
+6. The analyst enters an election.
+7. A different demo user approves it.
+8. The system generates a simulated instruction.
+9. Settlement data produces one match and one break.
+10. The user can investigate and resolve the break.
+11. The event can be closed only after required controls pass.
+12. Every action appears in the audit history.
+13. A cash-dividend event correctly skips the election stage.
+14. Refreshing the application does not lose workflow progress.
+15. No primary action is a non-functional placeholder.
+
+Implement the complete working flow. After implementation:
+
+- Run type checking
+- Run tests
+- Build the application
+- Seed the database
+- Start the app
+- Walk through the rights-issue scenario
+- Fix all UI, browser-console and API errors
+- Summarise exactly what was implemented and what remains outside the POC

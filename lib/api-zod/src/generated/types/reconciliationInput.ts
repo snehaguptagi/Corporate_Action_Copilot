@@ -9,4 +9,10 @@
 export interface ReconciliationInput {
   actual: number;
   note: string;
+  actualSecurityQuantity?: number;
+  actualCurrency?: string;
+  actualSettlementDate?: string;
+  actualAccount?: string;
+  actorId: string;
+  actorRole: string;
 }

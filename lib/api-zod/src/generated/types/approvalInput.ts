@@ -9,4 +9,6 @@
 export interface ApprovalInput {
   approved: boolean;
   note: string;
+  actorId: string;
+  actorRole: string;
 }

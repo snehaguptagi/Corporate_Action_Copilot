@@ -14,4 +14,8 @@ export interface Term {
   evidence: string;
   confidence: number;
   reviewStatus: string;
+  sourceType?: string;
+  manuallyCorrected?: boolean;
+  oldValue?: string;
+  correctionReason?: string;
 }

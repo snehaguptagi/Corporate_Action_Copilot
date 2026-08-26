@@ -8,4 +8,6 @@
 
 export interface InstructionInput {
   status: string;
+  actorId: string;
+  actorRole: string;
 }

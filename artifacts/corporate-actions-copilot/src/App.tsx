@@ -17,6 +17,7 @@ import EventsList from '@/pages/EventsList';
 import EventWorkbench from '@/pages/EventWorkbench';
 import TasksList from '@/pages/TasksList';
 import AuditLog from '@/pages/AuditLog';
+import NoticeIntake from '@/pages/NoticeIntake';
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/events" component={EventsList} />
+          <Route path="/intake" component={NoticeIntake} />
           <Route path="/events/:eventId" component={EventWorkbench} />
           <Route path="/tasks" component={TasksList} />
           <Route path="/audit" component={AuditLog} />

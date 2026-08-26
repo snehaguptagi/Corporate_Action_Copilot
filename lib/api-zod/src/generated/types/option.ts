@@ -12,4 +12,5 @@ export interface Option {
   description: string;
   result: string;
   default: boolean;
+  fundingFormula?: string;
 }

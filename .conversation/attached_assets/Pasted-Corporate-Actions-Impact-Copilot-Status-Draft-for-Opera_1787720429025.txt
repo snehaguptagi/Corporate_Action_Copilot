@@ -1,0 +1,380 @@
+Corporate Actions Impact Copilot
+Status: Draft for Operations, Product, Risk and Technology review
+Primary user: Corporate Actions Analyst
+Product type: Internal operations workbench
+Purpose: Reduce the manual effort and operational risk involved in processing corporate actions.
+
+1. Product summary
+The Corporate Actions Impact Copilot will help Operations process corporate actions from the moment a notice is received until the expected cash or securities have been reconciled.
+The product is not simply a notice summariser. It connects the complete operating process:
+Notice → Event → Affected accounts → Impact → Election, if required → Instruction → Settlement → Reconciliation → Audit
+The Copilot will support multiple event types, including dividends, stock splits, rights issues, tender offers, mergers, redemptions and optional events.
+A common platform will manage notice intake, holdings matching, deadlines, tasks, approvals and audit history. Event-specific modules will define which terms, calculations and elections are required for each corporate-action type.
+AI will help read and organise information. Deterministic code will perform calculations and workflow checks. Authorised users will retain responsibility for validation, elections and approvals.
+
+2. Problem statement
+Corporate-action notices arrive through different sources and formats. They may contain long narratives, amendments, multiple dates, market-specific terminology and different options.
+Receiving the notice is only the beginning. The analyst must still:
+Identify the event and affected security.
+Understand the relevant dates, rates, ratios, prices and options.
+Find every affected fund and account.
+Calculate the expected cash, securities or funding requirement.
+Obtain an election where the event requires a choice.
+Monitor internal and external deadlines.
+Prepare and track the instruction.
+Reconcile the final settlement.
+Retain evidence of every material action.
+This work is often distributed across notices, spreadsheets, emails and operational systems. As a result, teams face several risks:
+An affected fund may be missed.
+An outdated notice may be used.
+A critical term may be copied incorrectly.
+A calculation may use the wrong rule.
+An election may not be received before the deadline.
+An instruction may be rejected or remain unconfirmed.
+The final settlement may not match the expected result.
+The reasoning behind a decision may be difficult to reconstruct.
+The Copilot should create one controlled record connecting the notice, event terms, affected accounts, calculations, elections, instructions and settlement.
+
+3. Product goals
+The product should:
+Convert notices into structured corporate-action events.
+Link every critical event term to source evidence.
+Identify every affected fund and account.
+Apply the correct calculation for the identified event.
+Separate mandatory events from events requiring an election.
+Track elections, deadlines, approvals and instructions.
+Highlight missing, contradictory or urgent information.
+Generate clear downstream tasks.
+Compare expected and actual settlement.
+Retain a complete audit history.
+The product should reduce manual preparation work while keeping important decisions with authorised people.
+
+4. Users and responsibilities
+Corporate Actions Analyst — primary user
+The analyst reviews notices, validates event terms, investigates unclear information, confirms affected accounts and manages the event through completion.
+Checker or Team Lead
+The checker approves high-risk cases, material corrections, overrides and instruction-ready events where maker-checker control is required.
+Fund Manager or Authorised Delegate
+This person makes the fund-level election for voluntary events or mandatory events with options.
+Relationship Manager
+The RM may coordinate communications where the operating model requires client, fund or portfolio-manager involvement. The RM is not the primary operations user.
+Reconciliation or Fund Accounting Team
+This team investigates differences between the expected and actual cash or securities.
+Product and Technology Team
+This team maintains the extraction logic, calculations, workflow rules, integrations and audit controls.
+
+5. Corporate-action coverage
+The product must be designed as a multi-event corporate-actions platform.
+Event
+Typical impact
+Election normally required?
+Cash dividend
+Cash entitlement
+No
+Stock dividend or bonus issue
+Additional securities
+Usually no
+Stock split or consolidation
+Change in security quantity
+No
+Rights issue
+Rights entitlement and possible subscription funding
+Yes
+Tender offer
+Cash or other consideration for tendered securities
+Yes
+Optional dividend
+Cash or securities
+Yes
+Merger or exchange
+Cash, securities or a combination
+Sometimes
+Redemption
+Cash proceeds and reduction of security position
+Usually no
+Conversion
+Replacement of one security with another
+Sometimes
+Amendment or cancellation
+Change or withdrawal of previously announced terms
+Depends on original event
+
+The event type and processing type must be stored separately.
+The processing type can be:
+Mandatory: the event happens automatically.
+Voluntary: the holder decides whether to participate.
+Mandatory with options: the event happens, but the holder chooses the form of proceeds.
+
+6. End-to-end user flow
+Stage 1: Receive and register the notice
+The system receives a PDF, text file or structured message.
+It stores:
+Original document.
+Source and channel.
+Received date and time.
+File checksum.
+External event reference.
+Document version.
+Document role: new, preliminary, amended, cancelled, status or confirmation.
+The original document must never be overwritten.
+Stage 2: Classify the event
+The system identifies:
+Event type.
+Processing type.
+Security.
+Whether the document relates to an existing event.
+Whether analyst review is required.
+The result must include the evidence used for classification.
+Stage 3: Extract event-specific terms
+The system selects the relevant field template for the event.
+Common fields include:
+Issuer.
+ISIN or other security identifier.
+Event reference.
+Announcement date.
+Ex date.
+Record date.
+Payment or effective date.
+Market deadline and time zone.
+Currency.
+Options.
+Default result.
+Instruction destination.
+Additional fields depend on the event. For example:
+Dividend: cash rate and tax information.
+Split: pre-split and post-split ratio.
+Rights issue: rights ratio and subscription price.
+Tender: offer price and tender conditions.
+Merger: exchange ratio and cash consideration.
+Every critical term must include its source document, page or message location, supporting text, confidence and review status.
+Stage 4: Validate the terms
+Deterministic checks confirm that:
+Required fields are present.
+Dates are logically consistent.
+The security identifier is valid.
+Currency is known.
+Rates and ratios can be parsed.
+The market deadline includes the correct time zone.
+Event options and default consequences are clear.
+The notice does not conflict with a later version.
+If a critical term is missing or contradictory, the event moves to Needs Review. The system must not guess the value.
+Stage 5: Identify affected accounts
+The validated security is matched against the security master and approved holdings snapshot.
+The system verifies:
+One valid security match exists.
+The holdings snapshot is for the correct eligibility date.
+All positions for the security are included.
+Eligible quantity is present.
+Required fund and account attributes are available.
+The result is one impact record for each affected fund or account.
+Stage 6: Calculate the impact
+The system selects the event-specific calculation.
+Examples:
+Cash dividend: eligible quantity × dividend rate
+Stock split: eligible quantity × split ratio
+Rights issue: eligible quantity × rights ratio
+Rights subscription cash: exercisable rights × subscription price
+Merger: eligible quantity × exchange ratio
+Redemption: eligible quantity × redemption rate
+Calculations must be performed by deterministic code.
+Each result must store:
+Input values.
+Formula.
+Fraction or rounding rule.
+Rule version.
+Output.
+Calculation time.
+Stage 7: Manage elections
+If the event is mandatory and has no options, the process moves directly to expected settlement and task creation.
+If an election is required, the system creates one checklist row per affected account.
+The checklist includes:
+Fund and account.
+Eligible position.
+Valid options.
+Calculated result for each option.
+Default option.
+Market deadline.
+Internal deadline.
+Election owner.
+Election status.
+Approval status.
+Instruction status.
+Risk flags.
+The Copilot may explain the effect of each option. It must not select the final election.
+Stage 8: Prioritise and create tasks
+The system creates tasks when:
+A critical term needs validation.
+A security or account cannot be matched.
+An election is missing.
+A deadline is approaching.
+A default outcome may cause a loss.
+A checker’s approval is required.
+An instruction has been rejected.
+Confirmation has not been received.
+Settlement does not match expectations.
+Priority must be based on transparent rules such as time remaining, event value, missing information, default consequence and approval state.
+Stage 9: Prepare and track instructions
+Once the event is complete and approved, the system prepares an instruction in the required format.
+For the POC, instructions will be clearly marked:
+DRAFT — NOT SUBMITTED
+The POC may simulate accepted, rejected and pending statuses. It will not submit a live market instruction.
+Stage 10: Reconcile and close
+The system calculates the expected cash or securities and compares them with the settlement or booking record.
+A difference outside the approved tolerance creates an exception.
+The event can be closed only when:
+Expected and actual results agree; or
+The difference has been investigated and resolved; or
+An authorised user records an approved closure reason.
+
+7. Functional requirements
+ID
+Requirement
+FR-01
+Accept PDF, text and structured notice inputs
+FR-02
+Preserve original documents, versions and checksums
+FR-03
+Classify event type and processing type
+FR-04
+Extract event-specific terms with source evidence
+FR-05
+Allow analysts to validate and correct extracted terms
+FR-06
+Detect amendments, cancellations and possible duplicates
+FR-07
+Match securities to holdings and affected accounts
+FR-08
+Perform event-specific deterministic calculations
+FR-09
+Create election checklists only where elections are required
+FR-10
+Calculate internal deadlines using approved rules
+FR-11
+Generate risk flags, tasks, owners and escalation dates
+FR-12
+Support maker-checker approval
+FR-13
+Generate draft instructions and operational notes
+FR-14
+Track simulated instruction statuses
+FR-15
+Reconcile expected and actual settlement
+FR-16
+Record all material actions in the audit history
+
+
+8. Product interface
+Event Inbox
+Shows all events with security, event type, processing type, market deadline, internal deadline, status and risk.
+Notice Review
+Shows the original notice beside extracted fields, supporting evidence, confidence and analyst corrections.
+Impact Workbench
+Shows affected funds, holdings, calculation inputs, formulas and expected results.
+Election Workbench
+Appears for events requiring a decision. It shows options, defaults, owners, elections, approvals and deadlines.
+Tasks and Risks
+Shows unresolved information, missing elections, urgent deadlines, rejected instructions, settlement exceptions and required next actions.
+Audit and Reconciliation
+Shows notice versions, changes, calculations, elections, approvals, instructions and expected-versus-actual settlement.
+
+9. AI, rules and human controls
+AI may:
+Classify notices.
+Extract terms.
+Find supporting evidence.
+Compare notice versions.
+Explain an event.
+Draft notes and task descriptions.
+Deterministic code must:
+Match securities and holdings.
+Perform financial calculations.
+Apply deadline and priority rules.
+Enforce workflow states.
+Validate required fields.
+Record audit events.
+Humans must:
+Validate critical terms.
+Resolve ambiguity and conflicts.
+Make fund elections.
+Approve high-risk cases.
+Authorise instructions.
+Approve material overrides.
+The operating principle is:
+AI prepares the case, rules control the process, and humans remain accountable.
+
+10. POC scope
+The POC should prove that one common platform can handle different corporate-action workflows.
+It should include:
+Cash dividend.
+Stock split.
+Rights issue.
+Optional dividend or tender offer.
+Amended notice.
+Duplicate notice.
+Ambiguous critical term.
+Settlement match.
+Settlement break.
+The POC will use sample, synthetic or de-identified notices and holdings.
+It will not attempt to support every market variation.
+
+11. POC data requirements
+The business must provide:
+Eight to twelve sample notices.
+Holdings for approximately 10–20 funds.
+Both affected and unaffected accounts.
+Security identifiers and record dates.
+Event-specific calculation rules.
+Fraction and rounding rules.
+Internal deadline rules.
+Election and approval rules.
+Expected extraction results.
+Expected affected accounts.
+Expected calculations.
+Synthetic settlement records.
+At least two experienced Operations analysts should approve the expected answers before development begins.
+
+12. Success criteria
+The POC succeeds if it demonstrates:
+Correct classification of supported event types.
+Every critical term linked to supporting evidence.
+All affected funds identified.
+No unaffected funds incorrectly included.
+Exact calculation results.
+Correct distinction between mandatory and elective events.
+Missing elections and urgent deadlines flagged.
+Amendments reopening dependent calculations and approvals.
+Correct task and escalation creation.
+Settlement differences correctly identified.
+Complete audit reconstruction.
+No AI-selected election.
+No live instruction submission.
+A measurable reduction in analyst preparation time.
+
+13. Out of scope for the POC
+Live SWIFT, custodian or CSD integration.
+Live instruction submission.
+Production client data.
+Every corporate-action event and market.
+Complex tax and withholding-relief processing.
+Legal interpretation.
+Autonomous elections.
+Customer-facing functionality.
+Full production security, resilience and scale certification.
+NAV Exception Copilot and Operations Knowledge Copilot.
+
+14. Decisions required before development
+The build should not start until the business confirms:
+Supported POC event types.
+Sample notice and holdings pack.
+Critical fields for each event.
+Security and account matching rules.
+Calculation, fraction and rounding rules.
+Internal deadline logic.
+Election authority.
+Maker-checker requirements.
+Priority and escalation rules.
+Reconciliation tolerance.
+Acceptance criteria.
+Named Operations reviewers.
+Final product definition
+The Corporate Actions Impact Copilot is a controlled internal operations workbench that reads different corporate-action notices, identifies affected funds, calculates event-specific impacts, manages elections and deadlines, prepares the next operational actions, tracks settlement and retains the complete audit history.

@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: copilot
+    description: Corporate actions operations workbench
 paths:
   /healthz:
     get:
@@ -24,7 +26,219 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [copilot]
+      summary: Get operations dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /events:
+    get:
+      operationId: listEvents
+      tags: [copilot]
+      summary: List corporate action events
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: risk
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Corporate action events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EventSummary"
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [copilot]
+      summary: Get a corporate action event and its workbench data
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Corporate action event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          description: Event not found
+    patch:
+      operationId: updateEvent
+      tags: [copilot]
+      summary: Update analyst-controlled event terms
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+  /events/{eventId}/election:
+    post:
+      operationId: saveElection
+      tags: [copilot]
+      summary: Save an election for an affected account
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElectionInput"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+  /events/{eventId}/approval:
+    post:
+      operationId: approveEvent
+      tags: [copilot]
+      summary: Record maker-checker approval
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalInput"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+  /events/{eventId}/instruction:
+    post:
+      operationId: updateInstruction
+      tags: [copilot]
+      summary: Update simulated instruction status
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstructionInput"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+  /events/{eventId}/reconciliation:
+    post:
+      operationId: saveReconciliation
+      tags: [copilot]
+      summary: Record expected versus actual settlement
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReconciliationInput"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [copilot]
+      summary: List operational tasks and risk flags
+      responses:
+        "200":
+          description: Operational tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+  /tasks/{taskId}/resolve:
+    post:
+      operationId: resolveTask
+      tags: [copilot]
+      summary: Resolve an operational task
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /audit:
+    get:
+      operationId: listAudit
+      tags: [copilot]
+      summary: List audit history
+      parameters:
+        - in: query
+          name: eventId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Audit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEntry"
 components:
+  parameters:
+    EventId:
+      in: path
+      name: eventId
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +247,188 @@ components:
           type: string
       required:
         - status
+    Dashboard:
+      type: object
+      required: [totalEvents, needsReview, dueToday, openTasks, breaks, recentActivity]
+      properties:
+        totalEvents: { type: number }
+        needsReview: { type: number }
+        dueToday: { type: number }
+        openTasks: { type: number }
+        breaks: { type: number }
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+    EventSummary:
+      type: object
+      required: [id, reference, issuer, security, eventType, processingType, status, risk, marketDeadline, internalDeadline, affectedAccounts, amount, currency]
+      properties:
+        id: { type: string }
+        reference: { type: string }
+        issuer: { type: string }
+        security: { type: string }
+        eventType: { type: string }
+        processingType: { type: string }
+        status: { type: string }
+        risk: { type: string }
+        marketDeadline: { type: string }
+        internalDeadline: { type: string }
+        affectedAccounts: { type: number }
+        amount: { type: number }
+        currency: { type: string }
+    EventDetail:
+      allOf:
+        - $ref: "#/components/schemas/EventSummary"
+        - type: object
+          required: [notice, terms, impacts, options, instruction, reconciliation, tasks, audit]
+          properties:
+            notice:
+              $ref: "#/components/schemas/Notice"
+            terms:
+              type: array
+              items:
+                $ref: "#/components/schemas/Term"
+            impacts:
+              type: array
+              items:
+                $ref: "#/components/schemas/Impact"
+            options:
+              type: array
+              items:
+                $ref: "#/components/schemas/Option"
+            instruction:
+              $ref: "#/components/schemas/Instruction"
+            reconciliation:
+              $ref: "#/components/schemas/Reconciliation"
+            tasks:
+              type: array
+              items:
+                $ref: "#/components/schemas/Task"
+            audit:
+              type: array
+              items:
+                $ref: "#/components/schemas/AuditEntry"
+    Notice:
+      type: object
+      required: [documentName, source, receivedAt, version, role, excerpt]
+      properties:
+        documentName: { type: string }
+        source: { type: string }
+        receivedAt: { type: string }
+        version: { type: string }
+        role: { type: string }
+        excerpt: { type: string }
+    Term:
+      type: object
+      required: [key, label, value, page, evidence, confidence, reviewStatus]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        value: { type: string }
+        page: { type: string }
+        evidence: { type: string }
+        confidence: { type: number }
+        reviewStatus: { type: string }
+    Impact:
+      type: object
+      required: [id, fund, account, eligibleQuantity, formula, expected, currency, status]
+      properties:
+        id: { type: string }
+        fund: { type: string }
+        account: { type: string }
+        eligibleQuantity: { type: number }
+        formula: { type: string }
+        expected: { type: number }
+        currency: { type: string }
+        status: { type: string }
+        election: { type: ["string", "null"] }
+        approval: { type: string }
+    Option:
+      type: object
+      required: [id, label, description, result, default]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        description: { type: string }
+        result: { type: string }
+        default: { type: boolean }
+    Instruction:
+      type: object
+      required: [status, destination, reference, generatedAt, content]
+      properties:
+        status: { type: string }
+        destination: { type: string }
+        reference: { type: string }
+        generatedAt: { type: string }
+        content: { type: string }
+    Reconciliation:
+      type: object
+      required: [expected, actual, difference, tolerance, status, note]
+      properties:
+        expected: { type: number }
+        actual: { type: number }
+        difference: { type: number }
+        tolerance: { type: number }
+        status: { type: string }
+        note: { type: string }
+    Task:
+      type: object
+      required: [id, eventId, title, detail, priority, owner, due, status, category]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        priority: { type: string }
+        owner: { type: string }
+        due: { type: string }
+        status: { type: string }
+        category: { type: string }
+    AuditEntry:
+      type: object
+      required: [id, eventId, action, actor, timestamp, detail]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        action: { type: string }
+        actor: { type: string }
+        timestamp: { type: string }
+        detail: { type: string }
+    EventUpdate:
+      type: object
+      properties:
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermUpdate"
+    TermUpdate:
+      type: object
+      required: [key, value]
+      properties:
+        key: { type: string }
+        value: { type: string }
+    ElectionInput:
+      type: object
+      required: [impactId, optionId]
+      properties:
+        impactId: { type: string }
+        optionId: { type: string }
+    ApprovalInput:
+      type: object
+      required: [approved, note]
+      properties:
+        approved: { type: boolean }
+        note: { type: string }
+    InstructionInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    ReconciliationInput:
+      type: object
+      required: [actual, note]
+      properties:
+        actual: { type: number }
+        note: { type: string }
 

@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
+export interface Reconciliation {
+  expected: number;
+  actual: number;
+  difference: number;
+  tolerance: number;
   status: string;
+  note: string;
 }

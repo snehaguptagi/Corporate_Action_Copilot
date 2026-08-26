@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Corporate Actions Impact Copilot"
+description = "An internal operations workbench for reviewing corporate-action notices, validating event terms, calculating account impacts, managing elections and deadlines, tracking simulated instructions, reconciling settlement, and preserving an audit history."
+version = "1.0.0"
+id = "artifacts/corporate-actions-copilot"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25700
+
+[services.development]
+run = "pnpm --filter @workspace/corporate-actions-copilot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/corporate-actions-copilot", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/corporate-actions-copilot/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25700"
+BASE_PATH = "/"

@@ -1,0 +1,355 @@
+Improve the existing Corporate Actions Impact Copilot repository. Do not build a separate application or replace the existing backend unnecessarily. First inspect the current code, routes, API, database and synthetic demo data.
+
+The main objective is to redesign the UI so the POC presents one clear corporate-action operations journey. The current application contains the right capabilities, but they are spread across too many tabs and the user cannot immediately understand where a case is, what has been completed or what must happen next.
+
+This is an internal operations tool for analysts, reviewers and operations managers. It is not a customer-facing product.
+
+PRODUCT SCOPE
+
+The POC must demonstrate how an operations team can:
+
+1. Receive a corporate-action notice.
+2. Identify and classify the event.
+3. Extract important terms with source evidence.
+4. Validate or correct the extracted terms.
+5. identify affected securities, funds, accounts and positions.
+6. Calculate the expected cash or security impact.
+7. Capture an election when the event requires a decision.
+8. Apply maker-checker approval.
+9. Generate downstream tasks.
+10. Create a simulated instruction when required.
+11. Compare expected and actual settlement.
+12. identify reconciliation breaks.
+13. Retain a complete audit trail.
+
+Do not position this as a Rights Issue Copilot. It is a Corporate Actions Impact Copilot.
+
+The synthetic data should include:
+
+- Cash dividend
+- Rights issue
+- Stock split
+- Bonus issue or stock dividend
+- Tender offer
+- Merger or acquisition
+
+At least two cases must be fully interactive:
+
+- One voluntary event, such as a rights issue
+- One mandatory event, such as a cash dividend
+
+This is important because the POC must demonstrate that the workflow changes according to the corporate-action type.
+
+CORE UX PRINCIPLE
+
+The user should never need to work out which tab to open.
+
+Every case must clearly answer:
+
+- What event is this?
+- Which funds and accounts are affected?
+- What is the current stage?
+- What has already been completed?
+- What is blocked?
+- What is the next action?
+- Who owns the next action?
+- When is it due?
+- What evidence supports the result?
+- What approval is required?
+
+Replace the existing flat nine-tab structure with a visible case journey.
+
+CASE JOURNEY
+
+Use this horizontal lifecycle at the top of every event:
+
+Notice → Validate → Exposure → Impact → Decision → Execute → Reconcile & Close
+
+Every stage must have one of these states:
+
+- Completed: green check
+- Current: blue highlighted stage
+- Blocked: lock icon with explanation
+- Attention required: amber warning
+- Not required: grey skipped state
+- Future: neutral state
+
+The stepper must be clickable, but the current stage should open automatically.
+
+The workflow must be conditional.
+
+For a mandatory cash dividend:
+
+Notice → Validate → Exposure → Impact → Decision not required → Instruction not required → Reconcile & Close
+
+For a voluntary rights issue:
+
+Notice → Validate → Exposure → Impact → Election and approval → Simulated instruction → Reconcile & Close
+
+For a tender offer or merger with options, display the relevant decision and approval workflow.
+
+Do not show an active Election step when no election is required. Clearly mark it “Not required for this mandatory event.”
+
+GLOBAL APPLICATION STRUCTURE
+
+Keep the global navigation simple:
+
+1. Dashboard
+2. Event Inbox
+3. Process New Notice
+4. Tasks
+5. Audit Trail
+
+Keep the demo role switcher:
+
+- Aisha Mehta — Operations Analyst
+- Daniel Reed — Reviewer
+- Maya Shah — Operations Manager
+
+Display a visible but unobtrusive banner:
+
+“POC — Synthetic data. No instruction is transmitted externally.”
+
+Remove internal development terminology from the UI, including:
+
+- Hero case
+- Hero journey
+- Start hero rights issue
+
+Replace it with operational language such as:
+
+- Process new notice
+- Demonstration case
+- Continue case
+- Review required
+
+DASHBOARD
+
+Create an operations dashboard focused on work requiring attention.
+
+At the top, show clickable KPI cards:
+
+- Needs review
+- Due today
+- Awaiting approval
+- Settlement breaks
+- Active events
+
+Do not display zero when an API request fails. Show a clear error message with a Retry button.
+
+Below the KPIs, show a “Priority Work Queue” table.
+
+Required columns:
+
+- Event reference
+- Issuer and security
+- Event type
+- Current stage
+- Next action
+- Owner
+- Internal deadline
+- Market deadline
+- Time remaining
+- Affected funds/accounts
+- Risk
+- Open case button
+
+Prioritise the queue using:
+
+1. Missed or approaching internal deadlines
+2. Settlement breaks
+3. Events awaiting approval
+4. Missing or low-confidence terms
+5. High-value exposure
+6. Normal open cases
+
+Show the reason for the priority, for example:
+
+“High risk — internal deadline in 4 hours”
+“Blocked — payment currency not validated”
+“Settlement break — GBP 2,000 short”
+
+Add a prominent “Process New Notice” button.
+
+EVENT INBOX
+
+The Event Inbox must support:
+
+- Search by reference, issuer, ISIN, security or event type
+- Filter by event type
+- Filter by mandatory/voluntary classification
+- Filter by workflow stage
+- Filter by risk
+- Filter by owner
+- Filter by deadline
+- Sort by priority or deadline
+
+Every row must clearly show “Open case.” Do not rely on a hidden arrow that appears only on hover.
+
+PROCESS NEW NOTICE
+
+For this first-level POC, be completely honest about synthetic processing.
+
+Do not pretend that an arbitrary uploaded PDF has been analysed if the system only uses predefined data.
+
+Provide a “Use a sample notice” experience with cards for:
+
+- Cash dividend
+- Rights issue
+- Stock split
+- Bonus issue
+- Tender offer
+- Merger
+
+Each card should show:
+
+- Event type
+- Mandatory or voluntary
+- Issuer
+- Security/ISIN
+- Source
+- Short description
+- “Process sample notice” button
+
+Allow the user to preview the synthetic notice before processing it.
+
+If real PDF parsing is not implemented, do not call this an arbitrary PDF upload. Do not classify an event by checking whether its filename contains the word “rights.”
+
+The correct POC flow is:
+
+Select sample notice → Process notice → Create case for review → Open the Validate stage
+
+Replace “Create reviewed case” with “Create case for review,” because the analyst has not reviewed it yet.
+
+EVENT CASE PAGE
+
+Use a consistent event-case layout.
+
+A. Case header
+
+Show:
+
+- Event reference
+- Issuer
+- Security name
+- ISIN
+- Event type
+- Mandatory/voluntary classification
+- Current status
+- Risk
+- Market deadline
+- Internal deadline
+- Time remaining
+- Number of affected funds/accounts
+- Current owner
+
+Show both the market deadline and internal deadline. Explain through a tooltip:
+
+- Market deadline: final time the market or custodian accepts the instruction
+- Internal deadline: earlier operational deadline used to allow review and approval
+
+B. Lifecycle stepper
+
+Display the seven-stage case journey immediately below the header.
+
+C. Next Action card
+
+This must be the most prominent card on the page.
+
+Example:
+
+“Next action: Validate the subscription price and market deadline.”
+
+Also show:
+
+- Owner
+- Due time
+- Blocking reason
+- Primary action button
+- Escalation path where relevant
+
+Examples of primary buttons:
+
+- Review extracted terms
+- Calculate impact
+- Submit election
+- Review and approve
+- Create simulated instruction
+- Record settlement
+- Investigate break
+- Close case
+
+D. Main stage content
+
+Only show the content relevant to the selected journey stage.
+
+STAGE 1 — NOTICE
+
+Show:
+
+- Notice preview
+- Document name
+- Source
+- Received date and time
+- Notice reference
+- Number of pages
+- Detected issuer
+- Detected security
+- Proposed event classification
+- Classification confidence
+- Source page references
+
+Add a link to view the complete synthetic notice.
+
+STAGE 2 — VALIDATE
+
+Display extracted information in a clear review table:
+
+- Field
+- Extracted value
+- Confidence
+- Source page
+- Supporting notice text
+- Review status
+- Analyst action
+
+Typical fields include:
+
+- Event type
+- Mandatory/voluntary classification
+- ISIN
+- Record date
+- Ex-date
+- Payment or settlement date
+- Market deadline
+- Internal deadline
+- Currency
+- Rate, ratio or offer price
+- Default option
+- Fractional entitlement treatment
+
+Allow the analyst to:
+
+- Validate a field
+- Correct a field
+- Enter a mandatory reason for correction
+
+Highlight missing or low-confidence values.
+
+Do not allow impact calculations until all required terms are validated. Clearly explain which values are blocking the calculation.
+
+STAGE 3 — EXPOSURE
+
+Show how the notice is matched to internal holdings.
+
+Display:
+
+- Matched security and ISIN
+- Record date used
+- Position date
+- Fund
+- Account
+- Custodian
+- Holding quantity
+- Eligibility status
+- Eligibility

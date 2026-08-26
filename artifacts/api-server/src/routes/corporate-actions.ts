@@ -38,7 +38,6 @@ import {
   buildDashboard,
   calculateEventImpacts,
   createIntakeEvent,
-  demoUsers,
   getCorporateActionEvent,
   getCorporateActionEvents,
   reconcileEvent,
@@ -47,6 +46,7 @@ import {
   simulateInstruction,
   toSummary,
 } from "../lib/corporate-actions-v2";
+import { requireActor } from "../lib/actor-context";
 
 const router: IRouter = Router();
 
@@ -57,13 +57,6 @@ const parse = <T>(schema: { safeParse: (value: unknown) => { success: boolean; d
     return null;
   }
   return parsed.data as T;
-};
-
-const actorFor = (input: any) => {
-  const found = demoUsers.find((user) => user.id === input.actorId);
-  if (!found) throw new Error("Unknown demo user.");
-  if (found.role !== input.actorRole) throw new Error("Selected role does not match the demo user.");
-  return found;
 };
 
 async function findEvent(eventId: string, res: any) {
@@ -101,9 +94,9 @@ router.get("/events", async (req, res): Promise<void> => {
 router.post("/intake", async (req, res): Promise<void> => {
   const body = parse(CreateIntakeBody, req.body, res);
   if (!body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
   try {
-    const actor = actorFor(body);
-    if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can upload a notice.");
     const event = await createIntakeEvent(body.fileName, body.source);
     res.status(201).json(CreateIntakeResponse.parse(event));
   } catch (error) {
@@ -122,10 +115,11 @@ router.patch("/events/:eventId", async (req, res): Promise<void> => {
   const params = parse(UpdateEventParams, req.params, res);
   const body = parse(UpdateEventBody, req.body, res);
   if (!params || !body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
-    const actor = actorFor(body);
     applyTermUpdates(event, body.terms ?? [], actor, body.reason ?? "");
     await saveCorporateActionEvent(event);
     res.json(UpdateEventResponse.parse(event));
@@ -138,10 +132,12 @@ router.post("/events/:eventId/calculate", async (req, res): Promise<void> => {
   const params = parse(CalculateEventParams, req.params, res);
   const body = parse(CalculateEventBody, req.body, res);
   if (!params || !body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
-    calculateEventImpacts(event, actorFor(body));
+    calculateEventImpacts(event, actor);
     await saveCorporateActionEvent(event);
     res.json(CalculateEventResponse.parse(event));
   } catch (error) {
@@ -153,10 +149,12 @@ router.post("/events/:eventId/election", async (req, res): Promise<void> => {
   const params = parse(SaveElectionParams, req.params, res);
   const body = parse(SaveElectionBody, req.body, res);
   if (!params || !body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
-    recordElection(event, body, actorFor(body));
+    recordElection(event, body, actor);
     await saveCorporateActionEvent(event);
     res.json(SaveElectionResponse.parse(event));
   } catch (error) {
@@ -168,10 +166,12 @@ router.post("/events/:eventId/approval", async (req, res): Promise<void> => {
   const params = parse(ApproveEventParams, req.params, res);
   const body = parse(ApproveEventBody, req.body, res);
   if (!params || !body) return;
+  const actor = requireActor(req, res, ["Reviewer"]);
+  if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
-    approveControlledEvent(event, body.approved, body.note, actorFor(body));
+    approveControlledEvent(event, body.approved, body.note, actor);
     await saveCorporateActionEvent(event);
     res.json(ApproveEventResponse.parse(event));
   } catch (error) {
@@ -183,10 +183,12 @@ router.post("/events/:eventId/instruction", async (req, res): Promise<void> => {
   const params = parse(UpdateInstructionParams, req.params, res);
   const body = parse(UpdateInstructionBody, req.body, res);
   if (!params || !body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
-    simulateInstruction(event, body.status, actorFor(body));
+    simulateInstruction(event, body.status, actor);
     await saveCorporateActionEvent(event);
     res.json(UpdateInstructionResponse.parse(event));
   } catch (error) {
@@ -198,10 +200,12 @@ router.post("/events/:eventId/reconciliation", async (req, res): Promise<void> =
   const params = parse(SaveReconciliationParams, req.params, res);
   const body = parse(SaveReconciliationBody, req.body, res);
   if (!params || !body) return;
+  const actor = requireActor(req, res, ["Operations Analyst", "Operations Manager"]);
+  if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
-    reconcileEvent(event, body, actorFor(body));
+    reconcileEvent(event, body, actor);
     await saveCorporateActionEvent(event);
     res.json(SaveReconciliationResponse.parse(event));
   } catch (error) {
@@ -217,6 +221,8 @@ router.get("/tasks", async (_req, res): Promise<void> => {
 router.post("/tasks/:taskId/resolve", async (req, res): Promise<void> => {
   const params = parse(ResolveTaskParams, req.params, res);
   if (!params) return;
+  const actor = requireActor(req, res);
+  if (!actor) return;
   const events = await getCorporateActionEvents();
   const event = events.find((candidate) => candidate.tasks?.some((current: any) => current.id === params.taskId));
   const currentTask = event?.tasks.find((current: any) => current.id === params.taskId);
@@ -225,7 +231,7 @@ router.post("/tasks/:taskId/resolve", async (req, res): Promise<void> => {
     return;
   }
   currentTask.status = "Resolved";
-  appendAudit(event, "Task resolved", currentTask.title, "Aisha Mehta", { previousValue: "Open", newValue: "Resolved" });
+  appendAudit(event, "Task resolved", currentTask.title, actor.name, { previousValue: "Open", newValue: "Resolved" });
   await saveCorporateActionEvent(event);
   res.json(ResolveTaskResponse.parse(currentTask));
 });

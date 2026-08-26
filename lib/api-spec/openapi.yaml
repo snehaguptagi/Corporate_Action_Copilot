@@ -278,6 +278,12 @@ paths:
                 items:
                   $ref: "#/components/schemas/AuditEntry"
 components:
+  securitySchemes:
+    CorporateActionSession:
+      type: apiKey
+      in: cookie
+      name: corporate_actions_actor
+      description: Signed HTTP-only operational identity issued by the trusted identity gateway.
   parameters:
     EventId:
       in: path

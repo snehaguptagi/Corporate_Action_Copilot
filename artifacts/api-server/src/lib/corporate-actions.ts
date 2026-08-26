@@ -5,6 +5,145 @@ type EventData = Record<string, any>;
 
 const now = () => new Date().toISOString();
 
+export const REQUIRED_TERMS_BY_EVENT_TYPE: Record<string, string[]> = {
+  "Cash dividend": ["rate", "recordDate", "paymentDate", "withholding"],
+  "Stock split": ["ratio", "effectiveDate"],
+  "Rights issue": ["rightsRatio", "subscriptionPrice", "deadline"],
+  "Tender offer": ["offerPrice", "maximum"],
+};
+
+export type CalculationIssue = {
+  key: string;
+  label: string;
+  reason: string;
+};
+
+export function validateRequiredTerms(event: EventData): CalculationIssue[] {
+  const requiredKeys = REQUIRED_TERMS_BY_EVENT_TYPE[event.eventType] ?? event.terms.map((term: any) => term.key);
+  const issues: CalculationIssue[] = [];
+
+  for (const key of requiredKeys) {
+    const matches = event.terms.filter((term: any) => term.key === key);
+    const label = matches[0]?.label ?? key;
+    if (matches.length === 0) {
+      issues.push({ key, label, reason: `Required term "${label}" (${key}) is missing from the notice.` });
+      continue;
+    }
+    const values = [...new Set(matches.map((term: any) => String(term.value ?? "").trim()).filter(Boolean))];
+    if (values.length > 1 || matches.some((term: any) => ["Conflicting", "Conflict"].includes(term.reviewStatus))) {
+      issues.push({
+        key,
+        label,
+        reason: `Conflicting values found for "${label}" (${key}): ${values.join(", ") || "no usable value"}. Resolve the notice to one value.`,
+      });
+      continue;
+    }
+    const term = matches[0];
+    if (!String(term.value ?? "").trim() || term.reviewStatus !== "Validated") {
+      issues.push({
+        key,
+        label,
+        reason: `Required term "${label}" (${key}) must have a non-empty value and review status "Validated" before calculation.`,
+      });
+    }
+  }
+
+  return issues;
+}
+
+const termValue = (event: EventData, key: string): string => String(event.terms.find((term: any) => term.key === key)?.value ?? "");
+const numberFromTerm = (value: string): number | null => {
+  const match = value.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+};
+const rounded = (value: number, decimals = 2): number => Number(value.toFixed(decimals));
+const formatQuantity = (value: number): string => value.toLocaleString("en-US", { maximumFractionDigits: 4 });
+
+function calculationInputs(event: EventData): { rate?: number; splitRatio?: number; rightsRatio?: number; price?: number; maximum?: number } {
+  const rate = numberFromTerm(termValue(event, "rate"));
+  const price = numberFromTerm(termValue(event, event.eventType === "Tender offer" ? "offerPrice" : "subscriptionPrice"));
+  const ratioText = termValue(event, event.eventType === "Rights issue" ? "rightsRatio" : "ratio");
+  const ratioNumbers = ratioText.replace(/,/g, "").match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+  const splitRatio = ratioNumbers.length >= 2 ? ratioNumbers[0] / ratioNumbers[1] : ratioNumbers[0];
+  const rightsRatio = ratioNumbers.length >= 2 ? ratioNumbers[0] / ratioNumbers[1] : ratioNumbers[0];
+  const maximum = numberFromTerm(termValue(event, "maximum"));
+  return { rate: rate ?? undefined, price: price ?? undefined, splitRatio: splitRatio ?? undefined, rightsRatio: rightsRatio ?? undefined, maximum: maximum ?? undefined };
+}
+
+export function calculateImpacts(event: EventData): { issues: CalculationIssue[]; changed: Array<{ impactId: string; previous: number; next: number; previousFormula: string; formula: string }> } {
+  const issues = validateRequiredTerms(event);
+  const inputs = calculationInputs(event);
+  if (event.eventType === "Cash dividend" && !inputs.rate) issues.push({ key: "rate", label: "Cash rate", reason: `Cash rate "${termValue(event, "rate")}" is not a usable number.` });
+  if (event.eventType === "Stock split" && !inputs.splitRatio) issues.push({ key: "ratio", label: "Split ratio", reason: `Split ratio "${termValue(event, "ratio")}" is not a usable ratio.` });
+  if (event.eventType === "Rights issue" && (!inputs.rightsRatio || !inputs.price)) issues.push({ key: "rightsRatio", label: "Rights issue terms", reason: "Rights ratio and subscription price must both be usable numbers." });
+  if (event.eventType === "Tender offer" && (!inputs.price || !inputs.maximum)) issues.push({ key: "offerPrice", label: "Tender terms", reason: "Offer price and maximum acceptance must both be usable numbers." });
+  if (issues.length > 0) return { issues, changed: [] };
+
+  const changed: Array<{ impactId: string; previous: number; next: number; previousFormula: string; formula: string }> = [];
+  for (const impact of event.impacts) {
+    const previous = Number(impact.expected);
+    const previousFormula = String(impact.formula);
+    let expected = previous;
+    let formula = previousFormula;
+    const quantity = Number(impact.eligibleQuantity);
+    if (event.eventType === "Cash dividend") {
+      expected = rounded(quantity * (inputs.rate as number));
+      formula = `${formatQuantity(quantity)} × ${event.currency} ${(inputs.rate as number).toFixed(4)}`;
+    } else if (event.eventType === "Stock split") {
+      expected = rounded(quantity * (inputs.splitRatio as number), 4);
+      formula = `${formatQuantity(quantity)} × ${(inputs.splitRatio as number).toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
+    } else if (event.eventType === "Rights issue") {
+      const electedQuantity = impact.electionOptionId === "lapse"
+        ? 0
+        : Math.min(Math.max(Number(impact.electionQuantity ?? quantity), 0), quantity);
+      expected = rounded(electedQuantity * (inputs.rightsRatio as number) * (inputs.price as number));
+      formula = `(${formatQuantity(electedQuantity)} × ${(inputs.rightsRatio as number).toLocaleString("en-US", { maximumFractionDigits: 4 })}) × ${event.currency} ${(inputs.price as number).toFixed(2)}`;
+    } else if (event.eventType === "Tender offer") {
+      const requestedQuantity = impact.electionOptionId === "decline"
+        ? 0
+        : Math.min(Math.max(Number(impact.electionQuantity ?? quantity * (inputs.maximum as number) / 100), 0), quantity);
+      const acceptedQuantity = Math.min(requestedQuantity, quantity * (inputs.maximum as number) / 100);
+      expected = rounded(acceptedQuantity * (inputs.price as number));
+      formula = `(${formatQuantity(acceptedQuantity)} accepted after ${(inputs.maximum as number).toFixed(2)}% cap) × ${event.currency} ${(inputs.price as number).toFixed(2)}`;
+      impact.calculatedQuantity = acceptedQuantity;
+    }
+    impact.expected = expected;
+    impact.formula = formula;
+    impact.calculation = {
+      formula,
+      rounding: event.eventType === "Stock split" ? "4 decimal places for fractional shares" : "2 decimal places for currency",
+      fractionAssumption: event.eventType === "Rights issue" ? "Fractional rights are calculated using the stated ratio." : "No fractional entitlement adjustment.",
+      calculatedAt: now(),
+    };
+    changed.push({ impactId: impact.id, previous, next: expected, previousFormula, formula });
+    impact.status = impact.election ? "Election received" : "Calculated";
+  }
+  event.amount = rounded(event.impacts.reduce((sum: number, impact: any) => sum + Number(impact.expected), 0));
+  event.reconciliation.expected = event.amount;
+  return { issues: [], changed };
+}
+
+export function nextCalculatedStatus(event: EventData): string {
+  if (event.processingType === "Mandatory") return "Ready for settlement";
+  return event.impacts.every((impact: any) => impact.election) ? "Ready for approval" : "Election required";
+}
+
+export function canTransition(current: string, next: string): boolean {
+  const transitions: Record<string, string[]> = {
+    "Needs review": ["Needs calculation", "Validated", "Ready for settlement", "Election required", "Ready for approval"],
+    "Needs calculation": ["Validated", "Ready for settlement", "Election required", "Ready for approval"],
+    Validated: ["Needs calculation", "Ready for settlement", "Election required"],
+    "Election required": ["Needs calculation", "Ready for approval"],
+    "Ready for approval": ["Needs calculation", "Ready for instruction", "Needs review"],
+    "Ready for instruction": ["Needs calculation", "Instruction pending"],
+    "Instruction pending": ["Instruction pending", "Ready for settlement", "Reconciled", "Settlement break", "Needs review"],
+    "Ready for settlement": ["Ready for settlement", "Reconciled", "Settlement break", "Needs calculation"],
+    Reconciled: ["Needs calculation", "Reconciled"],
+    "Settlement break": ["Needs calculation", "Reconciled", "Settlement break"],
+  };
+  return current === next || transitions[current]?.includes(next) === true;
+}
+
 const makeAudit = (
   eventId: string,
   action: string,
@@ -55,7 +194,7 @@ const seedEvents: EventData[] = [
       { id: "imp-aur-3", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 69529.41, formula: "69,529.41 × GBP 0.4250", expected: 29500, currency: "GBP", status: "Calculated", election: null, approval: "Not required" },
     ],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory cash event. No instruction is submitted." },
+    instruction: { status: "SIMULATED_NOT_SENT", destination: "N/A", reference: "N/A", generatedAt: "—", content: "SIMULATED NOT SENT — mandatory cash event. No instruction is submitted." },
     reconciliation: { expected: 186750, actual: 0, difference: -186750, tolerance: 5, status: "Awaiting settlement", note: "Payment date amended; expected settlement recalculated." },
     tasks: [
       { id: "task-aur-1", eventId: "evt-aurora-div", title: "Validate amended payment date", detail: "Confirm the amendment supersedes notice version v1 before releasing downstream task dates.", priority: "High", owner: "M. Shah", due: "Today · 11:00 BST", status: "Open", category: "Term validation" },
@@ -90,7 +229,7 @@ const seedEvents: EventData[] = [
       { id: "imp-dgt-2", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 25000, formula: "25,000 × 4", expected: 100000, currency: "Shares", status: "Calculated", election: null, approval: "Validated" },
     ],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory position adjustment. No market instruction required." },
+    instruction: { status: "SIMULATED_NOT_SENT", destination: "N/A", reference: "N/A", generatedAt: "—", content: "SIMULATED NOT SENT — mandatory position adjustment. No market instruction required." },
     reconciliation: { expected: 420000, actual: 420000, difference: 0, tolerance: 1, status: "Matched", note: "Custodian confirmation received." },
     tasks: [],
     audit: [{ id: "audit-dgt-1", eventId: "evt-delta-split", action: "Settlement matched", actor: "Reconciliation", timestamp: "2026-08-26T07:12:00.000Z", detail: "Expected and booked share quantities agree." }],
@@ -153,7 +292,7 @@ const seedEvents: EventData[] = [
       { id: "subscribe", label: "Subscribe", description: "Exercise all eligible rights at the subscription price.", result: "Funding requirement calculated per account", default: false },
       { id: "lapse", label: "Allow to lapse", description: "Do not participate. Rights may expire without value.", result: "No funding; potential value loss", default: true },
     ],
-    instruction: { status: "Draft — not submitted", destination: "Euroclear instruction gateway", reference: "DRAFT-VRN-0821", generatedAt: "2026-08-26T07:30:00.000Z", content: "DRAFT ONLY — election instruction will be populated after fund-level approval." },
+    instruction: { status: "SIMULATED_NOT_SENT", destination: "Euroclear instruction gateway", reference: "DRAFT-VRN-0821", generatedAt: "2026-08-26T07:30:00.000Z", content: "SIMULATED NOT SENT — election instruction will be populated after fund-level approval." },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 1, status: "Not due", note: "Settlement expected after election and subscription." },
     tasks: [
       { id: "task-vrn-1", eventId: "evt-verdant-rights", title: "Obtain fund election", detail: "Northbridge Balanced Fund election is required before the internal deadline.", priority: "High", owner: "Fund Manager", due: "29 Aug · 10:00 CEST", status: "Open", category: "Election" },
@@ -181,13 +320,13 @@ const seedEvents: EventData[] = [
       { key: "maximum", label: "Maximum acceptance", value: "20% of position", page: "p. 2", evidence: "“up to twenty per cent of each registered holding”", confidence: 0.93, reviewStatus: "Validated" },
     ],
     impacts: [
-      { id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, formula: "(40,000 × 20%) × AUD 8.50", expected: 68000, currency: "AUD", status: "Election received", election: "Tender 20%", approval: "Approved" },
+      { id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, electionQuantity: 8000, formula: "(8,000 × AUD 8.50)", expected: 68000, currency: "AUD", status: "Election received", election: "Tender 20%", electionOptionId: "tender", approval: "Approved" },
     ],
     options: [
       { id: "tender", label: "Tender maximum", description: "Tender up to 20% of the eligible position.", result: "Expected cash: AUD 68,000", default: false },
       { id: "decline", label: "Do not tender", description: "Retain the current holding.", result: "No cash proceeds", default: true },
     ],
-    instruction: { status: "Draft — ready for checker", destination: "Custodian portal", reference: "DRAFT-MRL-0818", generatedAt: "2026-08-26T06:40:00.000Z", content: "DRAFT — tender 8,000 shares at AUD 8.50. Awaiting simulated submission." },
+    instruction: { status: "SIMULATED_PENDING", destination: "Custodian portal", reference: "DRAFT-MRL-0818", generatedAt: "2026-08-26T06:40:00.000Z", content: "SIMULATED NOT SENT — tender 8,000 shares at AUD 8.50. Awaiting simulated confirmation." },
     reconciliation: { expected: 68000, actual: 0, difference: -68000, tolerance: 1, status: "Not due", note: "Tender acceptance outcome is pending." },
     tasks: [{ id: "task-mrl-1", eventId: "evt-meridian-tender", title: "Simulate instruction confirmation", detail: "Checker approval complete. Move the DRAFT instruction to a simulated pending or accepted status.", priority: "Medium", owner: "M. Shah", due: "30 Aug · 09:00 AEST", status: "Open", category: "Instruction" }],
     audit: [{ id: "audit-mrl-1", eventId: "evt-meridian-tender", action: "Checker approval recorded", actor: "Team Lead", timestamp: "2026-08-26T06:35:00.000Z", detail: "Tender election approved for the Sovereign Select Mandate." }],
@@ -269,6 +408,16 @@ const seedEvents: EventData[] = [
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+function normalizeLegacySimulation(event: EventData): EventData {
+  if (event.instruction && !String(event.instruction.status).startsWith("SIMULATED_")) {
+    event.instruction.status = event.status === "Instruction pending"
+      ? "SIMULATED_PENDING"
+      : "SIMULATED_NOT_SENT";
+    event.instruction.content = `SIMULATED NOT SENT — ${String(event.instruction.content ?? "").replace(/^DRAFT(?: ONLY)?\s*[—-]\s*/i, "")}`;
+  }
+  return event;
+}
+
 export async function ensureCorporateActionSeedData(): Promise<void> {
   const existing = await db
     .select({ id: corporateActionEventsTable.id, data: corporateActionEventsTable.data })
@@ -299,13 +448,13 @@ export async function ensureCorporateActionSeedData(): Promise<void> {
 export async function getCorporateActionEvents(): Promise<EventData[]> {
   await ensureCorporateActionSeedData();
   const rows = await db.select().from(corporateActionEventsTable).orderBy(desc(corporateActionEventsTable.updatedAt));
-  return rows.map((row) => clone(row.data));
+  return rows.map((row) => normalizeLegacySimulation(clone(row.data)));
 }
 
 export async function getCorporateActionEvent(id: string): Promise<EventData | null> {
   await ensureCorporateActionSeedData();
   const [row] = await db.select().from(corporateActionEventsTable).where(eq(corporateActionEventsTable.id, id));
-  return row ? clone(row.data) : null;
+  return row ? normalizeLegacySimulation(clone(row.data)) : null;
 }
 
 export async function saveCorporateActionEvent(event: EventData): Promise<EventData> {

@@ -24,7 +24,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
+      <aside className="hidden w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col lg:shrink-0">
         <div className="h-14 flex items-center px-4 border-b border-sidebar-border/50 shrink-0">
           <div className="flex items-center gap-2 font-semibold tracking-tight">
             <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
@@ -87,6 +87,36 @@ export function Shell({ children }: { children: ReactNode }) {
       
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+        <div className="flex shrink-0 flex-col border-b border-slate-200 bg-sidebar text-sidebar-foreground lg:hidden">
+          <div className="flex h-14 items-center justify-between px-4">
+            <div className="flex items-center gap-2 font-semibold tracking-tight">
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
+                <ShieldAlert className="h-3.5 w-3.5 text-primary-foreground" />
+              </div>
+              <span>Impact Copilot</span>
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">Demo mode</span>
+          </div>
+          <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
+            {navItems.map((item) => {
+              const active = isActive(item.href)
+              return (
+                <Link key={item.href} href={item.href}>
+                  <button
+                    className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
+                      active
+                        ? "bg-sidebar-primary/15 text-sidebar-primary-foreground"
+                        : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    <item.icon className="h-3.5 w-3.5" />
+                    {item.label}
+                  </button>
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
         {children}
       </main>
     </div>

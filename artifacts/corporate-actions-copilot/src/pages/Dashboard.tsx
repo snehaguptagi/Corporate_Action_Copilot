@@ -137,9 +137,9 @@ function getActivityIcon(action: string) {
 }
 
 export default function Dashboard() {
-  const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboard();
-  const { data: events, isLoading: isEventsLoading } = useListEvents();
-  const { data: tasks, isLoading: isTasksLoading } = useListTasks();
+  const { data: dashboard, isLoading: isDashboardLoading, isError: isDashboardError, refetch: refetchDashboard } = useGetDashboard();
+  const { data: events, isLoading: isEventsLoading, isError: isEventsError, refetch: refetchEvents } = useListEvents();
+  const { data: tasks, isLoading: isTasksLoading, isError: isTasksError, refetch: refetchTasks } = useListTasks();
 
   if (isDashboardLoading || isEventsLoading || isTasksLoading) {
     return (
@@ -148,6 +148,23 @@ export default function Dashboard() {
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           Loading workspace...
         </div>
+      </div>
+    );
+  }
+
+  if (isDashboardError || isEventsError || isTasksError) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-slate-50 p-6">
+        <Card className="max-w-md border-rose-200">
+          <CardContent className="space-y-4 p-6 text-center">
+            <AlertCircle className="mx-auto h-8 w-8 text-rose-600" />
+            <div>
+              <h1 className="font-semibold text-slate-900">Operational data is unavailable</h1>
+              <p className="mt-1 text-sm text-slate-500">The dashboard has not substituted missing data with zeros. Retry to reload the active case, task, and control data.</p>
+            </div>
+            <Button onClick={() => { void refetchDashboard(); void refetchEvents(); void refetchTasks(); }}>Retry dashboard</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -189,7 +206,7 @@ export default function Dashboard() {
               <Button variant="outline">Open event inbox</Button>
             </Link>
             <Link href="/intake">
-              <Button>Start hero rights issue</Button>
+              <Button>Process new notice</Button>
             </Link>
           </div>
         </div>
@@ -361,8 +378,8 @@ export default function Dashboard() {
                 <div className="p-6 text-sm text-slate-500">No open tasks.</div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {topTasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-3 px-5 py-3.5">
+                  {topTasks.map((task, index) => (
+                    <div key={`${task.id}-${index}`} className="flex items-start gap-3 px-5 py-3.5">
                       <div className="mt-0.5">
                         {task.priority.toUpperCase() === "HIGH" ? <AlertTriangle className="h-4 w-4 text-rose-500" /> : <Clock3 className="h-4 w-4 text-amber-500" />}
                       </div>

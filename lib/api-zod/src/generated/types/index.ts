@@ -21,6 +21,7 @@ export * from './impactElectionDecision';
 export * from './instruction';
 export * from './instructionInput';
 export * from './intakeInput';
+export * from './intakeInputSampleId';
 export * from './listAuditParams';
 export * from './listEventsParams';
 export * from './notice';

@@ -274,7 +274,20 @@ export interface OperationalActor {
   role: string;
 }
 
+export type IntakeInputSampleId = typeof IntakeInputSampleId[keyof typeof IntakeInputSampleId];
+
+
+export const IntakeInputSampleId = {
+  'cash-dividend': 'cash-dividend',
+  'rights-issue': 'rights-issue',
+  'stock-split': 'stock-split',
+  'bonus-issue': 'bonus-issue',
+  'tender-offer': 'tender-offer',
+  merger: 'merger',
+} as const;
+
 export interface IntakeInput {
+  sampleId: IntakeInputSampleId;
   fileName: string;
   source: string;
   noticeText?: string;
@@ -290,3 +303,4 @@ eventType?: string;
 export type ListAuditParams = {
 eventId?: string;
 };
+

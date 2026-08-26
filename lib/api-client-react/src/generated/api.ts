@@ -462,7 +462,7 @@ export const getCreateIntakeUrl = () => {
 }
 
 /**
- * @summary Create a corporate-action case from a synthetic notice upload
+ * @summary Create a corporate-action case from a named synthetic sample
  */
 export const createIntake = async (intakeInput: IntakeInput, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
 
@@ -511,7 +511,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateIntakeMutationError = ErrorType<void>
 
     /**
- * @summary Create a corporate-action case from a synthetic notice upload
+ * @summary Create a corporate-action case from a named synthetic sample
  */
 export const useCreateIntake = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIntake>>, TError,{data: BodyType<IntakeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

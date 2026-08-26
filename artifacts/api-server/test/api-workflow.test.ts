@@ -193,12 +193,19 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
 
     const intake = await request("/intake", {
       method: "POST",
-      body: JSON.stringify({ fileName: `rights-${runId}.pdf`, source: "API workflow test" }),
+      body: JSON.stringify({ sampleId: "rights-issue", fileName: `rights-${runId}.pdf`, source: "API workflow test" }),
     }, analystSession);
     assert.equal(intake.status, 201);
     createdEventIds.add(intake.body.id);
     assert.equal(intake.body.audit[0].actor, "Aisha Mehta");
     assert.equal(intake.body.audit[0].actorId, "USR-001");
     assert.equal(intake.body.audit[0].actorRole, "Operations Analyst");
+
+    const invalidSample = await request("/intake", {
+      method: "POST",
+      body: JSON.stringify({ sampleId: "unknown-notice", fileName: "unknown.pdf", source: "API workflow test" }),
+    }, analystSession);
+    assert.equal(invalidSample.status, 400);
+    assert.match(invalidSample.body.error, /invalid enum value/i);
   });
 });

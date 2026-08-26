@@ -118,7 +118,7 @@ router.post("/intake", async (req, res): Promise<void> => {
   const actor = requireActor(req, res, ["Operations Analyst"]);
   if (!actor) return;
   try {
-    const event = await createIntakeEvent(body.fileName, body.source, actor);
+    const event = await createIntakeEvent(body.sampleId, body.fileName, body.source, actor);
     res.status(201).json(CreateIntakeResponse.parse(event));
   } catch (error) {
     workflowError(res, error);

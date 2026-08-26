@@ -1,7 +1,7 @@
 import { useListEvents } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal, ArrowRight, Inbox } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowRight, Inbox, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,20 +9,32 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function EventsList() {
-  const { data: events, isLoading, isError } = useListEvents();
+  const { data: events, isLoading, isError, refetch } = useListEvents();
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("All");
   const [status, setStatus] = useState("All");
+  const [processingType, setProcessingType] = useState("All");
 
   const filtered = useMemo(() => (events ?? []).filter((event) => {
     const haystack = `${event.reference} ${event.issuer} ${event.security} ${event.eventType}`.toLowerCase();
     return (!search || haystack.includes(search.toLowerCase()))
       && (risk === "All" || event.risk === risk)
-      && (status === "All" || event.status === status);
-  }), [events, risk, search, status]);
+      && (status === "All" || event.status === status)
+      && (processingType === "All" || event.processingType === processingType);
+  }), [events, processingType, risk, search, status]);
 
   if (isLoading) return <div className="p-8 text-sm text-muted-foreground">Loading event inbox…</div>;
-  if (isError) return <div className="p-8 text-sm text-destructive">Could not load the event inbox.</div>;
+  if (isError) return (
+    <div className="flex flex-1 items-center justify-center bg-slate-50 p-8">
+      <Card className="max-w-md border-rose-200">
+        <CardContent className="space-y-4 p-6 text-center">
+          <AlertCircle className="mx-auto h-8 w-8 text-rose-600" />
+          <div><h1 className="font-semibold">Could not load the event inbox</h1><p className="mt-1 text-sm text-slate-500">No empty queue has been shown in place of live case data.</p></div>
+          <Button onClick={() => void refetch()}>Retry inbox</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50/50">
@@ -55,6 +67,10 @@ export default function EventsList() {
                 <option>All</option>
                 {[...new Set((events ?? []).map((event) => event.status))].map((value) => <option key={value}>{value}</option>)}
               </select>
+               <select className="h-9 rounded-md border bg-white px-3 text-sm" value={processingType} onChange={(event) => setProcessingType(event.target.value)}>
+                 <option>All</option>
+                 {[...new Set((events ?? []).map((event) => event.processingType))].map((value) => <option key={value}>{value}</option>)}
+               </select>
               <Button variant="outline" size="icon" title="Filters are applied locally"><SlidersHorizontal className="h-4 w-4" /></Button>
             </div>
           </CardHeader>
@@ -72,7 +88,7 @@ export default function EventsList() {
                     <TableCell><Badge variant={event.risk === "High" ? "destructive" : event.risk === "Medium" ? "warning" : "secondary"}>{event.risk}</Badge></TableCell>
                     <TableCell className="text-sm text-slate-600">{event.internalDeadline}</TableCell>
                     <TableCell><Badge variant="secondary">{event.status}</Badge></TableCell>
-                    <TableCell><Link href={`/events/${event.id}`}><Button variant="ghost" size="icon" aria-label={`Open ${event.reference}`}><ArrowRight className="h-4 w-4" /></Button></Link></TableCell>
+                    <TableCell><Link href={`/events/${event.id}`}><Button variant="outline" size="sm" aria-label={`Open ${event.reference}`}>Open case <ArrowRight className="ml-2 h-3.5 w-3.5" /></Button></Link></TableCell>
                   </TableRow>
                 ))}
               </TableBody>

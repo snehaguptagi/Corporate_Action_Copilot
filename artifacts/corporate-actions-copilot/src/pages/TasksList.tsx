@@ -68,8 +68,8 @@ export default function TasksList() {
                   </TableCell>
                 </TableRow>
               ) : (
-                tasks?.map(task => (
-                  <TableRow key={task.id}>
+                tasks?.map((task, index) => (
+                  <TableRow key={`${task.id}-${index}`}>
                     <TableCell>{getPriorityIcon(task.priority)}</TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-900">{task.title}</div>

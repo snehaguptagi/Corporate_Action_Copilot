@@ -559,7 +559,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
   event.currency = event.eventType === "Stock split" || event.eventType === "Stock dividend / bonus issue" ? "Shares" : event.currency;
   event.calculation.calculationRunAt = now();
   event.calculation.assumptions = `${event.calculation.assumptions} ${positions.length} eligible positions matched by ISIN and record date.`;
-  event.status = event.processingType === "Mandatory" ? "Instruction ready" : "Election required";
+  event.status = event.processingType === "Mandatory" ? "Awaiting settlement" : "Election required";
   event.settlementStage = event.status;
   appendAudit(event, "Impact calculation run", `Deterministic calculation completed for ${positions.length} eligible positions.`, actor, { previousValue: "Validated", newValue: event.status, reason: event.calculation.rounding });
 }
@@ -612,7 +612,8 @@ export function approveControlledEvent(event: EventData, approved: boolean, note
 
 export function simulateInstruction(event: EventData, status: string, actor: any): void {
   if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can prepare a simulated instruction.");
-  const canIssue = event.processingType === "Mandatory" ? ["Instruction ready", "Approved"].includes(event.status) : event.status === "Approved";
+  if (event.processingType === "Mandatory") throw new Error("Mandatory events do not require an outbound instruction; proceed directly to settlement monitoring.");
+  const canIssue = event.status === "Approved";
   if (!canIssue) throw new Error(`Instruction is blocked while the event is ${event.status}. Approval and calculation controls must complete first.`);
   if (status !== "SIMULATED — NOT SENT") throw new Error("The POC only supports the explicit status SIMULATED — NOT SENT.");
   const electionLines = event.impacts.map((impact: any) => `${impact.account}: ${impact.electionDecision?.optionLabel ?? "Mandatory processing"}; quantity ${impact.electionDecision?.quantityElected ?? impact.expectedSecurityQuantity ?? 0}`).join("\n");
@@ -632,7 +633,7 @@ export function simulateInstruction(event: EventData, status: string, actor: any
 
 export function reconcileEvent(event: EventData, body: any, actor: any): void {
   if (!["Operations Analyst", "Operations Manager"].includes(actor.role)) throw new Error("Only Operations Analysts or Managers can record settlement results.");
-  if (!["Awaiting settlement", "Break identified"].includes(event.status)) throw new Error(`Settlement reconciliation is blocked while the event is ${event.status}. A simulated instruction is required first.`);
+  if (!["Awaiting settlement", "Break identified"].includes(event.status)) throw new Error(`Settlement reconciliation is blocked while the event is ${event.status}. The case must be ready for settlement first.`);
   const recon = event.reconciliation;
   const actualCash = body.actual;
   const actualSecurityQuantity = body.actualSecurityQuantity ?? recon.actualSecurityQuantity ?? 0;
@@ -716,10 +717,58 @@ export async function saveCorporateActionEvent(event: EventData): Promise<EventD
   return clone(event);
 }
 
-export async function createIntakeEvent(fileName: string, source: string, actor: WorkflowActor): Promise<EventData> {
+const sampleEventIds: Record<string, string> = {
+  "cash-dividend": "evt-aurora-review",
+  "rights-issue": "evt-verdant-rights",
+  "stock-split": "evt-delta-split",
+  "bonus-issue": "evt-nimbus-bonus",
+  "tender-offer": "evt-meridian-tender",
+  merger: "evt-verdant-merger",
+};
+
+function sampleCaseFromSeed(sampleId: string, fileName: string, source: string, actor: WorkflowActor): EventData {
+  if (sampleId === "rights-issue") return heroRightsEvent(fileName, source, actor);
+
+  const sourceEventId = sampleEventIds[sampleId];
+  const sourceEvent = preloadedEvents.find((candidate) => candidate.id === sourceEventId);
+  if (!sourceEvent) throw new Error("Choose one of the supplied synthetic sample notices.");
+
+  const eventId = `evt-${sampleId}-${Date.now()}`;
+  const event = clone(sourceEvent);
+  event.id = eventId;
+  event.reference = `${sourceEvent.reference}-DEMO`;
+  event.noticeReference = event.reference;
+  event.isHero = false;
+  event.notice = {
+    ...event.notice,
+    documentName: fileName,
+    source,
+    receivedAt: now(),
+    uploadState: "Synthetic sample selected for review",
+  };
+  event.tasks = (event.tasks ?? []).map((current: any, index: number) => ({
+    ...current,
+    id: `${current.id}-${Date.now()}-${index}`,
+    eventId,
+    eventReference: event.reference,
+    status: current.status === "Resolved" ? "Resolved" : "Open",
+  }));
+  event.audit = [
+    audit(
+      eventId,
+      "Sample notice processed",
+      `${event.notice.documentName} selected from the synthetic sample library and opened for analyst review.`,
+      actor.name,
+      event.status,
+      { actorId: actor.id, actorRole: actor.role, evidenceId: event.notice.sourceDocumentId },
+    ),
+  ];
+  return event;
+}
+
+export async function createIntakeEvent(sampleId: string, fileName: string, source: string, actor: WorkflowActor): Promise<EventData> {
   await ensureCorporateActionSeedData();
-  if (!fileName.toLowerCase().includes("rights")) throw new Error("This POC intake accepts the supplied synthetic rights-issue notice. Choose a filename containing “rights”.");
-  const event = heroRightsEvent(fileName, source, actor);
+  const event = sampleCaseFromSeed(sampleId, fileName, source, actor);
   refreshValidation(event);
   const { corporateActionEventsTable, db } = await import("@workspace/db");
   await db.insert(corporateActionEventsTable).values({ id: event.id, data: event });

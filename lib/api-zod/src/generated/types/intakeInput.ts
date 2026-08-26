@@ -5,8 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { IntakeInputSampleId } from './intakeInputSampleId';
 
 export interface IntakeInput {
+  sampleId: IntakeInputSampleId;
   fileName: string;
   source: string;
   noticeText?: string;

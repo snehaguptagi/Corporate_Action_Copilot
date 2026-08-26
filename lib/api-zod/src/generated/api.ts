@@ -105,9 +105,10 @@ export const ListEventsResponse = zod.array(ListEventsResponseItem)
 
 
 /**
- * @summary Create a corporate-action case from a synthetic notice upload
+ * @summary Create a corporate-action case from a named synthetic sample
  */
 export const CreateIntakeBody = zod.object({
+  "sampleId": zod.enum(['cash-dividend', 'rights-issue', 'stock-split', 'bonus-issue', 'tender-offer', 'merger']),
   "fileName": zod.string(),
   "source": zod.string(),
   "noticeText": zod.string().optional()

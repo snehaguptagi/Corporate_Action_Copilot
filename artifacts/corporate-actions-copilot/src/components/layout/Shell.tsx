@@ -1,11 +1,38 @@
-import { ReactNode, useState } from "react"
+import { ReactNode, useEffect, useState } from "react"
 import { Link, useLocation } from "wouter"
 import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload } from "lucide-react"
-import { getDemoRole, setDemoRole, demoRoles } from "@/lib/demo-role"
+import { getDemoRole, setDemoRole, signInDemoRole, demoRoles } from "@/lib/demo-role"
 
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation()
   const [activeRole, setActiveRole] = useState(getDemoRole)
+  const [sessionReady, setSessionReady] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    const establishSession = async () => {
+      try {
+        const session = await signInDemoRole(getDemoRole().id)
+        if (mounted) {
+          setActiveRole(setDemoRole(session.id))
+          setSessionReady(true)
+        }
+      } catch {
+        if (mounted) setSessionReady(false)
+      }
+    }
+    void establishSession()
+    return () => { mounted = false }
+  }, [])
+
+  const changeRole = async (id: string) => {
+    try {
+      const session = await signInDemoRole(id)
+      setActiveRole(setDemoRole(session.id))
+    } catch {
+      setActiveRole(getDemoRole())
+    }
+  }
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -58,11 +85,12 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
         
         <div className="mx-3 mb-3 rounded border border-sidebar-border/80 bg-sidebar-accent/50 px-3 py-2">
-          <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">Demo role</div>
+          <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 font-semibold">Signed-in operator</div>
           <select
             className="mt-1 w-full bg-transparent text-xs text-sidebar-foreground outline-none"
             value={activeRole.id}
-            onChange={(event) => setActiveRole(setDemoRole(event.target.value))}
+            onChange={(event) => void changeRole(event.target.value)}
+            disabled={!sessionReady}
             aria-label="Select demo role"
           >
             {demoRoles.map((role) => (

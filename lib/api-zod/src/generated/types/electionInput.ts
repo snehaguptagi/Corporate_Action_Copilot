@@ -11,6 +11,4 @@ export interface ElectionInput {
   optionId: string;
   quantityElected: number;
   comment?: string;
-  actorId: string;
-  actorRole: string;
 }

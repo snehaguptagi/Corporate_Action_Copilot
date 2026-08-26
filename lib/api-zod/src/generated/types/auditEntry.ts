@@ -11,6 +11,8 @@ export interface AuditEntry {
   eventId: string;
   action: string;
   actor: string;
+  actorId?: string;
+  actorRole?: string;
   timestamp: string;
   detail: string;
   actorType?: string;

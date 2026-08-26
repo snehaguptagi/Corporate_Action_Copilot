@@ -608,6 +608,20 @@ export function recalculateEventImpacts(event: EventData): EventData {
   return event;
 }
 
+function incompleteCalculation(event: EventData, message: string): EventData {
+  event.calculationStatus = "Incomplete";
+  event.calculationError = message;
+  return event;
+}
+
+function selectedOptionId(event: EventData, impact: EventData): string {
+  const selected = impact.electionDecision?.optionId ?? impact.election;
+  if (typeof selected !== "string") return "";
+  return event.options?.find(
+    (option: EventData) => option.id === selected || option.label === selected,
+  )?.id ?? selected;
+}
+
 const parseTenderMaximum = (value: string | null): number | null => {
   const match = /^(\d+(?:\.\d+)?)%\s+of\s+position$/i.exec(
     value?.trim() ?? "",

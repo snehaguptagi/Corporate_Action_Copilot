@@ -24,6 +24,7 @@ import {
   SaveReconciliationBody,
   SaveReconciliationParams,
   SaveReconciliationResponse,
+  SignInSessionBody,
   UpdateEventBody,
   UpdateEventParams,
   UpdateEventResponse,
@@ -46,7 +47,7 @@ import {
   simulateInstruction,
   toSummary,
 } from "../lib/corporate-actions-v2";
-import { requireActor } from "../lib/actor-context";
+import { getAuthenticatedActor, requireActor, signInDemoActor } from "../lib/actor-context";
 
 const router: IRouter = Router();
 
@@ -77,6 +78,26 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
   res.json(GetDashboardResponse.parse(buildDashboard(events)));
 });
 
+router.get("/session", (req, res): void => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    res.status(401).json({ error: "No authenticated operational identity." });
+    return;
+  }
+  res.json(actor);
+});
+
+router.post("/session", async (req, res): Promise<void> => {
+  const body = parse(SignInSessionBody, req.body, res);
+  if (!body) return;
+  const actor = signInDemoActor(res, body.actorId);
+  if (!actor) {
+    res.status(400).json({ error: "Choose a valid operational operator." });
+    return;
+  }
+  res.json(actor);
+});
+
 router.get("/events", async (req, res): Promise<void> => {
   const query = parse(ListEventsQueryParams, req.query, res);
   if (!query) return;
@@ -97,7 +118,7 @@ router.post("/intake", async (req, res): Promise<void> => {
   const actor = requireActor(req, res, ["Operations Analyst"]);
   if (!actor) return;
   try {
-    const event = await createIntakeEvent(body.fileName, body.source);
+    const event = await createIntakeEvent(body.fileName, body.source, actor);
     res.status(201).json(CreateIntakeResponse.parse(event));
   } catch (error) {
     workflowError(res, error);
@@ -255,7 +276,7 @@ router.post("/tasks/:taskId/resolve", async (req, res): Promise<void> => {
     return;
   }
   currentTask.status = "Resolved";
-  appendAudit(event, "Task resolved", currentTask.title, actor.name, { previousValue: "Open", newValue: "Resolved" });
+  appendAudit(event, "Task resolved", currentTask.title, actor, { previousValue: "Open", newValue: "Resolved" });
   await saveCorporateActionEvent(event);
   res.json(ResolveTaskResponse.parse(currentTask));
 });

@@ -6,8 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface IntakeInput {
-  fileName: string;
-  source: string;
-  noticeText?: string;
+export interface SignInInput {
+  actorId: string;
 }

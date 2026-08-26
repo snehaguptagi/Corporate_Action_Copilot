@@ -9,7 +9,5 @@ import type { TermUpdate } from './termUpdate';
 
 export interface EventUpdate {
   terms?: TermUpdate[];
-  actorId?: string;
-  actorRole?: string;
   reason?: string;
 }

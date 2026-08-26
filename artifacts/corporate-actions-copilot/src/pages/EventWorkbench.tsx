@@ -101,8 +101,6 @@ export default function EventWorkbench() {
       eventId,
       data: {
         terms: [{ key: term.key, value: nextValue, reason: changed ? reasons[term.key] ?? "" : undefined }],
-        actorId: actor.id,
-        actorRole: actor.role,
         reason: changed ? reasons[term.key] ?? "" : "",
       },
     }, {
@@ -111,7 +109,7 @@ export default function EventWorkbench() {
     });
   };
 
-  const runCalculation = () => calculateEvent.mutate({ eventId, data: { actorId: actor.id, actorRole: actor.role } }, {
+  const runCalculation = () => calculateEvent.mutate({ eventId, data: {} }, {
     onSuccess: () => { toast({ title: "Deterministic impacts calculated" }); refresh(); },
     onError: (error) => mutateError("Calculation blocked", error),
   });
@@ -123,18 +121,18 @@ export default function EventWorkbench() {
       toast({ title: "Election details needed", description: "Select an option and enter a valid quantity.", variant: "destructive" });
       return;
     }
-    saveElection.mutate({ eventId, data: { impactId: impact.id, optionId, quantityElected, comment: electionComments[impact.id] ?? "", actorId: actor.id, actorRole: actor.role } }, {
+    saveElection.mutate({ eventId, data: { impactId: impact.id, optionId, quantityElected, comment: electionComments[impact.id] ?? "" } }, {
       onSuccess: () => { toast({ title: "Election submitted for approval" }); refresh(); },
       onError: (error) => mutateError("Election blocked", error),
     });
   };
 
-  const approve = (approved: boolean) => approveEvent.mutate({ eventId, data: { approved, note: approved ? "Independent reviewer approval recorded." : "Returned for analyst review.", actorId: actor.id, actorRole: actor.role } }, {
+  const approve = (approved: boolean) => approveEvent.mutate({ eventId, data: { approved, note: approved ? "Independent reviewer approval recorded." : "Returned for analyst review." } }, {
     onSuccess: () => { toast({ title: approved ? "Checker approval recorded" : "Event returned" }); refresh(); },
     onError: (error) => mutateError("Approval blocked", error),
   });
 
-  const simulate = () => updateInstruction.mutate({ eventId, data: { status: "SIMULATED — NOT SENT", actorId: actor.id, actorRole: actor.role } }, {
+  const simulate = () => updateInstruction.mutate({ eventId, data: { status: "SIMULATED — NOT SENT" } }, {
     onSuccess: () => { toast({ title: "Instruction simulated", description: "No external instruction was sent." }); refresh(); },
     onError: (error) => mutateError("Instruction blocked", error),
   });
@@ -152,8 +150,6 @@ export default function EventWorkbench() {
       actualSettlementDate: data.reconciliation.expectedSettlementDate,
       actualAccount: data.reconciliation.expectedAccount,
       note: reconNote || "Synthetic settlement result recorded.",
-      actorId: actor.id,
-      actorRole: actor.role,
     } }, {
       onSuccess: () => { toast({ title: "Settlement reconciled" }); refresh(); },
       onError: (error) => mutateError("Reconciliation blocked", error),

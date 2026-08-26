@@ -14,6 +14,8 @@ export interface AuditEntry {
   eventId: string;
   action: string;
   actor: string;
+  actorId?: string;
+  actorRole?: string;
   timestamp: string;
   detail: string;
   actorType?: string;
@@ -112,15 +114,14 @@ export interface Impact {
   expected: number;
   currency: string;
   status: string;
-  expectedCash?: number;
-  cashCurrency?: string;
-  expectedShares?: number;
-  shareLabel?: string;
   /** @nullable */
   election?: string | null;
   approval?: string;
   expectedCash?: number;
+  cashCurrency?: string;
   expectedSecurityQuantity?: number;
+  expectedShares?: number;
+  shareLabel?: string;
   entitlement?: number;
   securityMovement?: string;
   positionDate?: string;
@@ -233,8 +234,6 @@ export interface TermUpdate {
 
 export interface EventUpdate {
   terms?: TermUpdate[];
-  actorId?: string;
-  actorRole?: string;
   reason?: string;
 }
 
@@ -243,21 +242,15 @@ export interface ElectionInput {
   optionId: string;
   quantityElected: number;
   comment?: string;
-  actorId: string;
-  actorRole: string;
 }
 
 export interface ApprovalInput {
   approved: boolean;
   note: string;
-  actorId: string;
-  actorRole: string;
 }
 
 export interface InstructionInput {
   status: string;
-  actorId: string;
-  actorRole: string;
 }
 
 export interface ReconciliationInput {
@@ -267,21 +260,24 @@ export interface ReconciliationInput {
   actualCurrency?: string;
   actualSettlementDate?: string;
   actualAccount?: string;
-  actorId: string;
-  actorRole: string;
 }
 
-export interface ActorInput {
+export interface CalculateInput { [key: string]: unknown }
+
+export interface SignInInput {
   actorId: string;
-  actorRole: string;
+}
+
+export interface OperationalActor {
+  id: string;
+  name: string;
+  role: string;
 }
 
 export interface IntakeInput {
   fileName: string;
   source: string;
   noticeText?: string;
-  actorId: string;
-  actorRole: string;
 }
 
 export type ListEventsParams = {

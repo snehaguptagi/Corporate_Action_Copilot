@@ -62,9 +62,21 @@ test("election prevents quantity above entitlement and requires an independent r
     assert.equal(event.status, "Awaiting approval");
     assert.equal(event.reconciliation.expectedCash, 170000);
     assert.equal(event.reconciliation.expectedSecurityQuantity, 20000);
-    assert.throws(() => approveControlledEvent(event, true, "Self approval", analyst), /Only a Reviewer/);
+    assert.equal(event.audit[0].actorId, analyst.id);
+    assert.equal(event.audit[0].actorRole, analyst.role);
+    const samePersonAsReviewer = { ...analyst, role: "Reviewer" };
+    assert.throws(() => approveControlledEvent(event, true, "Self approval", samePersonAsReviewer), /Maker-checker control failed/);
     approveControlledEvent(event, true, "Independent check complete", reviewer);
     assert.equal(event.status, "Approved");
+    assert.equal(event.audit[0].actorId, reviewer.id);
+    assert.equal(event.audit[0].actorRole, reviewer.role);
+});
+test("a term editor cannot approve the same event under a checker role", () => {
+    const event = rightsEvent();
+    applyTermUpdates(event, [{ key: "subscriptionPrice", value: "EUR 8.50" }], analyst, "");
+    event.status = "Awaiting approval";
+    const samePersonAsReviewer = { ...analyst, role: "Reviewer" };
+    assert.throws(() => approveControlledEvent(event, true, "Self approval after term validation", samePersonAsReviewer), /Maker-checker control failed/);
 });
 test("under-settlement creates an investigation task instead of silently matching", () => {
     const event = rightsEvent();

@@ -92,6 +92,8 @@ const audit = (
   newValue: extras.newValue ?? "",
   reason: extras.reason ?? "",
   evidenceId: extras.evidenceId ?? "",
+  actorId: extras.actorId ?? "",
+  actorRole: extras.actorRole ?? "",
   workflowStatus,
 });
 
@@ -343,7 +345,7 @@ const preloadedEvents: EventData[] = [
   }),
 ];
 
-function heroRightsEvent(documentName: string, source: string): EventData {
+function heroRightsEvent(documentName: string, source: string, actor: WorkflowActor): EventData {
   const eventId = `evt-verdant-rights-${Date.now()}`;
   return eventBase({
     id: eventId,
@@ -399,12 +401,20 @@ function heroRightsEvent(documentName: string, source: string): EventData {
     instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VRN-0821", generatedAt: "", content: "DRAFT ONLY — generated after independent reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement follows an approved election.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "EUR", actualCurrency: "EUR", expectedSettlementDate: "2026-09-05", actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
     tasks: [task("task-vrn-1", eventId, "CA-2026-0821-VR", "Validate notice terms", "Aisha Mehta", "Today · 12:00 CEST", "High", "Term validation", "Review all extracted terms against the uploaded notice.", "Open", "", "CA-CONTROL-001")],
-    audit: [audit(eventId, "Notice uploaded", `${documentName} accepted as a synthetic notice; deterministic extraction prepared for analyst review.`, "Aisha Mehta", "Received", { evidenceId: "DOC-VRN-01" })],
+    audit: [audit(eventId, "Notice uploaded", `${documentName} accepted as a synthetic notice; deterministic extraction prepared for analyst review.`, actor.name, "Received", { evidenceId: "DOC-VRN-01", actorId: actor.id, actorRole: actor.role })],
   });
 }
 
-export function appendAudit(event: EventData, action: string, detail: string, actor = "System", extras: Record<string, string> = {}): void {
-  event.audit = [audit(event.id, action, detail, actor, event.status, extras), ...(event.audit ?? [])];
+export type WorkflowActor = {
+  id: string;
+  name: string;
+  role: "Operations Analyst" | "Reviewer" | "Operations Manager";
+};
+
+export function appendAudit(event: EventData, action: string, detail: string, actor: WorkflowActor | string = "System", extras: Record<string, string> = {}): void {
+  const actorName = typeof actor === "string" ? actor : actor.name;
+  const actorExtras = typeof actor === "string" ? extras : { ...extras, actorId: actor.id, actorRole: actor.role };
+  event.audit = [audit(event.id, action, detail, actorName, event.status, actorExtras), ...(event.audit ?? [])];
 }
 
 function numeric(value: string): number {
@@ -469,7 +479,7 @@ export function applyTermUpdates(event: EventData, updates: any[], actor: any, r
     current.oldValue = changed ? oldValue : "";
     current.correctionReason = changed ? correctionReason : "";
     syncCalculationInput(event, update.key, update.value);
-    appendAudit(event, changed ? "Extracted term corrected" : "Extracted term validated", `${current.label} ${changed ? "corrected" : "validated"} against source evidence.`, actor.name, { previousValue: oldValue, newValue: update.value, reason: correctionReason, evidenceId: `EVD-${event.id}-${update.key}` });
+    appendAudit(event, changed ? "Extracted term corrected" : "Extracted term validated", `${current.label} ${changed ? "corrected" : "validated"} against source evidence.`, actor, { previousValue: oldValue, newValue: update.value, reason: correctionReason, evidenceId: `EVD-${event.id}-${update.key}` });
   }
   refreshValidation(event);
   event.status = event.validation.isReady ? "Validated" : "Under review";
@@ -551,7 +561,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
   event.calculation.assumptions = `${event.calculation.assumptions} ${positions.length} eligible positions matched by ISIN and record date.`;
   event.status = event.processingType === "Mandatory" ? "Instruction ready" : "Election required";
   event.settlementStage = event.status;
-  appendAudit(event, "Impact calculation run", `Deterministic calculation completed for ${positions.length} eligible positions.`, actor.name, { previousValue: "Validated", newValue: event.status, reason: event.calculation.rounding });
+  appendAudit(event, "Impact calculation run", `Deterministic calculation completed for ${positions.length} eligible positions.`, actor, { previousValue: "Validated", newValue: event.status, reason: event.calculation.rounding });
 }
 
 export function recordElection(event: EventData, body: any, actor: any): void {
@@ -579,14 +589,16 @@ export function recordElection(event: EventData, body: any, actor: any): void {
   event.status = event.impacts.every((candidate: any) => candidate.election) ? "Awaiting approval" : "Election required";
   event.settlementStage = event.status;
   for (const currentTask of event.tasks ?? []) if (currentTask.category === "Election") currentTask.status = "Resolved";
-  appendAudit(event, "Election submitted", `${impact.account} selected ${option.label} for ${body.quantityElected.toLocaleString()} entitlement units.`, actor.name, { previousValue: "", newValue: option.label, reason: body.comment ?? "" });
+  appendAudit(event, "Election submitted", `${impact.account} selected ${option.label} for ${body.quantityElected.toLocaleString()} entitlement units.`, actor, { previousValue: "", newValue: option.label, reason: body.comment ?? "" });
 }
 
 export function approveControlledEvent(event: EventData, approved: boolean, note: string, actor: any): void {
   if (actor.role !== "Reviewer") throw new Error("Only a Reviewer can approve or return controlled actions.");
   if (event.processingType !== "Mandatory" && event.status !== "Awaiting approval") throw new Error(`Approval is blocked while the event is ${event.status}.`);
   if (approved) {
-    const makerConflict = event.impacts.some((impact: any) => impact.electionDecision?.analystId === actor.id);
+    const makerActions = new Set(["Election submitted", "Extracted term corrected", "Extracted term validated"]);
+    const makerConflict = (event.audit ?? []).some((entry: any) => makerActions.has(entry.action) && entry.actorId === actor.id)
+      || event.impacts.some((impact: any) => impact.electionDecision?.analystId === actor.id);
     if (makerConflict) throw new Error("Maker-checker control failed: the person who prepared an election cannot approve it.");
   }
   event.impacts.forEach((impact: any) => {
@@ -595,7 +607,7 @@ export function approveControlledEvent(event: EventData, approved: boolean, note
   });
   event.status = approved ? "Approved" : "Election required";
   event.settlementStage = event.status;
-  appendAudit(event, approved ? "Checker approval recorded" : "Checker returned event", note, actor.name, { previousValue: "Awaiting approval", newValue: event.status, reason: note });
+  appendAudit(event, approved ? "Checker approval recorded" : "Checker returned event", note, actor, { previousValue: "Awaiting approval", newValue: event.status, reason: note });
 }
 
 export function simulateInstruction(event: EventData, status: string, actor: any): void {
@@ -615,7 +627,7 @@ export function simulateInstruction(event: EventData, status: string, actor: any
   };
   event.status = "Awaiting settlement";
   event.settlementStage = event.status;
-  appendAudit(event, "Simulated instruction created", "Structured draft instruction generated and marked SIMULATED — NOT SENT.", actor.name, { previousValue: "Approved", newValue: "Awaiting settlement" });
+  appendAudit(event, "Simulated instruction created", "Structured draft instruction generated and marked SIMULATED — NOT SENT.", actor, { previousValue: "Approved", newValue: "Awaiting settlement" });
 }
 
 export function reconcileEvent(event: EventData, body: any, actor: any): void {
@@ -658,7 +670,7 @@ export function reconcileEvent(event: EventData, body: any, actor: any): void {
     if (!exists) event.tasks.push(task(`task-${event.id}-break`, event.id, event.reference, "Investigate settlement difference", "Aisha Mehta", "Today · 16:00", "High", "Reconciliation", `${classification}: expected and actual settlement results differ.`, "Open", "", "CA-CONTROL-007"));
   }
   event.settlementStage = event.status;
-  appendAudit(event, "Settlement reconciled", body.note, actor.name, { previousValue: "Awaiting settlement", newValue: event.status, reason: classification });
+  appendAudit(event, "Settlement reconciled", body.note, actor, { previousValue: "Awaiting settlement", newValue: event.status, reason: classification });
 }
 
 export async function ensureCorporateActionSeedData(): Promise<void> {
@@ -704,10 +716,10 @@ export async function saveCorporateActionEvent(event: EventData): Promise<EventD
   return clone(event);
 }
 
-export async function createIntakeEvent(fileName: string, source: string): Promise<EventData> {
+export async function createIntakeEvent(fileName: string, source: string, actor: WorkflowActor): Promise<EventData> {
   await ensureCorporateActionSeedData();
   if (!fileName.toLowerCase().includes("rights")) throw new Error("This POC intake accepts the supplied synthetic rights-issue notice. Choose a filename containing “rights”.");
-  const event = heroRightsEvent(fileName, source);
+  const event = heroRightsEvent(fileName, source, actor);
   refreshValidation(event);
   const { corporateActionEventsTable, db } = await import("@workspace/db");
   await db.insert(corporateActionEventsTable).values({ id: event.id, data: event });

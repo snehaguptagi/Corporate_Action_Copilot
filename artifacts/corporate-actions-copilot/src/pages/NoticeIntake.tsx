@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getDemoRole } from "@/lib/demo-role";
 
 const demoPdfPath = `${import.meta.env.BASE_URL}demo-notices/rights-issue-notice.pdf`;
 
@@ -22,8 +21,7 @@ export default function NoticeIntake() {
   const [source, setSource] = useState("Synthetic custodian portal");
 
   const submit = () => {
-    const actor = getDemoRole();
-    createIntake.mutate({ data: { fileName, source, actorId: actor.id, actorRole: actor.role } }, {
+    createIntake.mutate({ data: { fileName, source } }, {
       onSuccess: (event) => {
         queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });

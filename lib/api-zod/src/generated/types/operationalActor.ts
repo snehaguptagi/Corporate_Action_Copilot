@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ActorInput {
-  actorId: string;
-  actorRole: string;
+export interface OperationalActor {
+  id: string;
+  name: string;
+  role: string;
 }

@@ -9,6 +9,30 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Get the signed-in operational operator
+ */
+export const GetSessionResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "role": zod.string()
+})
+
+
+/**
+ * @summary Sign in as an allowlisted POC operational operator
+ */
+export const SignInSessionBody = zod.object({
+  "actorId": zod.string()
+})
+
+export const SignInSessionResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "role": zod.string()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -31,6 +55,8 @@ export const GetDashboardResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -69,7 +95,11 @@ export const ListEventsResponseItem = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 })
 export const ListEventsResponse = zod.array(ListEventsResponseItem)
 
@@ -80,9 +110,7 @@ export const ListEventsResponse = zod.array(ListEventsResponseItem)
 export const CreateIntakeBody = zod.object({
   "fileName": zod.string(),
   "source": zod.string(),
-  "noticeText": zod.string().optional(),
-  "actorId": zod.string(),
-  "actorRole": zod.string()
+  "noticeText": zod.string().optional()
 })
 
 export const CreateIntakeResponse = zod.object({
@@ -101,7 +129,11 @@ export const CreateIntakeResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -155,7 +187,10 @@ export const CreateIntakeResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -221,6 +256,8 @@ export const CreateIntakeResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -277,7 +314,11 @@ export const GetEventResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -331,7 +372,10 @@ export const GetEventResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -397,6 +441,8 @@ export const GetEventResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -443,8 +489,6 @@ export const UpdateEventBody = zod.object({
   "value": zod.string(),
   "reason": zod.string().optional()
 })).optional(),
-  "actorId": zod.string().optional(),
-  "actorRole": zod.string().optional(),
   "reason": zod.string().optional()
 })
 
@@ -464,7 +508,11 @@ export const UpdateEventResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -518,7 +566,10 @@ export const UpdateEventResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -584,6 +635,8 @@ export const UpdateEventResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -625,8 +678,7 @@ export const CalculateEventParams = zod.object({
 })
 
 export const CalculateEventBody = zod.object({
-  "actorId": zod.string(),
-  "actorRole": zod.string()
+
 })
 
 export const CalculateEventResponse = zod.object({
@@ -645,7 +697,11 @@ export const CalculateEventResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -699,7 +755,10 @@ export const CalculateEventResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -765,6 +824,8 @@ export const CalculateEventResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -809,9 +870,7 @@ export const SaveElectionBody = zod.object({
   "impactId": zod.string(),
   "optionId": zod.string(),
   "quantityElected": zod.number(),
-  "comment": zod.string().optional(),
-  "actorId": zod.string(),
-  "actorRole": zod.string()
+  "comment": zod.string().optional()
 })
 
 export const SaveElectionResponse = zod.object({
@@ -830,7 +889,11 @@ export const SaveElectionResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -884,7 +947,10 @@ export const SaveElectionResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -950,6 +1016,8 @@ export const SaveElectionResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -992,9 +1060,7 @@ export const ApproveEventParams = zod.object({
 
 export const ApproveEventBody = zod.object({
   "approved": zod.boolean(),
-  "note": zod.string(),
-  "actorId": zod.string(),
-  "actorRole": zod.string()
+  "note": zod.string()
 })
 
 export const ApproveEventResponse = zod.object({
@@ -1013,7 +1079,11 @@ export const ApproveEventResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1067,7 +1137,10 @@ export const ApproveEventResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -1133,6 +1206,8 @@ export const ApproveEventResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -1174,9 +1249,7 @@ export const UpdateInstructionParams = zod.object({
 })
 
 export const UpdateInstructionBody = zod.object({
-  "status": zod.string(),
-  "actorId": zod.string(),
-  "actorRole": zod.string()
+  "status": zod.string()
 })
 
 export const UpdateInstructionResponse = zod.object({
@@ -1195,7 +1268,11 @@ export const UpdateInstructionResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1249,7 +1326,10 @@ export const UpdateInstructionResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -1315,6 +1395,8 @@ export const UpdateInstructionResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -1361,9 +1443,7 @@ export const SaveReconciliationBody = zod.object({
   "actualSecurityQuantity": zod.number().optional(),
   "actualCurrency": zod.string().optional(),
   "actualSettlementDate": zod.string().optional(),
-  "actualAccount": zod.string().optional(),
-  "actorId": zod.string(),
-  "actorRole": zod.string()
+  "actualAccount": zod.string().optional()
 })
 
 export const SaveReconciliationResponse = zod.object({
@@ -1382,7 +1462,11 @@ export const SaveReconciliationResponse = zod.object({
   "currency": zod.string(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
-  "settlementStage": zod.string().optional()
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1436,7 +1520,10 @@ export const SaveReconciliationResponse = zod.object({
   "election": zod.string().nullish(),
   "approval": zod.string().optional(),
   "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
   "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
   "entitlement": zod.number().optional(),
   "securityMovement": zod.string().optional(),
   "positionDate": zod.string().optional(),
@@ -1502,6 +1589,8 @@ export const SaveReconciliationResponse = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),
@@ -1592,6 +1681,8 @@ export const ListAuditResponseItem = zod.object({
   "eventId": zod.string(),
   "action": zod.string(),
   "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
   "timestamp": zod.string(),
   "detail": zod.string(),
   "actorType": zod.string().optional(),

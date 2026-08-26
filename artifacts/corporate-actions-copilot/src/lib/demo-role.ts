@@ -25,3 +25,16 @@ export function setDemoRole(id: string): DemoRole {
   window.dispatchEvent(new Event("demo-role-change"));
   return role;
 }
+
+export async function signInDemoRole(id: string): Promise<DemoRole> {
+  const response = await fetch("/api/session", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actorId: id }),
+  });
+  if (!response.ok) {
+    throw new Error("Could not establish the selected operational session.");
+  }
+  return response.json() as Promise<DemoRole>;
+}

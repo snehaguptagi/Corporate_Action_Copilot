@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { demoUsers } from "./corporate-actions-v2";
 
 export type OperationalActor = {
   id: string;
@@ -6,7 +7,7 @@ export type OperationalActor = {
   role: "Operations Analyst" | "Reviewer" | "Operations Manager";
 };
 
-const actorCookieName = "corporate_actions_actor";
+export const actorCookieName = "corporate_actions_actor";
 const operationalRoles = ["Operations Analyst", "Reviewer", "Operations Manager"] as const;
 
 function isOperationalRole(role: unknown): role is OperationalActor["role"] {
@@ -18,18 +19,29 @@ export function getAuthenticatedActor(req: Request): OperationalActor | null {
   if (typeof rawActor !== "string") return null;
 
   try {
-    const actor = JSON.parse(rawActor) as Partial<OperationalActor>;
-    if (
-      typeof actor.id !== "string" ||
-      typeof actor.name !== "string" ||
-      !isOperationalRole(actor.role)
-    ) {
+    const session = JSON.parse(rawActor) as { id?: unknown };
+    if (typeof session.id !== "string") {
       return null;
     }
+    const actor = demoUsers.find((candidate) => candidate.id === session.id);
+    if (!actor || !isOperationalRole(actor.role)) return null;
     return { id: actor.id, name: actor.name, role: actor.role };
   } catch {
     return null;
   }
+}
+
+export function signInDemoActor(res: Response, actorId: string): OperationalActor | null {
+  const actor = demoUsers.find((candidate) => candidate.id === actorId);
+  if (!actor || !isOperationalRole(actor.role)) return null;
+  res.cookie(actorCookieName, JSON.stringify({ id: actor.id }), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    signed: true,
+    maxAge: 8 * 60 * 60 * 1000,
+  });
+  return { id: actor.id, name: actor.name, role: actor.role };
 }
 
 export function requireActor(

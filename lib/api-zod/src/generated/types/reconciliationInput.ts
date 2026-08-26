@@ -13,6 +13,4 @@ export interface ReconciliationInput {
   actualCurrency?: string;
   actualSettlementDate?: string;
   actualAccount?: string;
-  actorId: string;
-  actorRole: string;
 }

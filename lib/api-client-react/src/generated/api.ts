@@ -20,9 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  ActorInput,
   ApprovalInput,
   AuditEntry,
+  CalculateInput,
   Dashboard,
   ElectionInput,
   EventDetail,
@@ -33,7 +33,9 @@ import type {
   IntakeInput,
   ListAuditParams,
   ListEventsParams,
+  OperationalActor,
   ReconciliationInput,
+  SignInInput,
   Task
 } from './api.schemas';
 
@@ -63,6 +65,154 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetSessionUrl = () => {
+
+
+
+
+  return `/api/session`
+}
+
+/**
+ * @summary Get the signed-in operational operator
+ */
+export const getSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<OperationalActor> => {
+
+  return customFetch<OperationalActor>(getGetSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSessionQueryKey = () => {
+    return [
+    `/api/session`
+    ] as const;
+    }
+
+
+export const getGetSessionQueryOptions = <TData = Awaited<ReturnType<typeof getSession>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSession>>> = ({ signal }) => getSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getSession>>>
+export type GetSessionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the signed-in operational operator
+ */
+
+export function useGetSession<TData = Awaited<ReturnType<typeof getSession>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSignInSessionUrl = () => {
+
+
+
+
+  return `/api/session`
+}
+
+/**
+ * @summary Sign in as an allowlisted POC operational operator
+ */
+export const signInSession = async (signInInput: SignInInput, options?: Parameters<typeof customFetch>[1]): Promise<OperationalActor> => {
+
+  return customFetch<OperationalActor>(getSignInSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(signInInput)
+  }
+);}
+
+
+
+
+
+export const getSignInSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signInSession>>, TError,{data: BodyType<SignInInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signInSession>>, TError,{data: BodyType<SignInInput>}, TContext> => {
+
+const mutationKey = ['signInSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signInSession>>, {data: BodyType<SignInInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  signInSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignInSessionMutationResult = NonNullable<Awaited<ReturnType<typeof signInSession>>>
+    export type SignInSessionMutationBody = BodyType<SignInInput>
+    export type SignInSessionMutationError = ErrorType<void>
+
+    /**
+ * @summary Sign in as an allowlisted POC operational operator
+ */
+export const useSignInSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signInSession>>, TError,{data: BodyType<SignInInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof signInSession>>,
+        TError,
+        {data: BodyType<SignInInput>},
+        TContext
+      > => {
+      return useMutation(getSignInSessionMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 
@@ -535,14 +685,14 @@ export const getCalculateEventUrl = (eventId: string,) => {
  * @summary Run deterministic eligibility and impact calculation
  */
 export const calculateEvent = async (eventId: string,
-    actorInput: ActorInput, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
+    calculateInput: CalculateInput, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
 
   return customFetch<EventDetail>(getCalculateEventUrl(eventId),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(actorInput)
+    body: JSON.stringify(calculateInput)
   }
 );}
 
@@ -551,8 +701,8 @@ export const calculateEvent = async (eventId: string,
 
 
 export const getCalculateEventMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<ActorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<ActorInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<CalculateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<CalculateInput>}, TContext> => {
 
 const mutationKey = ['calculateEvent'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -564,7 +714,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof calculateEvent>>, {eventId: string;data: BodyType<ActorInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof calculateEvent>>, {eventId: string;data: BodyType<CalculateInput>}> = (props) => {
           const {eventId,data} = props ?? {};
 
           return  calculateEvent(eventId,data,requestOptions)
@@ -578,18 +728,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CalculateEventMutationResult = NonNullable<Awaited<ReturnType<typeof calculateEvent>>>
-    export type CalculateEventMutationBody = BodyType<ActorInput>
+    export type CalculateEventMutationBody = BodyType<CalculateInput>
     export type CalculateEventMutationError = ErrorType<void>
 
     /**
  * @summary Run deterministic eligibility and impact calculation
  */
 export const useCalculateEvent = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<ActorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateEvent>>, TError,{eventId: string;data: BodyType<CalculateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof calculateEvent>>,
         TError,
-        {eventId: string;data: BodyType<ActorInput>},
+        {eventId: string;data: BodyType<CalculateInput>},
         TContext
       > => {
       return useMutation(getCalculateEventMutationOptions(options));

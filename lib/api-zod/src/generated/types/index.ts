@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from './actorInput';
 export * from './approvalInput';
 export * from './auditEntry';
+export * from './calculateInput';
 export * from './calculation';
 export * from './dashboard';
 export * from './electionInput';
@@ -25,11 +25,13 @@ export * from './listAuditParams';
 export * from './listEventsParams';
 export * from './notice';
 export * from './noticePage';
+export * from './operationalActor';
 export * from './option';
 export * from './position';
 export * from './reconciliation';
 export * from './reconciliationInput';
 export * from './securityMaster';
+export * from './signInInput';
 export * from './task';
 export * from './term';
 export * from './termUpdate';

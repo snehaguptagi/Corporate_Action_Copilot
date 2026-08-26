@@ -13,6 +13,39 @@ tags:
   - name: copilot
     description: Corporate actions operations workbench
 paths:
+  /session:
+    get:
+      operationId: getSession
+      tags: [copilot]
+      summary: Get the signed-in operational operator
+      responses:
+        "200":
+          description: Authenticated operational operator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationalActor"
+        "401":
+          description: No signed-in operator
+    post:
+      operationId: signInSession
+      tags: [copilot]
+      summary: Sign in as an allowlisted POC operational operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInInput"
+      responses:
+        "200":
+          description: Signed-in operational operator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationalActor"
+        "400":
+          description: Invalid operational operator
   /healthz:
     get:
       operationId: healthCheck
@@ -74,6 +107,8 @@ paths:
       operationId: createIntake
       tags: [copilot]
       summary: Create a corporate-action case from a synthetic notice upload
+      security:
+        - CorporateActionSession: []
       requestBody:
         required: true
         content:
@@ -107,6 +142,8 @@ paths:
       operationId: updateEvent
       tags: [copilot]
       summary: Update analyst-controlled event terms
+      security:
+        - CorporateActionSession: []
       parameters:
         - $ref: "#/components/parameters/EventId"
       requestBody:
@@ -127,6 +164,8 @@ paths:
       operationId: calculateEvent
       tags: [copilot]
       summary: Run deterministic eligibility and impact calculation
+      security:
+        - CorporateActionSession: []
       parameters:
         - $ref: "#/components/parameters/EventId"
       requestBody:
@@ -134,7 +173,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ActorInput"
+              $ref: "#/components/schemas/CalculateInput"
       responses:
         "200":
           description: Calculated event
@@ -151,6 +190,8 @@ paths:
       operationId: saveElection
       tags: [copilot]
       summary: Save an election for an affected account
+      security:
+        - CorporateActionSession: []
       parameters:
         - $ref: "#/components/parameters/EventId"
       requestBody:
@@ -171,6 +212,8 @@ paths:
       operationId: approveEvent
       tags: [copilot]
       summary: Record maker-checker approval
+      security:
+        - CorporateActionSession: []
       parameters:
         - $ref: "#/components/parameters/EventId"
       requestBody:
@@ -191,6 +234,8 @@ paths:
       operationId: updateInstruction
       tags: [copilot]
       summary: Update simulated instruction status
+      security:
+        - CorporateActionSession: []
       parameters:
         - $ref: "#/components/parameters/EventId"
       requestBody:
@@ -211,6 +256,8 @@ paths:
       operationId: saveReconciliation
       tags: [copilot]
       summary: Record expected versus actual settlement
+      security:
+        - CorporateActionSession: []
       parameters:
         - $ref: "#/components/parameters/EventId"
       requestBody:
@@ -245,6 +292,8 @@ paths:
       operationId: resolveTask
       tags: [copilot]
       summary: Resolve an operational task
+      security:
+        - CorporateActionSession: []
       parameters:
         - in: path
           name: taskId
@@ -332,6 +381,10 @@ components:
         isHero: { type: boolean }
         noticeReference: { type: string }
         settlementStage: { type: string }
+        cashAmount: { type: number }
+        cashCurrency: { type: string }
+        shareAmount: { type: number }
+        shareLabel: { type: string }
     EventDetail:
       allOf:
         - $ref: "#/components/schemas/EventSummary"
@@ -472,7 +525,10 @@ components:
         election: { type: ["string", "null"] }
         approval: { type: string }
         expectedCash: { type: number }
+        cashCurrency: { type: string }
         expectedSecurityQuantity: { type: number }
+        expectedShares: { type: number }
+        shareLabel: { type: string }
         entitlement: { type: number }
         securityMovement: { type: string }
         positionDate: { type: string }
@@ -552,6 +608,8 @@ components:
         eventId: { type: string }
         action: { type: string }
         actor: { type: string }
+        actorId: { type: string }
+        actorRole: { type: string }
         timestamp: { type: string }
         detail: { type: string }
         actorType: { type: string }
@@ -567,8 +625,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TermUpdate"
-        actorId: { type: string }
-        actorRole: { type: string }
         reason: { type: string }
     TermUpdate:
       type: object
@@ -579,32 +635,26 @@ components:
         reason: { type: string }
     ElectionInput:
       type: object
-      required: [impactId, optionId, quantityElected, actorId, actorRole]
+      required: [impactId, optionId, quantityElected]
       properties:
         impactId: { type: string }
         optionId: { type: string }
         quantityElected: { type: number }
         comment: { type: string }
-        actorId: { type: string }
-        actorRole: { type: string }
     ApprovalInput:
       type: object
-      required: [approved, note, actorId, actorRole]
+      required: [approved, note]
       properties:
         approved: { type: boolean }
         note: { type: string }
-        actorId: { type: string }
-        actorRole: { type: string }
     InstructionInput:
       type: object
-      required: [status, actorId, actorRole]
+      required: [status]
       properties:
         status: { type: string }
-        actorId: { type: string }
-        actorRole: { type: string }
     ReconciliationInput:
       type: object
-      required: [actual, note, actorId, actorRole]
+      required: [actual, note]
       properties:
         actual: { type: number }
         note: { type: string }
@@ -612,21 +662,26 @@ components:
         actualCurrency: { type: string }
         actualSettlementDate: { type: string }
         actualAccount: { type: string }
-        actorId: { type: string }
-        actorRole: { type: string }
-    ActorInput:
+    CalculateInput:
       type: object
-      required: [actorId, actorRole]
+      additionalProperties: false
+    SignInInput:
+      type: object
+      required: [actorId]
       properties:
         actorId: { type: string }
-        actorRole: { type: string }
+    OperationalActor:
+      type: object
+      required: [id, name, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string }
     IntakeInput:
       type: object
-      required: [fileName, source, actorId, actorRole]
+      required: [fileName, source]
       properties:
         fileName: { type: string }
         source: { type: string }
         noticeText: { type: string }
-        actorId: { type: string }
-        actorRole: { type: string }
 

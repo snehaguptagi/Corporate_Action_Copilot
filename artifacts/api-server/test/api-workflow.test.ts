@@ -1,492 +1,204 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import test, { after, afterEach, before, describe } from "node:test";
+import test, { after, afterEach, before, beforeEach, describe } from "node:test";
 import { inArray } from "drizzle-orm";
-import {
-  corporateActionEventsTable,
-  db,
-  pool,
-} from "@workspace/db";
+import { corporateActionEventsTable, db, pool } from "@workspace/db";
 import app from "../src/app";
-import {
-  calculateDividend,
-  calculateRights,
-  calculateSplit,
-  calculateTender,
-} from "../src/lib/calculations";
-import { getCorporateActionEvent } from "../src/lib/corporate-actions";
+import { demoUsers } from "../src/lib/corporate-actions-v2";
 
 type EventData = Record<string, any>;
+type Session = { cookie: string };
 
 const runId = crypto.randomUUID().replaceAll("-", "").slice(0, 10);
-const fixtureIds = {
-  dividend: `test-${runId}-dividend`,
-  split: `test-${runId}-split`,
-  rights: `test-${runId}-rights`,
-  tender: `test-${runId}-tender`,
-};
+const eventId = `test-${runId}-rights`;
+const createdEventIds = new Set<string>([eventId]);
 
 let server: ReturnType<typeof app.listen>;
 let baseUrl: string;
-let fixtures: Record<keyof typeof fixtureIds, EventData>;
+let analystSession: Session;
+let reviewerSession: Session;
 
-function cloneFixture(
-  source: EventData,
-  id: string,
-  status: string,
-): EventData {
-  const event = structuredClone(source);
-  event.id = id;
-  event.reference = `TEST-${runId}-${source.reference}`;
-  event.status = status;
-  event.tasks = event.tasks.map((task: EventData, index: number) => ({
-    ...task,
-    id: `${id}-task-${index}`,
-    eventId: id,
-    status: "Open",
-  }));
-  event.audit = [];
-  return event;
-}
-
-function makeFixtures(
-  dividend: EventData,
-  split: EventData,
-  rights: EventData,
-  tender: EventData,
-): Record<keyof typeof fixtureIds, EventData> {
-  const dividendFixture = cloneFixture(
-    dividend,
-    fixtureIds.dividend,
-    "Needs review",
-  );
-  const splitFixture = cloneFixture(
-    split,
-    fixtureIds.split,
-    "Ready for settlement",
-  );
-  const rightsFixture = cloneFixture(
-    rights,
-    fixtureIds.rights,
-    "Election required",
-  );
-  rightsFixture.impacts.forEach((impact: EventData) => {
-    impact.election = null;
-    impact.approval = "Pending";
-    impact.status = "Awaiting election";
-  });
-  rightsFixture.instruction.status = "Draft — not submitted";
-
-  const tenderFixture = cloneFixture(
-    tender,
-    fixtureIds.tender,
-    "Instruction pending",
-  );
-  tenderFixture.instruction.status = "Draft — ready for checker";
-  tenderFixture.impacts.forEach((impact: EventData) => {
-    impact.election = tenderFixture.options.find(
-      (option: EventData) => option.id === "tender",
-    )?.label;
-  });
-  tenderFixture.reconciliation = {
-    expected: 68_000,
-    actual: 0,
-    difference: -68_000,
-    tolerance: 1,
-    status: "Not due",
-    note: "Tender acceptance outcome is pending.",
-  };
-  tenderFixture.impacts.forEach((impact: EventData) => {
-    impact.approval = "Approved";
-  });
-
+function rightsFixture(): EventData {
   return {
-    dividend: dividendFixture,
-    split: splitFixture,
-    rights: rightsFixture,
-    tender: tenderFixture,
+    id: eventId,
+    reference: `TEST-${runId}-RIGHTS`,
+    issuer: "Test Rights Issuer",
+    security: "ISIN FR001400TEST · TRS",
+    eventType: "Rights issue",
+    processingType: "Voluntary",
+    status: "Validated",
+    settlementStage: "Validated",
+    risk: "High",
+    marketDeadline: "30 Aug 2026 · 17:30 CEST",
+    internalDeadline: "30 Aug 2026 · 14:00 CEST",
+    affectedAccounts: 0,
+    amount: 0,
+    currency: "EUR",
+    notice: {
+      documentName: "test-rights-notice.pdf",
+      source: "API workflow test",
+      receivedAt: "2026-08-26T08:00:00.000Z",
+      version: "v1",
+      role: "New",
+      excerpt: "One right for every five shares at EUR 8.50.",
+      pages: [{ page: 1, text: "Rights ratio: 1 for 5. Subscription price: EUR 8.50." }],
+    },
+    terms: [
+      { key: "rightsRatio", label: "Rights ratio", value: "1 for 5", page: "p. 1", evidence: "Rights ratio: 1 for 5.", confidence: 1, reviewStatus: "Validated" },
+      { key: "subscriptionPrice", label: "Subscription price", value: "EUR 8.50", page: "p. 1", evidence: "Subscription price: EUR 8.50.", confidence: 1, reviewStatus: "Validated" },
+    ],
+    positions: [
+      { id: "test-position-1", fund: "Test Fund", account: "TEST-001", isin: "FR001400TEST", securityId: "SEC-TEST", eligibleQuantity: 100_000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
+    ],
+    securityMaster: { securityId: "SEC-TEST", isin: "FR001400TEST", ticker: "TRS", securityName: "Test Rights Security", currency: "EUR", market: "France", status: "Active" },
+    requiredTermKeys: ["rightsRatio", "subscriptionPrice"],
+    calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 8.5, currency: "EUR" },
+    impacts: [],
+    options: [
+      { id: "exercise", label: "Exercise rights", description: "Subscribe for new shares.", result: "Funding is required.", default: false },
+      { id: "lapse", label: "Allow rights to lapse", description: "Take no action.", result: "Rights expire.", default: true },
+    ],
+    instruction: { status: "DRAFT", destination: "Synthetic gateway", reference: "DRAFT-TEST", generatedAt: "", content: "DRAFT ONLY", simulated: false, approvalActor: "" },
+    reconciliation: {
+      expected: 0, expectedCash: 0, expectedSecurityQuantity: 0, expectedCurrency: "EUR", expectedSettlementDate: "2026-09-05", expectedAccount: "TEST-001",
+      actual: 0, actualCash: 0, actualSecurityQuantity: 0, actualCurrency: "EUR", actualSettlementDate: "", actualAccount: "",
+      difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "", investigationSteps: [],
+    },
+    tasks: [],
+    audit: [],
+    calculation: { rounding: "Round down", assumptions: "Test fixture", sourceRule: "TEST-CONTROL" },
+    validation: { missingTerms: [], isReady: true },
   };
 }
 
-async function resetFixtures(): Promise<void> {
-  await db
-    .delete(corporateActionEventsTable)
-    .where(inArray(corporateActionEventsTable.id, Object.values(fixtureIds)));
-  await db.insert(corporateActionEventsTable).values(
-    Object.values(fixtures).map((event) => ({ id: event.id, data: event })),
-  );
+async function signIn(actorId: string): Promise<Session> {
+  const response = await fetch(`${baseUrl}/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ actorId }),
+  });
+  assert.equal(response.status, 200, `Could not sign in ${actorId}`);
+  const cookie = response.headers.get("set-cookie")?.split(";", 1)[0];
+  assert.ok(cookie, "Expected a signed session cookie");
+  return { cookie };
 }
 
-async function request(
-  path: string,
-  init: RequestInit = {},
-): Promise<{ status: number; body: any }> {
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      ...init.headers,
-    },
-  });
-  const body = await response.json();
-  return { status: response.status, body };
+async function request(path: string, init: RequestInit = {}, session?: Session): Promise<{ status: number; body: any }> {
+  const headers = new Headers(init.headers);
+  headers.set("content-type", "application/json");
+  if (session) headers.set("cookie", session.cookie);
+  const response = await fetch(`${baseUrl}${path}`, { ...init, headers });
+  return { status: response.status, body: await response.json() };
+}
+
+async function resetFixture(): Promise<void> {
+  await db.delete(corporateActionEventsTable).where(inArray(corporateActionEventsTable.id, [eventId]));
+  await db.insert(corporateActionEventsTable).values({ id: eventId, data: rightsFixture() });
 }
 
 before(async () => {
-  const [dividend, split, rights, tender] = await Promise.all([
-    getCorporateActionEvent("evt-aurora-div"),
-    getCorporateActionEvent("evt-delta-split"),
-    getCorporateActionEvent("evt-verdant-rights"),
-    getCorporateActionEvent("evt-meridian-tender"),
-  ]);
-  assert.ok(dividend && split && rights && tender, "Expected seeded POC events");
-  fixtures = makeFixtures(dividend, split, rights, tender);
-  await resetFixtures();
-
   server = app.listen(0);
   await once(server, "listening");
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   baseUrl = `http://127.0.0.1:${address.port}/api`;
+  analystSession = await signIn("USR-001");
+  reviewerSession = await signIn("USR-002");
 });
 
-afterEach(async () => {
-  await resetFixtures();
-});
+beforeEach(resetFixture);
+
+afterEach(resetFixture);
 
 after(async () => {
-  await db
-    .delete(corporateActionEventsTable)
-    .where(inArray(corporateActionEventsTable.id, Object.values(fixtureIds)));
+  await db.delete(corporateActionEventsTable).where(inArray(corporateActionEventsTable.id, [...createdEventIds]));
   server.close();
   await once(server, "close");
   await pool.end();
 });
 
 describe("corporate-action API workflow", { concurrency: false }, () => {
-  test("returns impact amounts calculated from recorded terms and decisions", async () => {
-    const [dividend, split, rights, tender] = await Promise.all([
-      request(`/events/${fixtureIds.dividend}`),
-      request(`/events/${fixtureIds.split}`),
-      request(`/events/${fixtureIds.rights}`),
-      request(`/events/${fixtureIds.tender}`),
-    ]);
-
-    assert.deepEqual(
-      dividend.body.impacts.map((impact: EventData) => impact.expected),
-      dividend.body.impacts.map((impact: EventData) =>
-        calculateDividend(impact.eligibleQuantity, 0.425),
-      ),
-    );
-    assert.deepEqual(
-      split.body.impacts.map((impact: EventData) => impact.expected),
-      split.body.impacts.map((impact: EventData) =>
-        calculateSplit(impact.eligibleQuantity, 4, 1),
-      ),
-    );
-    assert.deepEqual(
-      rights.body.impacts.map((impact: EventData) => impact.expected),
-      [0, 0],
-    );
-    assert.deepEqual(
-      tender.body.impacts.map((impact: EventData) => impact.expected),
-      tender.body.impacts.map((impact: EventData) =>
-        calculateTender(impact.eligibleQuantity, 0.2, 8.5),
-      ),
-    );
-  });
-
-  test("blocks malformed requests and prevents approval or instruction before prerequisites", async () => {
-    const invalidElection = await request(
-      `/events/${fixtureIds.rights}/election`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          impactId: fixtures.rights.impacts[0].id,
-          optionId: "not-a-real-option",
-        }),
-      },
-    );
-    assert.equal(invalidElection.status, 400);
-
-    const prematureApproval = await request(
-      `/events/${fixtureIds.rights}/approval`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          approved: true,
-          note: "This must be rejected before elections.",
-        }),
-      },
-    );
-    assert.equal(prematureApproval.status, 409);
-
-    const prematureInstruction = await request(
-      `/events/${fixtureIds.rights}/instruction`,
-      {
-        method: "POST",
-        body: JSON.stringify({ status: "Simulated — pending" }),
-      },
-    );
-    assert.equal(prematureInstruction.status, 409);
-  });
-
-  test("sets voluntary expected amounts to zero for lapse and decline elections", async () => {
-    for (const impact of fixtures.rights.impacts) {
-      const election = await request(
-        `/events/${fixtureIds.rights}/election`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            impactId: impact.id,
-            optionId: "lapse",
-          }),
-        },
-      );
-      assert.equal(election.status, 200);
-      assert.equal(
-        election.body.impacts.find(
-          (candidate: EventData) => candidate.id === impact.id,
-        ).expected,
-        0,
-      );
-    }
-
-    const declinedTender = await request(
-      `/events/${fixtureIds.tender}/election`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          impactId: fixtures.tender.impacts[0].id,
-          optionId: "decline",
-        }),
-      },
-    );
-    assert.equal(declinedTender.status, 200);
-    assert.equal(declinedTender.body.impacts[0].expected, 0);
-    assert.equal(declinedTender.body.reconciliation.expected, 0);
-  });
-
-  test("fails closed for ambiguous, negative, and zero calculation terms", async () => {
-    const invalidTerms = [
-      { key: "maximum", value: "20% or 30% of position" },
-      { key: "maximum", value: "-20% of position" },
-      { key: "maximum", value: "0% of position" },
-      { key: "offerPrice", value: "AUD -8.50" },
-    ];
-
-    for (const term of invalidTerms) {
-      const updatedTerms = await request(`/events/${fixtureIds.tender}`, {
-        method: "PATCH",
-        body: JSON.stringify({ terms: [term] }),
-      });
-      assert.equal(updatedTerms.status, 422, term.value);
-      assert.match(updatedTerms.body.error, /valid tender/i);
-
-      const approval = await request(`/events/${fixtureIds.tender}/approval`, {
-        method: "POST",
-        body: JSON.stringify({ approved: true, note: "Must be blocked." }),
-      });
-      assert.equal(approval.status, 409, term.value);
-
-      const instruction = await request(
-        `/events/${fixtureIds.tender}/instruction`,
-        {
-          method: "POST",
-          body: JSON.stringify({ status: "Simulated — pending" }),
-        },
-      );
-      assert.equal(instruction.status, 409, term.value);
-      await resetFixtures();
-    }
-  });
-
-  test("requires fresh checker approval after an elected value or term changes", async () => {
-    const electionChange = await request(
-      `/events/${fixtureIds.tender}/election`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          impactId: fixtures.tender.impacts[0].id,
-          optionId: "decline",
-        }),
-      },
-    );
-    assert.equal(electionChange.status, 200);
-    assert.equal(electionChange.body.impacts[0].expected, 0);
-    assert.equal(electionChange.body.impacts[0].approval, "Pending");
-    assert.equal(electionChange.body.instruction.status, "Draft — not submitted");
-
-    const blockedAfterElection = await request(
-      `/events/${fixtureIds.tender}/instruction`,
-      {
-        method: "POST",
-        body: JSON.stringify({ status: "Simulated — pending" }),
-      },
-    );
-    assert.equal(blockedAfterElection.status, 409);
-
-    const reapprovedElection = await request(
-      `/events/${fixtureIds.tender}/approval`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          approved: true,
-          note: "Checker reviewed the declined tender.",
-        }),
-      },
-    );
-    assert.equal(reapprovedElection.status, 200);
-
-    const instructedAfterReapproval = await request(
-      `/events/${fixtureIds.tender}/instruction`,
-      {
-        method: "POST",
-        body: JSON.stringify({ status: "Simulated — pending" }),
-      },
-    );
-    assert.equal(instructedAfterReapproval.status, 200);
-
-    await resetFixtures();
-    const termChange = await request(`/events/${fixtureIds.tender}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        terms: [{ key: "offerPrice", value: "AUD 9.00" }],
-      }),
+  test("derives workflow roles from signed sessions and blocks maker self-approval", async () => {
+    const unauthenticated = await request(`/events/${eventId}/calculate`, {
+      method: "POST",
+      body: JSON.stringify({}),
     });
-    assert.equal(termChange.status, 200);
-    assert.equal(termChange.body.impacts[0].approval, "Pending");
-    assert.equal(termChange.body.instruction.status, "Draft — not submitted");
+    assert.equal(unauthenticated.status, 401);
 
-    const blockedAfterTermChange = await request(
-      `/events/${fixtureIds.tender}/instruction`,
-      {
-        method: "POST",
-        body: JSON.stringify({ status: "Simulated — pending" }),
-      },
-    );
-    assert.equal(blockedAfterTermChange.status, 409);
+    const calculated = await request(`/events/${eventId}/calculate`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }, analystSession);
+    assert.equal(calculated.status, 200);
+    const impact = calculated.body.impacts[0];
 
-    await resetFixtures();
-    for (const impact of fixtures.rights.impacts) {
-      const election = await request(
-        `/events/${fixtureIds.rights}/election`,
-        {
-          method: "POST",
-          body: JSON.stringify({ impactId: impact.id, optionId: "subscribe" }),
-        },
-      );
-      assert.equal(election.status, 200);
-    }
-    const approval = await request(`/events/${fixtureIds.rights}/approval`, {
+    const election = await request(`/events/${eventId}/election`, {
+      method: "POST",
+      body: JSON.stringify({
+        impactId: impact.id,
+        optionId: "exercise",
+        quantityElected: 20_000,
+        comment: "Exercise full entitlement.",
+      }),
+    }, analystSession);
+    assert.equal(election.status, 200);
+    assert.equal(election.body.status, "Awaiting approval");
+
+    const spoofedReviewer = await request(`/events/${eventId}/approval`, {
       method: "POST",
       body: JSON.stringify({
         approved: true,
-        note: "Checker approved the original deadline.",
+        note: "Role in the payload must be ignored.",
+        actorId: "USR-002",
+        actorRole: "Reviewer",
       }),
-    });
-    assert.equal(approval.status, 200);
+    }, analystSession);
+    assert.equal(spoofedReviewer.status, 403);
 
-    const deadlineAmendment = await request(`/events/${fixtureIds.rights}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        terms: [{ key: "deadline", value: "30 Aug 2026 · 17:30 CEST" }],
-      }),
-    });
-    assert.equal(deadlineAmendment.status, 200);
-    assert.ok(
-      deadlineAmendment.body.impacts.every(
-        (impact: EventData) => impact.approval === "Pending",
-      ),
-    );
-
-    const blockedAfterDeadlineAmendment = await request(
-      `/events/${fixtureIds.rights}/instruction`,
-      {
+    const aisha = demoUsers.find((user) => user.id === "USR-001");
+    assert.ok(aisha);
+    const originalRole = aisha.role;
+    aisha.role = "Reviewer";
+    try {
+      const selfApproval = await request(`/events/${eventId}/approval`, {
         method: "POST",
-        body: JSON.stringify({ status: "Simulated — pending" }),
-      },
-    );
-    assert.equal(blockedAfterDeadlineAmendment.status, 409);
-  });
-
-  test("completes the gated election, approval, and simulated instruction path with audit evidence", async () => {
-    for (const impact of fixtures.rights.impacts) {
-      const election = await request(
-        `/events/${fixtureIds.rights}/election`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            impactId: impact.id,
-            optionId: "subscribe",
-          }),
-        },
-      );
-      assert.equal(election.status, 200);
+        body: JSON.stringify({ approved: true, note: "Self approval must be rejected." }),
+      }, analystSession);
+      assert.equal(selfApproval.status, 409);
+      assert.match(selfApproval.body.error, /Maker-checker control failed/);
+    } finally {
+      aisha.role = originalRole;
     }
 
-    const approval = await request(`/events/${fixtureIds.rights}/approval`, {
+    const approved = await request(`/events/${eventId}/approval`, {
       method: "POST",
-      body: JSON.stringify({
-        approved: true,
-        note: "All fund elections reviewed by the checker.",
-      }),
-    });
-    assert.equal(approval.status, 200);
-    assert.equal(approval.body.status, "Ready for instruction");
-
-    const instruction = await request(
-      `/events/${fixtureIds.rights}/instruction`,
-      {
-        method: "POST",
-        body: JSON.stringify({ status: "Simulated — pending" }),
-      },
-    );
-    assert.equal(instruction.status, 200);
-    assert.equal(instruction.body.status, "Instruction pending");
-
-    const audit = await request(`/audit?eventId=${fixtureIds.rights}`);
-    assert.equal(audit.status, 200);
-    assert.deepEqual(
-      audit.body.slice(0, 2).map((entry: EventData) => entry.action),
-      ["Simulated instruction updated", "Checker approval recorded"],
-    );
+      body: JSON.stringify({ approved: true, note: "Independent checker approval." }),
+    }, reviewerSession);
+    assert.equal(approved.status, 200);
+    assert.equal(approved.body.status, "Approved");
+    assert.equal(approved.body.audit[0].actor, "Daniel Reed");
+    assert.equal(approved.body.audit[0].actorId, "USR-002");
+    assert.equal(approved.body.audit[0].actorRole, "Reviewer");
   });
 
-  test("marks an out-of-tolerance settlement as a reconciliation break", async () => {
-    const reconciliation = await request(
-      `/events/${fixtureIds.tender}/reconciliation`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          actual: 67_000,
-          note: "Custodian booked less cash than expected.",
-        }),
-      },
-    );
-    assert.equal(reconciliation.status, 200);
-    assert.equal(reconciliation.body.reconciliation.difference, -1_000);
-    assert.equal(reconciliation.body.reconciliation.status, "Break");
-    assert.equal(reconciliation.body.status, "Settlement break");
-  });
+  test("records server-resolved identity on term and intake audit entries", async () => {
+    const updated = await request(`/events/${eventId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ terms: [{ key: "subscriptionPrice", value: "EUR 8.50" }] }),
+    }, analystSession);
+    assert.equal(updated.status, 200);
+    assert.equal(updated.body.audit[0].actor, "Aisha Mehta");
+    assert.equal(updated.body.audit[0].actorId, "USR-001");
+    assert.equal(updated.body.audit[0].actorRole, "Operations Analyst");
 
-  test("resolves an exception task and exposes its audit entry", async () => {
-    const tasks = await request("/tasks");
-    const exception = tasks.body.find(
-      (task: EventData) =>
-        task.eventId === fixtureIds.rights && task.category === "Election",
-    );
-    assert.ok(exception);
-
-    const resolved = await request(`/tasks/${exception.id}/resolve`, {
+    const intake = await request("/intake", {
       method: "POST",
-    });
-    assert.equal(resolved.status, 200);
-    assert.equal(resolved.body.status, "Resolved");
-
-    const audit = await request(`/audit?eventId=${fixtureIds.rights}`);
-    assert.ok(
-      audit.body.some((entry: EventData) => entry.action === "Task resolved"),
-    );
+      body: JSON.stringify({ fileName: `rights-${runId}.pdf`, source: "API workflow test" }),
+    }, analystSession);
+    assert.equal(intake.status, 201);
+    createdEventIds.add(intake.body.id);
+    assert.equal(intake.body.audit[0].actor, "Aisha Mehta");
+    assert.equal(intake.body.audit[0].actorId, "USR-001");
+    assert.equal(intake.body.audit[0].actorRole, "Operations Analyst");
   });
 });

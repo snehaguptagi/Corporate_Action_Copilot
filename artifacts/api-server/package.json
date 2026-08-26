@@ -9,7 +9,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test .test-dist/tests/*.test.js"
+    "test": "pnpm --filter @workspace/corporate-actions-copilot exec tsx --test ../api-server/test/*.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

@@ -171,6 +171,18 @@ router.post("/events/:eventId/approval", async (req, res): Promise<void> => {
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
+    if (
+      body.approved &&
+      (!event.terms.every((term: any) => term.reviewStatus === "Validated") ||
+        !event.impacts.every(
+          (impact: any) => event.options.length === 0 || impact.election,
+        ))
+    ) {
+      res.status(409).json({
+        error: "All validated terms and required elections must be complete before approval.",
+      });
+      return;
+    }
     approveControlledEvent(event, body.approved, body.note, actor);
     await saveCorporateActionEvent(event);
     res.json(ApproveEventResponse.parse(event));
@@ -188,6 +200,18 @@ router.post("/events/:eventId/instruction", async (req, res): Promise<void> => {
   const event = await findEvent(params.eventId, res);
   if (!event) return;
   try {
+    if (
+      !body.status.toLowerCase().includes("rejected") &&
+      !event.impacts.every(
+        (impact: any) =>
+          event.options.length === 0 ||
+          impact.approval === "Approved",
+      )
+    ) {
+      throw new Error(
+        "Checker approval is required before a simulated instruction can be recorded.",
+      );
+    }
     simulateInstruction(event, body.status, actor);
     await saveCorporateActionEvent(event);
     res.json(UpdateInstructionResponse.parse(event));

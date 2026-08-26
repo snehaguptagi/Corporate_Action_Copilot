@@ -1,5 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import { corporateActionEventsTable, db } from "@workspace/db";
+import {
+  calculateDividend,
+  calculateRights,
+  calculateSplit,
+  calculateTender,
+} from "./calculations";
 
 type EventData = Record<string, any>;
 
@@ -408,6 +414,15 @@ const seedEvents: EventData[] = [
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+const getTermValue = (event: EventData, key: string): string | null =>
+  event.terms?.find((term: any) => term.key === key)?.value ?? null;
+
+const parsePositiveDecimal = (value: string): number | null => {
+  if (!/^\d+(?:\.\d+)?$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
 function normalizeLegacySimulation(event: EventData): EventData {
   if (event.instruction && !String(event.instruction.status).startsWith("SIMULATED_")) {
     event.instruction.status = event.status === "Instruction pending"
@@ -448,13 +463,17 @@ export async function ensureCorporateActionSeedData(): Promise<void> {
 export async function getCorporateActionEvents(): Promise<EventData[]> {
   await ensureCorporateActionSeedData();
   const rows = await db.select().from(corporateActionEventsTable).orderBy(desc(corporateActionEventsTable.updatedAt));
-  return rows.map((row) => normalizeLegacySimulation(clone(row.data)));
+  return rows.map((row) =>
+    normalizeLegacySimulation(recalculateEventImpacts(clone(row.data))),
+  );
 }
 
 export async function getCorporateActionEvent(id: string): Promise<EventData | null> {
   await ensureCorporateActionSeedData();
   const [row] = await db.select().from(corporateActionEventsTable).where(eq(corporateActionEventsTable.id, id));
-  return row ? normalizeLegacySimulation(clone(row.data)) : null;
+  return row
+    ? normalizeLegacySimulation(recalculateEventImpacts(clone(row.data)))
+    : null;
 }
 
 export async function saveCorporateActionEvent(event: EventData): Promise<EventData> {
@@ -486,3 +505,137 @@ export function buildDashboard(events: EventData[]): EventData {
     recentActivity: activity,
   };
 }
+
+
+/**
+ * Keeps the impact values returned by the POC API derived from the recorded
+ * event terms, rather than treating the display values as a second source of
+ * truth. The persisted JSON remains the scenario/evidence record.
+ */
+export function recalculateEventImpacts(event: EventData): EventData {
+  event.calculationStatus = "Complete";
+  delete event.calculationError;
+
+  if (event.eventType === "Cash dividend") {
+    const rate = parseCurrencyTerm(getTermValue(event, "rate"));
+    if (rate === null) {
+      return incompleteCalculation(event, "A valid cash dividend rate is required.");
+    }
+    event.impacts.forEach((impact: any) => {
+      impact.expected = calculateDividend(impact.eligibleQuantity, rate);
+    });
+  }
+
+  if (event.eventType === "Stock split") {
+    const ratio = parseWholeNumberRatio(getTermValue(event, "ratio"), ":");
+    if (ratio === null) {
+      return incompleteCalculation(event, "A valid split ratio is required.");
+    }
+    const [newShares, oldShares] = ratio;
+    event.impacts.forEach((impact: any) => {
+      impact.expected = calculateSplit(
+        impact.eligibleQuantity,
+        newShares,
+        oldShares,
+      );
+    });
+  }
+
+  if (event.eventType === "Rights issue") {
+    const ratio = parseWholeNumberRatio(
+      getTermValue(event, "rightsRatio"),
+      "for",
+    );
+    const subscriptionPrice = parseCurrencyTerm(
+      getTermValue(event, "subscriptionPrice"),
+    );
+    if (
+      ratio === null ||
+      subscriptionPrice === null
+    ) {
+      return incompleteCalculation(
+        event,
+        "A valid rights ratio and subscription price are required.",
+      );
+    }
+    const [rightsGranted, sharesRequired] = ratio;
+    event.impacts.forEach((impact: any) => {
+      impact.expected =
+        selectedOptionId(event, impact) === "subscribe"
+          ? calculateRights(
+              impact.eligibleQuantity,
+              rightsGranted,
+              sharesRequired,
+              subscriptionPrice,
+            ).funding
+          : 0;
+    });
+  }
+
+  if (event.eventType === "Tender offer") {
+    const offerPrice = parseCurrencyTerm(getTermValue(event, "offerPrice"));
+    const maximum = parseTenderMaximum(getTermValue(event, "maximum"));
+    if (offerPrice === null || maximum === null) {
+      return incompleteCalculation(
+        event,
+        "A valid tender offer price and maximum percentage are required.",
+      );
+    }
+    event.impacts.forEach((impact: any) => {
+      impact.expected =
+        selectedOptionId(event, impact) === "tender"
+          ? calculateTender(
+              impact.eligibleQuantity,
+              maximum / 100,
+              offerPrice,
+            )
+          : 0;
+    });
+  }
+
+  const totalExpected = event.impacts.reduce(
+    (total: number, impact: any) => total + impact.expected,
+    0,
+  );
+  event.amount = totalExpected;
+  if (event.reconciliation) {
+    event.reconciliation.expected = totalExpected;
+    event.reconciliation.difference = Number(
+      (event.reconciliation.actual - totalExpected).toFixed(2),
+    );
+  }
+
+  return event;
+}
+
+const parseTenderMaximum = (value: string | null): number | null => {
+  const match = /^(\d+(?:\.\d+)?)%\s+of\s+position$/i.exec(
+    value?.trim() ?? "",
+  );
+  if (!match) return null;
+  const percentage = parsePositiveDecimal(match[1]);
+  return percentage !== null && percentage <= 100 ? percentage : null;
+};
+
+const parseWholeNumberRatio = (
+  value: string | null,
+  separator: ":" | "for",
+): [number, number] | null => {
+  const pattern =
+    separator === ":"
+      ? /^(\d+)\s*:\s*(\d+)$/
+      : /^(\d+)\s+for\s+(\d+)$/i;
+  const match = pattern.exec(value?.trim() ?? "");
+  if (!match) return null;
+
+  const numerator = parsePositiveDecimal(match[1]);
+  const denominator = parsePositiveDecimal(match[2]);
+  return numerator !== null && denominator !== null
+    ? [numerator, denominator]
+    : null;
+};
+
+const parseCurrencyTerm = (value: string | null): number | null => {
+  const match = /^([A-Z]{3})\s+(\d+(?:\.\d+)?)$/.exec(value?.trim() ?? "");
+  return match ? parsePositiveDecimal(match[2]) : null;
+};

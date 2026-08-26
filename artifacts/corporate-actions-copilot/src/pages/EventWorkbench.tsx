@@ -14,7 +14,7 @@ import {
 import { Link, useParams } from "wouter";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, AlertTriangle, CheckCircle2, FileSearch, LockKeyhole, Play, Send, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, ExternalLink, FileSearch, FileText, LockKeyhole, Play, Send, ShieldCheck, UserRoundCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,20 @@ import { getDemoRole } from "@/lib/demo-role";
 const money = (amount: number, currency: string) => currency === "Shares"
   ? `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(amount)} shares`
   : new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+
+const demoPdfPath = `${import.meta.env.BASE_URL}demo-notices/rights-issue-notice.pdf`;
+const heroJourney = ["Notice", "Terms", "Holdings", "Calculation", "Election", "Approval", "Instruction", "Settlement", "Audit"];
+
+function getHeroJourneyIndex(status: string) {
+  if (status === "Received") return 0;
+  if (status === "Under review") return 1;
+  if (status === "Election required") return 4;
+  if (status === "Awaiting approval") return 5;
+  if (status === "Approved") return 5;
+  if (status === "Awaiting settlement") return 7;
+  if (status === "Break identified" || status === "Reconciled") return 8;
+  return 1;
+}
 
 export default function EventWorkbench() {
   const { eventId = "" } = useParams();
@@ -165,6 +179,40 @@ export default function EventWorkbench() {
         </div>
       </header>
 
+      {data.isHero && (
+        <div className="shrink-0 border-b bg-slate-50 px-6 py-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <FileSearch className="h-3.5 w-3.5 text-primary" />
+              Hero journey
+            </div>
+            <span className="text-xs text-slate-500">
+              Current control point: <strong className="text-slate-700">{data.status}</strong>
+            </span>
+          </div>
+          <div className="flex min-w-max items-center gap-1 overflow-x-auto pb-1">
+            {heroJourney.map((step, index) => {
+              const currentStep = getHeroJourneyIndex(data.status);
+              const complete = index < currentStep;
+              const active = index === currentStep;
+              return (
+                <div key={step} className="flex items-center gap-1">
+                  <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    active ? "bg-primary text-primary-foreground" : complete ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-400"
+                  }`}>
+                    <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
+                      active ? "bg-white/20" : complete ? "bg-emerald-200" : "bg-slate-100"
+                    }`}>{complete ? "✓" : index + 1}</span>
+                    {step}
+                  </div>
+                  {index < heroJourney.length - 1 && <span className={`text-xs ${complete ? "text-emerald-500" : "text-slate-300"}`}>→</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="overview" className="flex h-full flex-col">
           <div className="overflow-x-auto border-b bg-white px-4 pt-2">
@@ -188,7 +236,8 @@ export default function EventWorkbench() {
               {data.isHero && <Card><CardHeader><CardTitle className="text-base">Hero journey</CardTitle><CardDescription>Upload → validate terms → match holdings → calculate → enter election → reviewer approval → simulated instruction → reconcile → audit.</CardDescription></CardHeader></Card>}
             </TabsContent>
 
-            <TabsContent value="evidence" className="m-0 space-y-4">
+              <TabsContent value="evidence" className="m-0 space-y-4">
+               {data.isHero && <Card className="overflow-hidden border-primary/20"><CardHeader className="border-b border-slate-100 bg-white"><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4 text-primary" />Uploaded source document</CardTitle><CardDescription className="mt-1">The PDF remains visible beside the extracted terms so every review decision can be checked against source evidence.</CardDescription></div><a href={demoPdfPath} target="_blank" rel="noreferrer"><Button variant="outline" size="sm"><ExternalLink className="mr-2 h-3.5 w-3.5" />Open PDF</Button></a></div></CardHeader><CardContent className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(240px,0.6fr)]"><div className="overflow-hidden rounded border bg-slate-100"><iframe title="Uploaded synthetic rights issue notice" src={demoPdfPath} className="h-[520px] w-full bg-white" /></div><div className="space-y-4"><div className="rounded border bg-slate-50 p-4 text-sm"><div className="flex items-center gap-2 font-medium text-slate-900"><CheckCircle2 className="h-4 w-4 text-emerald-600" />Uploaded and linked</div><dl className="mt-3 space-y-2 text-xs"><div className="flex justify-between gap-3"><dt className="text-slate-500">Document</dt><dd className="text-right font-medium text-slate-700">{data.notice.documentName}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-500">Source</dt><dd className="text-right font-medium text-slate-700">{data.notice.source}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-500">State</dt><dd className="text-right font-medium text-emerald-700">{data.notice.uploadState}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-500">Pages</dt><dd className="text-right font-medium text-slate-700">{data.notice.pages?.length ?? 0}</dd></div></dl></div><div className="rounded border border-amber-100 bg-amber-50 p-4 text-xs leading-5 text-amber-950"><strong>Review rule</strong><br />Terms are not trusted until the analyst validates them against the page evidence. Corrections require a reason and remain in the audit trail.</div></div></CardContent></Card>}
               <Card><CardHeader><CardTitle>Source evidence and extracted terms</CardTitle><CardDescription>Every value links to a source page. Manual corrections require a reason.</CardDescription></CardHeader></Card>
               {data.terms.map((current: any) => {
                 const currentValue = values[current.key] ?? current.value;

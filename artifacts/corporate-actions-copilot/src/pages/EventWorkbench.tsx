@@ -173,7 +173,7 @@ export default function EventWorkbench() {
     onError: (error) => mutateError("Approval blocked", error),
   });
 
-  const simulate = () => updateInstruction.mutate({ eventId, data: { status: "SIMULATED — NOT SENT" } }, {
+  const simulate = () => updateInstruction.mutate({ eventId, data: { status: "SIMULATED - NOT SENT" } }, {
     onSuccess: () => { toast({ title: "Instruction simulated", description: "No external instruction was sent." }); refresh(); },
     onError: (error) => mutateError("Instruction blocked", error),
   });
@@ -361,7 +361,7 @@ export default function EventWorkbench() {
                         <TableCell>{position.positionDate}</TableCell>
                         <TableCell className="text-right font-mono">{position.eligibleQuantity.toLocaleString()}</TableCell>
                         <TableCell><Badge variant={position.eligibilityStatus === "Eligible" ? "secondary" : "outline"}>{position.eligibilityStatus}</Badge></TableCell>
-                        <TableCell className="text-xs text-amber-700">{position.dataQualityWarning || "—"}</TableCell>
+                        <TableCell className="text-xs text-amber-700">{position.dataQualityWarning || "N/A"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -500,7 +500,7 @@ export default function EventWorkbench() {
             <Card className="bg-white">
               <CardHeader>
                 <CardTitle>Simulated instruction</CardTitle>
-                <CardDescription>External connectivity is disabled. The only actionable status is SIMULATED — NOT SENT.</CardDescription>
+                <CardDescription>External connectivity is disabled. The only actionable status is SIMULATED - NOT SENT.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3 rounded border bg-slate-50 p-4 text-sm md:grid-cols-3">
@@ -577,7 +577,7 @@ export default function EventWorkbench() {
                         </TableCell>
                         <TableCell>{current.owner}</TableCell>
                         <TableCell>{current.due}</TableCell>
-                        <TableCell className="text-xs">{current.dependency || "—"}</TableCell>
+                        <TableCell className="text-xs">{current.dependency || "N/A"}</TableCell>
                         <TableCell><Badge variant={current.status === "Resolved" ? "secondary" : "warning"}>{current.status}</Badge></TableCell>
                       </TableRow>
                     ))}

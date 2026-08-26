@@ -54,7 +54,7 @@ export default function NoticeIntake() {
                 <p className="mt-1 text-sm text-slate-500">Select a named synthetic sample notice to create a traceable case for review.</p>
               </div>
             </div>
-            <Badge variant="warning" className="self-center">POC — synthetic notices only</Badge>
+            <Badge variant="warning" className="self-center">POC: synthetic notices only</Badge>
           </div>
         </div>
       </header>

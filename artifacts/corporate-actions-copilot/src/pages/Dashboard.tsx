@@ -219,7 +219,7 @@ export default function Dashboard() {
               <FileText className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-amber-950">Demo dataset — synthetic operational cases</p>
+              <p className="text-sm font-semibold text-amber-950">Demo dataset: synthetic operational cases</p>
               <p className="mt-0.5 text-xs leading-5 text-amber-900/75">
                 Six cases are seeded to show the full journey from notice intake to settlement. Amounts remain in their native currency or shares.
               </p>

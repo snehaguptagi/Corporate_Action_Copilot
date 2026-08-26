@@ -200,7 +200,7 @@ const seedEvents: EventData[] = [
       { id: "imp-aur-3", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 69529.41, formula: "69,529.41 × GBP 0.4250", expected: 29500, currency: "GBP", status: "Calculated", election: null, approval: "Not required" },
     ],
     options: [],
-    instruction: { status: "SIMULATED_NOT_SENT", destination: "N/A", reference: "N/A", generatedAt: "—", content: "SIMULATED NOT SENT — mandatory cash event. No instruction is submitted." },
+    instruction: { status: "SIMULATED_NOT_SENT", destination: "N/A", reference: "N/A", generatedAt: "", content: "SIMULATED NOT SENT: mandatory cash event. No instruction is submitted." },
     reconciliation: { expected: 186750, actual: 0, difference: -186750, tolerance: 5, status: "Awaiting settlement", note: "Payment date amended; expected settlement recalculated." },
     tasks: [
       { id: "task-aur-1", eventId: "evt-aurora-div", title: "Validate amended payment date", detail: "Confirm the amendment supersedes notice version v1 before releasing downstream task dates.", priority: "High", owner: "M. Shah", due: "Today · 11:00 BST", status: "Open", category: "Term validation" },
@@ -235,7 +235,7 @@ const seedEvents: EventData[] = [
       { id: "imp-dgt-2", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 25000, formula: "25,000 × 4", expected: 100000, currency: "Shares", status: "Calculated", election: null, approval: "Validated" },
     ],
     options: [],
-    instruction: { status: "SIMULATED_NOT_SENT", destination: "N/A", reference: "N/A", generatedAt: "—", content: "SIMULATED NOT SENT — mandatory position adjustment. No market instruction required." },
+    instruction: { status: "SIMULATED_NOT_SENT", destination: "N/A", reference: "N/A", generatedAt: "", content: "SIMULATED NOT SENT: mandatory position adjustment. No market instruction required." },
     reconciliation: { expected: 420000, actual: 420000, difference: 0, tolerance: 1, status: "Matched", note: "Custodian confirmation received." },
     tasks: [],
     audit: [{ id: "audit-dgt-1", eventId: "evt-delta-split", action: "Settlement matched", actor: "Reconciliation", timestamp: "2026-08-26T07:12:00.000Z", detail: "Expected and booked share quantities agree." }],
@@ -265,7 +265,7 @@ const seedEvents: EventData[] = [
       { id: "imp-lhs-2", fund: "Northbridge Balanced Fund", account: "CUST-9227", eligibleQuantity: 12345, formula: "(12,345 ÷ 20), rounded down", expected: 617, currency: "Shares", status: "Calculated", election: null, approval: "Validated" },
     ],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory bonus issue. No election or market instruction is required." },
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory bonus issue. No election or market instruction is required." },
     reconciliation: { expected: 5617, actual: 0, difference: -5617, tolerance: 1, status: "Awaiting settlement", note: "Additional shares will post automatically after the record date." },
     tasks: [{ id: "task-lhs-1", eventId: "evt-lumen-bonus", title: "Confirm fractional cash-in-lieu handling", detail: "Validate that the 0.25-share fractional entitlement is routed to cash-in-lieu processing.", priority: "Medium", owner: "Fund Accounting", due: "29 Aug · 12:00 BST", status: "Open", category: "Fractional entitlement" }],
     audit: [{ id: "audit-lhs-1", eventId: "evt-lumen-bonus", action: "Bonus issue validated", actor: "System", timestamp: "2026-08-26T03:22:00.000Z", detail: "Mandatory 1-for-20 bonus issue validated with round-down and cash-in-lieu rules." }],
@@ -298,7 +298,7 @@ const seedEvents: EventData[] = [
       { id: "subscribe", label: "Subscribe", description: "Exercise all eligible rights at the subscription price.", result: "Funding requirement calculated per account", default: false },
       { id: "lapse", label: "Allow to lapse", description: "Do not participate. Rights may expire without value.", result: "No funding; potential value loss", default: true },
     ],
-    instruction: { status: "SIMULATED_NOT_SENT", destination: "Euroclear instruction gateway", reference: "DRAFT-VRN-0821", generatedAt: "2026-08-26T07:30:00.000Z", content: "SIMULATED NOT SENT — election instruction will be populated after fund-level approval." },
+    instruction: { status: "SIMULATED_NOT_SENT", destination: "Euroclear instruction gateway", reference: "DRAFT-VRN-0821", generatedAt: "2026-08-26T07:30:00.000Z", content: "SIMULATED NOT SENT: election instruction will be populated after fund-level approval." },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 1, status: "Not due", note: "Settlement expected after election and subscription." },
     tasks: [
       { id: "task-vrn-1", eventId: "evt-verdant-rights", title: "Obtain fund election", detail: "Northbridge Balanced Fund election is required before the internal deadline.", priority: "High", owner: "Fund Manager", due: "29 Aug · 10:00 CEST", status: "Open", category: "Election" },
@@ -332,7 +332,7 @@ const seedEvents: EventData[] = [
       { id: "tender", label: "Tender maximum", description: "Tender up to 20% of the eligible position.", result: "Expected cash: AUD 68,000", default: false },
       { id: "decline", label: "Do not tender", description: "Retain the current holding.", result: "No cash proceeds", default: true },
     ],
-    instruction: { status: "SIMULATED_PENDING", destination: "Custodian portal", reference: "DRAFT-MRL-0818", generatedAt: "2026-08-26T06:40:00.000Z", content: "SIMULATED NOT SENT — tender 8,000 shares at AUD 8.50. Awaiting simulated confirmation." },
+    instruction: { status: "SIMULATED_PENDING", destination: "Custodian portal", reference: "DRAFT-MRL-0818", generatedAt: "2026-08-26T06:40:00.000Z", content: "SIMULATED NOT SENT: tender 8,000 shares at AUD 8.50. Awaiting simulated confirmation." },
     reconciliation: { expected: 68000, actual: 0, difference: -68000, tolerance: 1, status: "Not due", note: "Tender acceptance outcome is pending." },
     tasks: [{ id: "task-mrl-1", eventId: "evt-meridian-tender", title: "Simulate instruction confirmation", detail: "Checker approval complete. Move the DRAFT instruction to a simulated pending or accepted status.", priority: "Medium", owner: "M. Shah", due: "30 Aug · 09:00 AEST", status: "Open", category: "Instruction" }],
     audit: [{ id: "audit-mrl-1", eventId: "evt-meridian-tender", action: "Checker approval recorded", actor: "Team Lead", timestamp: "2026-08-26T06:35:00.000Z", detail: "Tender election approved for the Sovereign Select Mandate." }],
@@ -370,7 +370,7 @@ const seedEvents: EventData[] = [
       { id: "mixed", label: "Cash and shares", description: "Accept the default mixed consideration of USD 18.00 plus 0.35 acquiring shares per NSD share.", result: "Expected cash: USD 228,600 plus 4,445 Nexus Holdings shares", default: true },
       { id: "cash", label: "All cash", description: "Elect cash consideration, subject to the merger agreement's proration.", result: "Cash election recorded for checker review", default: false },
     ],
-    instruction: { status: "Draft — not submitted", destination: "Custodian portal", reference: "DRAFT-NSD-0824", generatedAt: "2026-08-26T06:20:00.000Z", content: "DRAFT ONLY — merger consideration instruction will be populated after all account elections and approval." },
+    instruction: { status: "Draft: not submitted", destination: "Custodian portal", reference: "DRAFT-NSD-0824", generatedAt: "2026-08-26T06:20:00.000Z", content: "DRAFT ONLY: merger consideration instruction will be populated after all account elections and approval." },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 1, status: "Not due", note: "Completion and consideration delivery are pending." },
     tasks: [
       { id: "task-nsd-1", eventId: "evt-northstar-merger", title: "Obtain merger consideration election", detail: "Northbridge Income Fund must confirm mixed or all-cash consideration before the internal deadline.", priority: "High", owner: "Fund Manager", due: "1 Sep · 12:00 ET", status: "Open", category: "Election" },
@@ -402,7 +402,7 @@ const seedEvents: EventData[] = [
       { id: "imp-hug-2", fund: "Northbridge Balanced Fund", account: "CUST-9227", eligibleQuantity: 65000, formula: "65,000 × USD 0.8000", expected: 52000, currency: "USD", status: "Calculated", election: null, approval: "Not required" },
     ],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory cash event. No instruction is submitted." },
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory cash event. No instruction is submitted." },
     reconciliation: { expected: 152000, actual: 151500, difference: -500, tolerance: 5, status: "Break", note: "Partial settlement received; USD 500 remains outstanding and requires custodian investigation." },
     tasks: [{ id: "task-hug-1", eventId: "evt-harbor-break", title: "Investigate partial dividend settlement", detail: "Trace the USD 500 shortfall against the custodian cash statement and record the resolution.", priority: "High", owner: "Reconciliation", due: "Today · 15:00 ET", status: "Open", category: "Settlement break" }],
     audit: [
@@ -428,7 +428,7 @@ function normalizeLegacySimulation(event: EventData): EventData {
     event.instruction.status = event.status === "Instruction pending"
       ? "SIMULATED_PENDING"
       : "SIMULATED_NOT_SENT";
-    event.instruction.content = `SIMULATED NOT SENT — ${String(event.instruction.content ?? "").replace(/^DRAFT(?: ONLY)?\s*[—-]\s*/i, "")}`;
+    event.instruction.content = `SIMULATED NOT SENT: ${String(event.instruction.content ?? "").replace(/^DRAFT(?: ONLY)?\s*[:-]\s*/i, "")}`;
   }
   return event;
 }

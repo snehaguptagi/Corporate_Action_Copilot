@@ -86,9 +86,9 @@ export function getCaseStages(event: any): CaseStage[] {
 }
 
 export function getPriorityReason(event: any) {
-  if (event.status === "Break identified") return "Settlement break — investigate the variance";
-  if (event.status === "Under review") return "Blocked — a critical term needs validation";
-  if (event.status === "Received") return "Review required — validate the extracted notice terms";
+  if (event.status === "Break identified") return "Settlement break: investigate the variance";
+  if (event.status === "Under review") return "Blocked: a critical term needs validation";
+  if (event.status === "Received") return "Review required: validate the extracted notice terms";
   if (event.status === "Election required") return "Decision required before the internal deadline";
   if (event.status === "Awaiting approval") return "Awaiting independent checker approval";
   if (event.status === "Awaiting settlement") return "Monitor the expected settlement";

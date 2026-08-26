@@ -54,7 +54,7 @@ export default function EventsList() {
         <Card>
           <CardHeader className="border-b bg-white">
             <CardTitle className="text-base">Operational cases</CardTitle>
-            <CardDescription>POC — Synthetic Data. All instructions remain draft or simulated.</CardDescription>
+            <CardDescription>POC: synthetic data. All instructions remain draft or simulated.</CardDescription>
             <div className="mt-4 flex flex-wrap gap-3">
               <div className="relative min-w-[260px] flex-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />

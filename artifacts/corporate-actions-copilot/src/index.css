@@ -60,52 +60,51 @@
 }
 
 :root {
-  /* Precise Control Room Theme */
-  --background: 210 20% 98%;
-  --foreground: 222 47% 11%;
-  --border: 214 32% 91%;
+  /* PwC inspired operations theme */
+  --background: 30 20% 97%;
+  --foreground: 24 18% 14%;
+  --border: 30 14% 87%;
   
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --card-border: 214 32% 91%;
+  --card-foreground: 24 18% 14%;
+  --card-border: 30 14% 87%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --popover-border: 214 32% 91%;
+  --popover-foreground: 24 18% 14%;
+  --popover-border: 30 14% 87%;
   
-  /* Deep tailored blue for operations primary */
-  --primary: 222 47% 25%;
+  --primary: 21 100% 41%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
+  --secondary: 28 33% 94%;
+  --secondary-foreground: 24 18% 14%;
   
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
+  --muted: 30 22% 94%;
+  --muted-foreground: 24 9% 43%;
   
-  --accent: 210 40% 96%;
-  --accent-foreground: 222 47% 11%;
+  --accent: 43 100% 50%;
+  --accent-foreground: 24 18% 14%;
   
   /* Signal colors */
-  --destructive: 350 89% 60%;
+  --destructive: 350 75% 45%;
   --destructive-foreground: 0 0% 100%;
   
-  --success: 152 69% 31%;
+  --success: 145 58% 29%;
   --success-foreground: 0 0% 100%;
 
-  --warning: 38 92% 50%;
+  --warning: 30 100% 42%;
   --warning-foreground: 0 0% 100%;
 
-  --sidebar: 222 47% 13%;
-  --sidebar-foreground: 210 20% 96%;
-  --sidebar-border: 215 25% 22%;
-  --sidebar-primary: 199 89% 58%;
+  --sidebar: 335 48% 20%;
+  --sidebar-foreground: 30 30% 96%;
+  --sidebar-border: 335 32% 31%;
+  --sidebar-primary: 21 100% 57%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 218 35% 18%;
-  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar-accent: 335 38% 28%;
+  --sidebar-accent-foreground: 30 30% 98%;
 
-  --input: 214 32% 91%;
-  --ring: 222 47% 25%;
+  --input: 30 14% 87%;
+  --ring: 21 100% 41%;
   
   --app-font-sans: 'Plus Jakarta Sans', sans-serif;
   --app-font-mono: 'Spline Sans Mono', monospace;
@@ -115,29 +114,29 @@
 }
 
 .dark {
-  --background: 222 47% 11%;
-  --foreground: 210 20% 98%;
-  --border: 215 25% 20%;
+  --background: 24 18% 10%;
+  --foreground: 30 30% 96%;
+  --border: 24 12% 25%;
   
-  --card: 222 47% 13%;
-  --card-foreground: 210 20% 98%;
-  --card-border: 215 25% 20%;
+  --card: 24 18% 14%;
+  --card-foreground: 30 30% 96%;
+  --card-border: 24 12% 25%;
   
-  --popover: 222 47% 13%;
-  --popover-foreground: 210 20% 98%;
-  --popover-border: 215 25% 20%;
+  --popover: 24 18% 14%;
+  --popover-foreground: 30 30% 96%;
+  --popover-border: 24 12% 25%;
   
-  --primary: 210 40% 96%;
-  --primary-foreground: 222 47% 11%;
+  --primary: 21 100% 57%;
+  --primary-foreground: 24 18% 10%;
   
-  --secondary: 215 25% 20%;
-  --secondary-foreground: 210 20% 98%;
+  --secondary: 24 12% 25%;
+  --secondary-foreground: 30 30% 96%;
   
-  --muted: 215 25% 20%;
-  --muted-foreground: 215 20% 65%;
+  --muted: 24 12% 25%;
+  --muted-foreground: 30 12% 70%;
   
-  --accent: 215 25% 20%;
-  --accent-foreground: 210 20% 98%;
+  --accent: 43 100% 50%;
+  --accent-foreground: 24 18% 10%;
   
   --destructive: 350 89% 60%;
   --destructive-foreground: 0 0% 100%;
@@ -148,16 +147,16 @@
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 100%;
 
-  --sidebar: 222 47% 9%;
-  --sidebar-foreground: 210 20% 98%;
-  --sidebar-border: 215 25% 20%;
-  --sidebar-primary: 199 89% 64%;
-  --sidebar-primary-foreground: 222 47% 11%;
-  --sidebar-accent: 215 25% 20%;
-  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar: 335 48% 13%;
+  --sidebar-foreground: 30 30% 98%;
+  --sidebar-border: 335 32% 24%;
+  --sidebar-primary: 21 100% 64%;
+  --sidebar-primary-foreground: 24 18% 10%;
+  --sidebar-accent: 335 38% 22%;
+  --sidebar-accent-foreground: 30 30% 98%;
 
-  --input: 215 25% 20%;
-  --ring: 210 40% 96%;
+  --input: 24 12% 25%;
+  --ring: 21 100% 57%;
 }
 
 @layer base {

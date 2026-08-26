@@ -186,7 +186,7 @@ const preloadedEvents: EventData[] = [
       { id: "imp-aur-2", fund: "Northbridge Balanced Fund", account: "CUST-9227", eligibleQuantity: 150000, positionDate: "2026-08-25", securityId: "SEC-002", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "150,000 × GBP 0.4250", expected: 63750, expectedCash: 63750, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "GBP", status: "Calculated", election: null, approval: "Not required" },
     ],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 191250, actual: 0, difference: -191250, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Awaiting payment date.", expectedCash: 191250, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: "2026-09-18", actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
     tasks: [
       task("task-aur-1", "evt-aurora-review", "CA-2026-0814-AX", "Validate payment currency", "Aisha Mehta", "Today · 11:00 BST", "High", "Term validation", "Confirm the currency evidence before calculation can be released."),
@@ -227,7 +227,7 @@ const preloadedEvents: EventData[] = [
       { id: "imp-dgt-2", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 25000, positionDate: "2026-08-24", securityId: "SEC-003", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "25,000 × 4", expected: 100000, expectedCash: 0, expectedSecurityQuantity: 100000, securityMovement: "75,000 additional shares", currency: "Shares", status: "Calculated", election: null, approval: "Not required" },
     ],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory position adjustment. No instruction is submitted.", simulated: false, approvalActor: "" },
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory position adjustment. No instruction is submitted.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 420000, actual: 0, difference: -420000, tolerance: 1, status: "Not due", classification: "Not due", note: "Awaiting custodian movement confirmation.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 420000, actualSecurityQuantity: 0, expectedCurrency: "Shares", actualCurrency: "Shares", expectedSettlementDate: "2026-08-28", actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
     tasks: [task("task-dgt-1", "evt-delta-split", "CA-2026-0809-DL", "Check security receipt", "Aisha Mehta", "28 Aug · EOD ET", "Medium", "Settlement", "Reconcile post-split quantities once custodian movement arrives.")],
     audit: [{ id: "audit-dgt-1", eventId: "evt-delta-split", action: "Calculation approved", actor: "Daniel Reed", actorType: "user", timestamp: "2026-08-26T06:45:00.000Z", detail: "Split calculation and position eligibility approved.", previousValue: "Impact calculated", newValue: "Awaiting settlement", reason: "Mandatory event", evidenceId: "EVD-DGT-01", workflowStatus: "Awaiting settlement" }],
@@ -254,7 +254,7 @@ const preloadedEvents: EventData[] = [
     positions: [position("POS-NMB-1", "European Opportunities Fund", "CUST-6632", "NL000NIMB001", 50000, "2026-08-14")],
     impacts: [{ id: "imp-nmb-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 50000, positionDate: "2026-08-14", securityId: "SEC-004", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "floor(50,000 × 1 ÷ 10)", expected: 5000, expectedCash: 0, expectedSecurityQuantity: 5000, securityMovement: "5,000 bonus shares", currency: "Shares", status: "Reconciled", election: null, approval: "Not required" }],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory bonus issue processed without instruction.", simulated: false, approvalActor: "" },
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory bonus issue processed without instruction.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 5000, actual: 5000, difference: 0, tolerance: 1, status: "Matched", classification: "Matched", note: "Custodian security movement matches expected entitlement.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 5000, actualSecurityQuantity: 5000, expectedCurrency: "Shares", actualCurrency: "Shares", expectedSettlementDate: "2026-08-20", actualSettlementDate: "2026-08-20", expectedAccount: "CUST-6632", actualAccount: "CUST-6632", investigationSteps: [] },
     tasks: [],
     audit: [{ id: "audit-nmb-1", eventId: "evt-nimbus-bonus", action: "Event closed", actor: "Maya Shah", actorType: "user", timestamp: "2026-08-21T09:15:00.000Z", detail: "Settlement matched and closure control completed.", previousValue: "Reconciled", newValue: "Closed", reason: "All mandatory controls complete", evidenceId: "SET-NMB-01", workflowStatus: "Closed" }],
@@ -281,7 +281,7 @@ const preloadedEvents: EventData[] = [
     positions: [position("POS-MRL-1", "Sovereign Select Mandate", "CUST-1138", "AU0000MERID2", 40000, "2026-08-24")],
     impacts: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: "2026-08-24", securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-001", analyst: "Aisha Mehta", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
     options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20% of the eligible position.", result: "Expected cash proceeds at the offer price.", default: false, fundingFormula: "Quantity elected × offer price" }, { id: "decline", label: "Do not tender", description: "Retain the current holding.", result: "No cash proceeds.", default: true, fundingFormula: "No funding" }],
-    instruction: { status: "DRAFT", destination: "Synthetic custodian gateway", reference: "DRAFT-MRL-0818", generatedAt: "2026-08-26T06:40:00.000Z", content: "DRAFT ONLY — awaiting reviewer approval.", simulated: false, approvalActor: "" },
+    instruction: { status: "DRAFT", destination: "Synthetic custodian gateway", reference: "DRAFT-MRL-0818", generatedAt: "2026-08-26T06:40:00.000Z", content: "DRAFT ONLY - awaiting reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 68000, actual: 0, difference: -68000, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Tender outcome pending.", expectedCash: 68000, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "AUD", actualCurrency: "AUD", expectedSettlementDate: "2026-09-06", actualSettlementDate: "", expectedAccount: "CUST-1138", actualAccount: "", investigationSteps: [] },
     tasks: [task("task-mrl-1", "evt-meridian-tender", "CA-2026-0818-MT", "Complete checker approval", "Daniel Reed", "29 Aug · 19:00 AEST", "High", "Approval", "A reviewer independent of the maker must approve the tender.", "Open", "Obtain election decision", "CA-CONTROL-004")],
     audit: [{ id: "audit-mrl-1", eventId: "evt-meridian-tender", action: "Election submitted", actor: "Aisha Mehta", actorType: "user", timestamp: "2026-08-26T06:35:00.000Z", detail: "Tender election for 8,000 shares submitted for independent review.", previousValue: "Election required", newValue: "Awaiting approval", reason: "Portfolio decision received", evidenceId: "EVD-MRL-02", workflowStatus: "Awaiting approval" }],
@@ -311,7 +311,7 @@ const preloadedEvents: EventData[] = [
     ],
     impacts: [{ id: "imp-vmh-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 13005, positionDate: "2026-08-24", securityId: "SEC-006", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "(13,005 × EUR 4.25) + floor(13,005 × 0.333) shares + cash in lieu", expected: 55271.25, expectedCash: 55271.25, expectedSecurityQuantity: 4330, securityMovement: "4,330 New Horizon shares; fraction paid in cash", currency: "EUR", status: "Calculated", election: null, approval: "Pending" }],
     options: [{ id: "default-consideration", label: "Accept default consideration", description: "Receive the announced cash and share consideration.", result: "Cash plus shares; fractional share settled in cash.", default: true, fundingFormula: "No funding" }, { id: "cash-only", label: "Cash alternative", description: "Elect the optional all-cash consideration.", result: "Cash consideration subject to offer terms.", default: false, fundingFormula: "No funding" }],
-    instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VMH-0820", generatedAt: "2026-08-26T07:00:00.000Z", content: "DRAFT ONLY — election required before any simulated instruction.", simulated: false, approvalActor: "" },
+    instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VMH-0820", generatedAt: "2026-08-26T07:00:00.000Z", content: "DRAFT ONLY - election required before any simulated instruction.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 55271.25, actual: 0, difference: -55271.25, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement follows election deadline.", expectedCash: 55271.25, actualCash: 0, expectedSecurityQuantity: 4330, actualSecurityQuantity: 0, expectedCurrency: "EUR", actualCurrency: "EUR", expectedSettlementDate: "2026-09-12", actualSettlementDate: "", expectedAccount: "CUST-6632", actualAccount: "", investigationSteps: [] },
     tasks: [task("task-vmh-1", "evt-verdant-merger", "CA-2026-0820-VM", "Obtain merger election", "Fund Manager", "30 Aug · 10:00 CEST", "High", "Election", "Confirm the account's optional consideration election before the internal deadline.")],
     audit: [{ id: "audit-vmh-1", eventId: "evt-verdant-merger", action: "Fractional entitlement flagged", actor: "System", actorType: "system", timestamp: "2026-08-26T07:05:00.000Z", detail: "Fractional share treatment requires analyst review.", previousValue: "", newValue: "Election required", reason: "Fractional consideration", evidenceId: "EVD-VMH-02", workflowStatus: "Election required" }],
@@ -338,7 +338,7 @@ const preloadedEvents: EventData[] = [
     positions: [position("POS-HBR-1", "Northbridge Income Fund", "CUST-4081", "GB00HARB0007", 450000, "2026-08-12")],
     impacts: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: "2026-08-12", securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "450,000 × GBP 0.4250", expected: 191250, expectedCash: 191250, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
     options: [],
-    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory cash event. No instruction is submitted.", simulated: false, approvalActor: "" },
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory cash event. No instruction is submitted.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 191250, actual: 189250, difference: -2000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is GBP 2,000 below expected.", expectedCash: 191250, actualCash: 189250, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: "2026-08-22", actualSettlementDate: "2026-08-22", expectedAccount: "CUST-4081", actualAccount: "CUST-4081", investigationSteps: ["Verify eligible quantity.", "Check withholding tax treatment.", "Confirm the announced dividend rate.", "Confirm whether one account settled separately.", "Contact the custodian if unexplained."] },
     tasks: [task("task-hbr-1", "evt-harbor-break", "CA-2026-0804-HB", "Investigate custodian payment", "Aisha Mehta", "Today · 14:00 BST", "High", "Reconciliation", "Expected GBP 191,250; actual GBP 189,250. Verify tax, rate, quantity, and separate settlement.", "Open", "", "CA-CONTROL-007")],
     audit: [{ id: "audit-hbr-1", eventId: "evt-harbor-break", action: "Settlement break identified", actor: "System", actorType: "system", timestamp: "2026-08-22T10:00:00.000Z", detail: "Under-settlement of GBP 2,000 detected; exception task generated.", previousValue: "Awaiting settlement", newValue: "Break identified", reason: "Actual cash below expected", evidenceId: "SET-HBR-01", workflowStatus: "Break identified" }],
@@ -376,7 +376,7 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
         ],
         source,
       ),
-      uploadState: "Uploaded — deterministic seeded extraction",
+      uploadState: "Uploaded: deterministic seeded extraction",
     },
     terms: [
       term("rightsRatio", "Rights ratio", "1 for 5", 2, "“One new share for every five existing shares.”", "Needs review", 0.96),
@@ -398,7 +398,7 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
       { id: "sell", label: "Sell rights", description: "Submit the rights for sale; no subscription funding is required.", result: "Sale proceeds depend on market execution.", default: false, fundingFormula: "No funding" },
       { id: "lapse", label: "Allow rights to lapse", description: "Take no action; rights expire at the deadline.", result: "No funding; potential value loss.", default: true, fundingFormula: "No funding" },
     ],
-    instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VRN-0821", generatedAt: "", content: "DRAFT ONLY — generated after independent reviewer approval.", simulated: false, approvalActor: "" },
+    instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VRN-0821", generatedAt: "", content: "DRAFT ONLY - generated after independent reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement follows an approved election.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "EUR", actualCurrency: "EUR", expectedSettlementDate: "2026-09-05", actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
     tasks: [task("task-vrn-1", eventId, "CA-2026-0821-VR", "Validate notice terms", "Aisha Mehta", "Today · 12:00 CEST", "High", "Term validation", "Review all extracted terms against the uploaded notice.", "Open", "", "CA-CONTROL-001")],
     audit: [audit(eventId, "Notice uploaded", `${documentName} accepted as a synthetic notice; deterministic extraction prepared for analyst review.`, actor.name, "Received", { evidenceId: "DOC-VRN-01", actorId: actor.id, actorRole: actor.role })],
@@ -615,7 +615,7 @@ export function simulateInstruction(event: EventData, status: string, actor: any
   if (event.processingType === "Mandatory") throw new Error("Mandatory events do not require an outbound instruction; proceed directly to settlement monitoring.");
   const canIssue = event.status === "Approved";
   if (!canIssue) throw new Error(`Instruction is blocked while the event is ${event.status}. Approval and calculation controls must complete first.`);
-  if (status !== "SIMULATED — NOT SENT") throw new Error("The POC only supports the explicit status SIMULATED — NOT SENT.");
+  if (status !== "SIMULATED - NOT SENT") throw new Error("The POC only supports the explicit status SIMULATED - NOT SENT.");
   const electionLines = event.impacts.map((impact: any) => `${impact.account}: ${impact.electionDecision?.optionLabel ?? "Mandatory processing"}; quantity ${impact.electionDecision?.quantityElected ?? impact.expectedSecurityQuantity ?? 0}`).join("\n");
   event.instruction = {
     status,
@@ -624,11 +624,11 @@ export function simulateInstruction(event: EventData, status: string, actor: any
     generatedAt: now(),
     simulated: true,
     approvalActor: event.audit?.find((entry: any) => entry.action === "Checker approval recorded")?.actor ?? "",
-    content: `SIMULATED — NOT SENT\nEvent: ${event.reference}\nSecurity: ${event.security}\nInternal deadline: ${event.internalDeadline}\n${electionLines}\nNo external market instruction has been sent.`,
+    content: `SIMULATED - NOT SENT\nEvent: ${event.reference}\nSecurity: ${event.security}\nInternal deadline: ${event.internalDeadline}\n${electionLines}\nNo external market instruction has been sent.`,
   };
   event.status = "Awaiting settlement";
   event.settlementStage = event.status;
-  appendAudit(event, "Simulated instruction created", "Structured draft instruction generated and marked SIMULATED — NOT SENT.", actor, { previousValue: "Approved", newValue: "Awaiting settlement" });
+  appendAudit(event, "Simulated instruction created", "Structured draft instruction generated and marked SIMULATED - NOT SENT.", actor, { previousValue: "Approved", newValue: "Awaiting settlement" });
 }
 
 export function reconcileEvent(event: EventData, body: any, actor: any): void {

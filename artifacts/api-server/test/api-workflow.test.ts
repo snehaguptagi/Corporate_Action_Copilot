@@ -4,7 +4,6 @@ import test, { after, afterEach, before, beforeEach, describe } from "node:test"
 import { inArray } from "drizzle-orm";
 import { corporateActionEventsTable, db, pool } from "@workspace/db";
 import app from "../src/app";
-import { getAuthenticatedActor } from "../src/lib/actor-context";
 import { demoUsers } from "../src/lib/corporate-actions-v2";
 
 process.env.CORPORATE_ACTIONS_POC = "true";
@@ -104,7 +103,25 @@ before(async () => {
   await once(server, "listening");
   const address = server.address();
 
-    const previousDirectory = process.env.CORPORATE_ACTIONS_ROLE_DIRECTORY;
+  assert.ok(address && typeof address !== "string");
+  baseUrl = `http://127.0.0.1:${address.port}/api`;
+  analystSession = await signIn("USR-001");
+  reviewerSession = await signIn("USR-002");
+});
+
+beforeEach(resetFixture);
+
+afterEach(resetFixture);
+
+after(async () => {
+  await db.delete(corporateActionEventsTable).where(inArray(corporateActionEventsTable.id, [...createdEventIds]));
+  server.close();
+  await once(server, "close");
+  await pool.end();
+});
+
+describe("corporate-action API workflow", { concurrency: false }, () => {
+  test("derives workflow roles from signed sessions and blocks maker self-approval", async () => {
     const unauthenticated = await request(`/events/${eventId}/calculate`, {
       method: "POST",
       body: JSON.stringify({}),
@@ -195,42 +212,3 @@ before(async () => {
     assert.match(invalidSample.body.error, /invalid enum value/i);
   });
 });
-
-      const ambiguous = getAuthenticatedActor({
-        isAuthenticated: () => true,
-        user: {
-          id: "enterprise-maker",
-          email: "maker@example.com",
-          firstName: "Morgan",
-          lastName: "Maker",
-          profileImageUrl: null,
-        },
-      } as any);
-
-      const maker = getAuthenticatedActor({
-        isAuthenticated: () => true,
-        user: {
-          id: "enterprise-maker",
-          email: "maker@example.com",
-          firstName: "Morgan",
-          lastName: "Maker",
-          profileImageUrl: null,
-        },
-      } as any);
-
-    const response = await request("/dashboard", {
-      headers: { origin: "https://untrusted.example" },
-    });
-
-      const checker = getAuthenticatedActor({
-        isAuthenticated: () => true,
-        user: {
-          id: "enterprise-checker",
-          email: "checker@example.com",
-          firstName: "Unused",
-          lastName: "Name",
-          profileImageUrl: null,
-        },
-      } as any);
-
-    const previousPocSetting = process.env.CORPORATE_ACTIONS_POC;

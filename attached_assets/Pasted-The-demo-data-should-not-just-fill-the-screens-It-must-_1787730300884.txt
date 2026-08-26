@@ -1,0 +1,621 @@
+The demo data should not just “fill the screens.” It must represent the complete operational truth of each case.
+
+For every event, the data must let us answer:
+
+> What did the notice say, what is the correct interpretation, who is affected, what should they receive, what action is required, what actually settled and who approved each step?
+
+## 1. Two different kinds of demo cases
+
+We need both:
+
+### A. One hero case
+
+This case starts from the beginning during the demo.
+
+Use a rights issue because it demonstrates the largest workflow:
+
+> Upload notice → extract terms → validate → find holdings → calculate rights → enter election → approve → simulate instruction → reconcile → audit.
+
+### B. Preloaded operational cases
+
+These are already at different stages so the dashboard looks like a real operations workbench.
+
+Include:
+
+- One event needing notice review
+- One election approaching its deadline
+- One event awaiting approval
+- One instruction awaiting settlement
+- One reconciliation break
+- One completed event
+
+Without these preloaded cases, the dashboard will appear empty until we manually complete the hero workflow.
+
+## 2. Recommended demo-data pack
+
+```text
+demo-data/
+│
+├── notices/
+│   ├── rights-issue-notice.pdf
+│   ├── cash-dividend-notice.pdf
+│   └── stock-split-notice.pdf
+│
+├── masters/
+│   ├── securities.csv
+│   ├── funds.csv
+│   ├── accounts.csv
+│   └── users.csv
+│
+├── positions/
+│   └── holdings.csv
+│
+├── events/
+│   ├── event-cases.json
+│   ├── validated-event-terms.json
+│   └── source-evidence.json
+│
+├── workflow/
+│   ├── task-rules.json
+│   ├── tasks.json
+│   ├── elections.json
+│   └── approvals.json
+│
+├── settlement/
+│   ├── expected-settlement.csv
+│   └── actual-settlement.csv
+│
+├── knowledge/
+│   ├── corporate-actions-sop.pdf
+│   └── control-rules.json
+│
+└── expected-results/
+    ├── expected-extraction.json
+    ├── expected-impacts.csv
+    ├── expected-workflows.json
+    └── expected-reconciliation.csv
+```
+
+The `expected-results` folder is especially important. It is the answer key used to determine whether the Copilot is correct.
+
+## 3. Corporate-action notices
+
+Create three realistic synthetic PDFs.
+
+They should resemble genuine custodian or agent notices, but they must not contain real customer information.
+
+Each notice should contain:
+
+- Notice reference
+- Issuer
+- Security name
+- ISIN
+- Event type
+- Mandatory or voluntary classification
+- Announcement date
+- Ex-date
+- Record date
+- Payment or settlement date
+- Market deadline
+- Currency
+- Rate, ratio or price
+- Available options
+- Default option
+- Restrictions
+- Contact or agent information
+- Disclaimer
+
+Do not place all the information in one neat table. Some terms should appear in paragraphs and on different pages. This tests whether the Copilot can actually find evidence.
+
+### Deliberate review cases
+
+Each notice should contain one realistic difficulty:
+
+- Rights issue: deadline appears in a paragraph on page two.
+- Dividend: payment date is clear, but the currency is mentioned elsewhere.
+- Stock split: the notice says “four new shares for each existing share,” requiring careful ratio interpretation.
+
+Do not deliberately create an impossible notice. The correct answer should still be discoverable.
+
+## 4. Source evidence
+
+For every extracted field, create a correct evidence record.
+
+Example:
+
+```json
+{
+  "event_id": "EVT-RIGHTS-001",
+  "field": "subscription_price",
+  "correct_value": 8.5,
+  "currency": "EUR",
+  "source_document": "rights-issue-notice.pdf",
+  "source_page": 2,
+  "source_quote": "Eligible holders may subscribe at a price of EUR 8.50 per new share.",
+  "confidence_expected": "high"
+}
+```
+
+Do this for:
+
+- Event type
+- Classification
+- ISIN
+- Record date
+- Ex-date
+- Market deadline
+- Payment date
+- Rate or ratio
+- Subscription or offer price
+- Options
+- Default option
+
+This allows us to test whether the Copilot extracted the right value and cited the right evidence.
+
+## 5. Security master
+
+The security master describes the securities independently of the notice.
+
+Required fields:
+
+```csv
+security_id,isin,ticker,security_name,issuer,currency,market,status
+SEC-001,FR001400VRN5,VRN,Verdant Renewables SA,Verdant Renewables SA,EUR,France,Active
+SEC-002,GB00AUR00018,AUR,Aurora Global plc,Aurora Global plc,GBP,United Kingdom,Active
+SEC-003,US24703D1072,DGT,Delta Grid Technologies,Delta Grid Technologies,USD,United States,Active
+```
+
+This is what the system uses to confirm that the notice security exists internally.
+
+Include one alias, such as a slightly different issuer name, to test matching:
+
+- Notice: “Verdant Renewables S.A.”
+- Security master: “Verdant Renewables SA”
+
+## 6. Fund and account master
+
+Funds and accounts must be separate because one fund may contain multiple custody accounts.
+
+### Fund data
+
+Required fields:
+
+- Fund ID
+- Fund name
+- Base currency
+- Fund type
+- Operations desk
+- Status
+
+### Account data
+
+Required fields:
+
+- Account ID
+- Fund ID
+- Custodian
+- Account currency
+- Market
+- Account status
+- Assigned operations analyst
+
+Example:
+
+```csv
+account_id,fund_id,fund_name,custodian,currency,market,analyst
+CUST-6632,FUND-101,European Opportunities Fund,Demo Custodian A,EUR,France,Aisha Mehta
+CUST-7741,FUND-102,Sustainable Growth Fund,Demo Custodian A,EUR,France,Aisha Mehta
+CUST-8101,FUND-201,Northbridge Equity Fund,Demo Custodian B,GBP,United Kingdom,Daniel Reed
+```
+
+## 7. Holdings or positions
+
+The holdings file is how the Copilot determines which funds and accounts are affected.
+
+Required fields:
+
+- Position ID
+- Fund ID
+- Account ID
+- Security ID
+- ISIN
+- Position date
+- Settled quantity
+- Unsettled quantity
+- Eligible quantity
+- Position currency
+- Data-quality status
+
+Example:
+
+```csv
+position_id,fund_id,account_id,isin,position_date,settled_quantity,unsettled_quantity,eligible_quantity
+POS-001,FUND-101,CUST-6632,FR001400VRN5,2026-08-24,100000,0,100000
+POS-002,FUND-102,CUST-7741,FR001400VRN5,2026-08-24,50000,0,50000
+POS-003,FUND-201,CUST-8101,GB00AUR00018,2026-08-25,300000,0,300000
+```
+
+Include a few positions that should not match:
+
+- Same issuer but different ISIN
+- Position after the eligibility date
+- Closed account
+- Zero position
+
+This proves that the system is filtering correctly instead of returning every holding.
+
+## 8. Validated event terms
+
+The event record should contain the final operational interpretation of the notice.
+
+### Common terms
+
+- Event ID
+- Notice reference
+- Event type
+- Classification
+- Security ID and ISIN
+- Announcement date
+- Ex-date
+- Record date
+- Payment date
+- Market deadline
+- Internal deadline
+- Status
+- Risk level
+- Validated by
+- Validation timestamp
+
+### Cash-dividend terms
+
+- Dividend rate
+- Currency
+- Gross or net indicator
+- Tax-treatment assumption
+- Cash rounding precision
+
+### Stock-split terms
+
+- Ratio numerator
+- Ratio denominator
+- Effective date
+- Whether the result represents total or additional shares
+- Fractional-share treatment
+
+### Rights-issue terms
+
+- Entitlement numerator
+- Entitlement denominator
+- Subscription price
+- Currency
+- Available options
+- Default option
+- Exercise deadline
+- Rights-trading deadline
+- Fractional-rights treatment
+
+Ratios must be stored structurally.
+
+Do not store only `"1 for 5"` as text. Store:
+
+```json
+{
+  "entitlement_numerator": 1,
+  "entitlement_denominator": 5,
+  "display_text": "1 new share for every 5 existing shares"
+}
+```
+
+## 9. Expected calculation results
+
+For every affected account, create a manually verified expected answer.
+
+### Rights issue
+
+```csv
+event_id,account_id,eligible_quantity,ratio_numerator,ratio_denominator,entitlement,subscription_price,full_subscription_cost
+EVT-RIGHTS-001,CUST-6632,100000,1,5,20000,8.50,170000
+EVT-RIGHTS-001,CUST-7741,50000,1,5,10000,8.50,85000
+```
+
+### Cash dividend
+
+```csv
+event_id,account_id,eligible_quantity,rate,currency,expected_cash
+EVT-DIV-001,CUST-8101,300000,0.425,GBP,127500
+EVT-DIV-001,CUST-9227,150000,0.425,GBP,63750
+```
+
+### Stock split
+
+Include both the final position and additional shares:
+
+```csv
+event_id,account_id,eligible_quantity,split_factor,post_event_quantity,additional_shares
+EVT-SPLIT-001,CUST-4410,80000,4,320000,240000
+EVT-SPLIT-001,CUST-1138,25000,4,100000,75000
+```
+
+The expected-results file should also state:
+
+- Formula used
+- Decimal precision
+- Rounding method
+- Fractional treatment
+- Assumptions
+- Manually verified total
+
+These figures must drive automated tests.
+
+## 10. Election data
+
+Election data is only required for the rights issue.
+
+Required fields:
+
+- Election ID
+- Event ID
+- Account ID
+- Eligible entitlement
+- Option selected
+- Quantity elected
+- Required funding
+- Election status
+- Decision source
+- Analyst
+- Checker
+- Decision timestamp
+- Approval timestamp
+- Comment
+
+Use different outcomes:
+
+- Account one: fully exercise
+- Account two: partially exercise
+- One optional test case: no decision entered, so the default option applies
+
+Include an invalid test election where the entered quantity exceeds eligibility. The UI should block it.
+
+## 11. SOP and control rules
+
+We need both a readable SOP document and structured control rules.
+
+### SOP document
+
+The PDF should explain the internal process in normal operational language.
+
+Include:
+
+- Notice-review steps
+- Required fields by event type
+- Deadline management
+- Eligibility checks
+- Calculation review
+- Election controls
+- Maker-checker requirements
+- Instruction preparation
+- Settlement monitoring
+- Exception escalation
+- Event closure
+
+### Structured rules
+
+Example:
+
+```json
+{
+  "rule_id": "CA-CONTROL-004",
+  "name": "Voluntary election approval",
+  "event_types": ["rights_issue", "tender_offer"],
+  "condition": "election_submitted",
+  "requirement": "maker_checker_approval",
+  "blocking": true,
+  "source_section": "SOP 5.2"
+}
+```
+
+Other rules should include:
+
+- Internal deadline is 24 hours before the market deadline.
+- Missing required terms block calculation.
+- Election quantity cannot exceed entitlement.
+- Simulated instruction requires approval.
+- Settlement differences create an exception.
+- Manual corrections require a reason.
+
+## 12. Task templates and tasks
+
+Create task templates by event type.
+
+### Rights-issue tasks
+
+- Validate notice
+- Confirm holdings
+- Calculate entitlement
+- Confirm funding
+- Obtain election decision
+- Complete checker approval
+- Prepare instruction
+- Monitor acknowledgement
+- Reconcile securities
+- Close event
+
+Each generated task needs:
+
+- Task ID
+- Event ID
+- Task type
+- Owner
+- Due date
+- Priority
+- Status
+- Dependency
+- Source rule
+- Escalation path
+
+Dependencies matter. For example:
+
+> “Prepare instruction” cannot begin until “Checker approval” is complete.
+
+## 13. Users and roles
+
+Use at least three synthetic users:
+
+```csv
+user_id,name,role,desk
+USR-001,Aisha Mehta,Operations Analyst,London Operations
+USR-002,Daniel Reed,Reviewer,London Operations
+USR-003,Maya Shah,Operations Manager,Global Oversight
+```
+
+The role determines permitted actions:
+
+- Analyst can validate and prepare.
+- Reviewer can approve or reject.
+- Manager can monitor and escalate.
+
+The same person should not act as maker and checker for the same election.
+
+## 14. Expected and actual settlement
+
+These must be separate datasets.
+
+### Expected settlement
+
+Generated from the validated calculation and approved election.
+
+Fields:
+
+- Event ID
+- Account
+- Expected cash
+- Expected security quantity
+- Currency
+- Expected settlement date
+
+### Actual settlement
+
+Represents what was received from a synthetic custodian feed.
+
+Fields:
+
+- Custodian transaction ID
+- Event ID or reference
+- Account
+- Actual cash
+- Actual securities
+- Currency
+- Actual settlement date
+- Processing status
+
+Include:
+
+1. One exact match.
+2. One underpayment.
+3. One late settlement.
+4. One wrong-account or unmatched transaction.
+
+The main demo break could be:
+
+- Expected: GBP 191,250
+- Actual: GBP 189,250
+- Difference: GBP 2,000
+- Classification: Under-settled
+- Required action: Investigate custodian payment
+
+## 15. Audit history
+
+Preloaded cases need realistic audit histories.
+
+Each audit entry requires:
+
+- Audit ID
+- Event ID
+- Timestamp
+- Actor
+- Actor type: user or system
+- Action
+- Previous value
+- New value
+- Reason
+- Evidence reference
+
+Example:
+
+```json
+{
+  "audit_id": "AUD-1007",
+  "event_id": "EVT-RIGHTS-001",
+  "timestamp": "2026-08-26T09:15:00Z",
+  "actor": "Aisha Mehta",
+  "actor_type": "user",
+  "action": "corrected_event_term",
+  "field": "market_deadline",
+  "old_value": "2026-08-30T10:00:00+02:00",
+  "new_value": "2026-08-29T10:00:00+02:00",
+  "reason": "Corrected against notice page 2",
+  "evidence_id": "EVD-021"
+}
+```
+
+## 16. Negative and edge cases
+
+The demo data must include a small number of mistakes so we can prove that controls work.
+
+Include:
+
+- Missing market deadline
+- Conflicting rate or ratio
+- No matching holding
+- Position recorded after the eligibility date
+- Election exceeding entitlement
+- Fractional entitlement
+- Duplicate notice reference
+- Settlement amount below expectation
+- Analyst attempting to approve their own election
+
+Do not overload the POC with every possible failure. Five or six carefully selected cases are enough.
+
+## 17. Golden answer key
+
+The most important file is the golden answer key.
+
+For every case, it must define:
+
+- Correct event classification
+- Correct extracted values
+- Correct evidence page and sentence
+- Correct affected accounts
+- Correct eligible quantities
+- Correct calculation results
+- Whether an election is required
+- Correct task list
+- Correct approval requirement
+- Correct settlement classification
+- Correct final workflow status
+
+This is how we measure the POC. Without it, we can say the output “looks good,” but we cannot prove that it is correct.
+
+## Recommended minimum size
+
+A convincing POC needs roughly:
+
+- 3 synthetic notices
+- 6 event cases at different stages
+- 3 securities
+- 4–5 funds
+- 6–8 accounts
+- 15–20 positions
+- 3 users
+- 20–30 operational tasks
+- 2 elections
+- 5–6 settlement transactions
+- 30–40 audit entries
+- 1 SOP document
+- 1 complete golden answer pack
+
+The main principle is:
+
+> Every displayed number, status, task and warning must be traceable back to either the notice, holdings, an SOP rule, a user decision or settlement data.
+
+That is what will make the POC feel like a real operations system instead of a collection of attractive mock screens.

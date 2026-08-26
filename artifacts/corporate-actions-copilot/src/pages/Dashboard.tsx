@@ -27,6 +27,11 @@ export default function Dashboard() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
   };
 
+  const formatExposure = (event: NonNullable<typeof events>[number]) => {
+    if (event.shareAmount === undefined) return formatCurrency(event.amount, event.currency);
+    return `${formatCurrency(event.cashAmount ?? event.amount, event.cashCurrency ?? event.currency)} + ${formatCurrency(event.shareAmount, "Shares")}`;
+  };
+
   const getRiskBadge = (risk: string) => {
     switch (risk.toUpperCase()) {
       case 'HIGH': return <Badge variant="destructive" className="uppercase text-[10px]">High</Badge>;
@@ -148,7 +153,7 @@ export default function Dashboard() {
                         {event.internalDeadline}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm text-slate-700">
-                        {formatCurrency(event.amount, event.currency)}
+                        {formatExposure(event)}
                       </TableCell>
                       <TableCell>{getStatusBadge(event.status)}</TableCell>
                       <TableCell>

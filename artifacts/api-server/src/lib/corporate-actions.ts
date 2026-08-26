@@ -96,6 +96,36 @@ const seedEvents: EventData[] = [
     audit: [{ id: "audit-dgt-1", eventId: "evt-delta-split", action: "Settlement matched", actor: "Reconciliation", timestamp: "2026-08-26T07:12:00.000Z", detail: "Expected and booked share quantities agree." }],
   },
   {
+    id: "evt-lumen-bonus",
+    reference: "CA-2026-0820-LH",
+    issuer: "Lumen Health Systems plc",
+    security: "ISIN GB00LUM00027 · LHS",
+    eventType: "Stock dividend / bonus issue",
+    processingType: "Mandatory",
+    status: "Ready for settlement",
+    risk: "Medium",
+    marketDeadline: "29 Aug 2026 · EOD",
+    internalDeadline: "28 Aug 2026 · 12:00 BST",
+    affectedAccounts: 2,
+    amount: 5617,
+    currency: "Shares",
+    notice: { documentName: "LHS_Bonus_Issue_Notice.pdf", source: "Issuer agent", receivedAt: "2026-08-26T03:18:00.000Z", version: "v1", role: "New", excerpt: "One bonus share will be issued for every twenty ordinary shares held on the record date. Fractional entitlements will be rounded down and paid as cash in lieu where applicable." },
+    terms: [
+      { key: "bonusRatio", label: "Bonus ratio", value: "1 : 20", page: "p. 1", evidence: "“one bonus share for every twenty ordinary shares”", confidence: 0.98, reviewStatus: "Validated" },
+      { key: "recordDate", label: "Record date", value: "28 Aug 2026", page: "p. 1", evidence: "“holders on the register at close of business on 28 August 2026”", confidence: 0.97, reviewStatus: "Validated" },
+      { key: "fractionRule", label: "Fraction rule", value: "Round down; cash in lieu", page: "p. 2", evidence: "“fractional entitlements will be rounded down and paid as cash in lieu”", confidence: 0.95, reviewStatus: "Validated" },
+    ],
+    impacts: [
+      { id: "imp-lhs-1", fund: "Northbridge Growth Fund", account: "CUST-7019", eligibleQuantity: 100000, formula: "100,000 ÷ 20", expected: 5000, currency: "Shares", status: "Calculated", election: null, approval: "Validated" },
+      { id: "imp-lhs-2", fund: "Northbridge Balanced Fund", account: "CUST-9227", eligibleQuantity: 12345, formula: "(12,345 ÷ 20), rounded down", expected: 617, currency: "Shares", status: "Calculated", election: null, approval: "Validated" },
+    ],
+    options: [],
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory bonus issue. No election or market instruction is required." },
+    reconciliation: { expected: 5617, actual: 0, difference: -5617, tolerance: 1, status: "Awaiting settlement", note: "Additional shares will post automatically after the record date." },
+    tasks: [{ id: "task-lhs-1", eventId: "evt-lumen-bonus", title: "Confirm fractional cash-in-lieu handling", detail: "Validate that the 0.25-share fractional entitlement is routed to cash-in-lieu processing.", priority: "Medium", owner: "Fund Accounting", due: "29 Aug · 12:00 BST", status: "Open", category: "Fractional entitlement" }],
+    audit: [{ id: "audit-lhs-1", eventId: "evt-lumen-bonus", action: "Bonus issue validated", actor: "System", timestamp: "2026-08-26T03:22:00.000Z", detail: "Mandatory 1-for-20 bonus issue validated with round-down and cash-in-lieu rules." }],
+  },
+  {
     id: "evt-verdant-rights",
     reference: "CA-2026-0821-VR",
     issuer: "Verdant Renewables SA",
@@ -162,15 +192,107 @@ const seedEvents: EventData[] = [
     tasks: [{ id: "task-mrl-1", eventId: "evt-meridian-tender", title: "Simulate instruction confirmation", detail: "Checker approval complete. Move the DRAFT instruction to a simulated pending or accepted status.", priority: "Medium", owner: "M. Shah", due: "30 Aug · 09:00 AEST", status: "Open", category: "Instruction" }],
     audit: [{ id: "audit-mrl-1", eventId: "evt-meridian-tender", action: "Checker approval recorded", actor: "Team Lead", timestamp: "2026-08-26T06:35:00.000Z", detail: "Tender election approved for the Sovereign Select Mandate." }],
   },
+  {
+    id: "evt-northstar-merger",
+    seedRevision: 2,
+    reference: "CA-2026-0824-NS",
+    issuer: "Northstar Data Group Inc.",
+    security: "ISIN US66702N1046 · NSD",
+    eventType: "Mixed cash/share merger",
+    processingType: "Mandatory with options",
+    status: "Election required",
+    risk: "High",
+    marketDeadline: "2 Sep 2026 · 17:00 ET",
+    internalDeadline: "1 Sep 2026 · 12:00 ET",
+    affectedAccounts: 2,
+    amount: 228600,
+    currency: "USD",
+    cashAmount: 228600,
+    cashCurrency: "USD",
+    shareAmount: 4445,
+    shareLabel: "Nexus Holdings shares",
+    notice: { documentName: "NSD_Merger_Consideration_Notice.pdf", source: "Custodian portal", receivedAt: "2026-08-26T06:02:00.000Z", version: "v1", role: "New", excerpt: "At completion, each NSD share will be exchanged for USD 18.00 in cash plus 0.35 shares of the acquiring company. Holders may elect all-cash consideration subject to proration." },
+    terms: [
+      { key: "exchangeRatio", label: "Share exchange ratio", value: "0.35 acquiring shares", page: "p. 3", evidence: "“0.35 shares of the acquiring company for each NSD share”", confidence: 0.98, reviewStatus: "Validated" },
+      { key: "cashConsideration", label: "Cash consideration", value: "USD 18.00 per share", page: "p. 3", evidence: "“cash consideration of USD 18.00 per NSD share”", confidence: 0.99, reviewStatus: "Validated" },
+      { key: "electionDeadline", label: "Election deadline", value: "1 Sep 2026 · 12:00 ET", page: "p. 8", evidence: "“all-cash elections must be received by 12:00 ET on 1 September 2026”", confidence: 0.96, reviewStatus: "Validated" },
+    ],
+    impacts: [
+      { id: "imp-nsd-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 8500, formula: "8,500 × USD 18.00; 8,500 × 0.35 acquiring shares", expected: 153000, currency: "USD", expectedCash: 153000, cashCurrency: "USD", expectedShares: 2975, shareLabel: "Nexus Holdings shares", status: "Awaiting election", election: null, approval: "Pending" },
+      { id: "imp-nsd-2", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 4200, formula: "4,200 × USD 18.00; 4,200 × 0.35 acquiring shares", expected: 75600, currency: "USD", expectedCash: 75600, cashCurrency: "USD", expectedShares: 1470, shareLabel: "Nexus Holdings shares", status: "Awaiting election", election: null, approval: "Pending" },
+    ],
+    options: [
+      { id: "mixed", label: "Cash and shares", description: "Accept the default mixed consideration of USD 18.00 plus 0.35 acquiring shares per NSD share.", result: "Expected cash: USD 228,600 plus 4,445 Nexus Holdings shares", default: true },
+      { id: "cash", label: "All cash", description: "Elect cash consideration, subject to the merger agreement's proration.", result: "Cash election recorded for checker review", default: false },
+    ],
+    instruction: { status: "Draft — not submitted", destination: "Custodian portal", reference: "DRAFT-NSD-0824", generatedAt: "2026-08-26T06:20:00.000Z", content: "DRAFT ONLY — merger consideration instruction will be populated after all account elections and approval." },
+    reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 1, status: "Not due", note: "Completion and consideration delivery are pending." },
+    tasks: [
+      { id: "task-nsd-1", eventId: "evt-northstar-merger", title: "Obtain merger consideration election", detail: "Northbridge Income Fund must confirm mixed or all-cash consideration before the internal deadline.", priority: "High", owner: "Fund Manager", due: "1 Sep · 12:00 ET", status: "Open", category: "Election" },
+      { id: "task-nsd-2", eventId: "evt-northstar-merger", title: "Obtain merger consideration election", detail: "Sovereign Select Mandate must confirm mixed or all-cash consideration before the internal deadline.", priority: "High", owner: "Fund Manager", due: "1 Sep · 12:00 ET", status: "Open", category: "Election" },
+    ],
+    audit: [{ id: "audit-nsd-1", eventId: "evt-northstar-merger", action: "Mixed consideration terms validated", actor: "System", timestamp: "2026-08-26T06:25:00.000Z", detail: "Mandatory merger with an all-cash election option and share fractional handling pending." }],
+  },
+  {
+    id: "evt-harbor-break",
+    reference: "CA-2026-0812-HB",
+    issuer: "Harbor Utilities Group",
+    security: "ISIN US41141U1016 · HUG",
+    eventType: "Cash dividend",
+    processingType: "Mandatory",
+    status: "Settlement break",
+    risk: "High",
+    marketDeadline: "26 Aug 2026 · 16:00 ET",
+    internalDeadline: "26 Aug 2026 · 10:00 ET",
+    affectedAccounts: 2,
+    amount: 152000,
+    currency: "USD",
+    notice: { documentName: "HUG_Q3_Cash_Dividend_Notice.pdf", source: "Custodian portal", receivedAt: "2026-08-22T13:40:00.000Z", version: "v1", role: "New", excerpt: "A cash dividend of USD 0.80 per ordinary share was payable on 26 August 2026. Custodian postings show a partial settlement." },
+    terms: [
+      { key: "rate", label: "Cash rate", value: "USD 0.8000", page: "p. 1", evidence: "“cash dividend of USD 0.80 per ordinary share”", confidence: 0.99, reviewStatus: "Validated" },
+      { key: "paymentDate", label: "Payment date", value: "26 Aug 2026", page: "p. 1", evidence: "“payable on 26 August 2026”", confidence: 0.98, reviewStatus: "Validated" },
+    ],
+    impacts: [
+      { id: "imp-hug-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 125000, formula: "125,000 × USD 0.8000", expected: 100000, currency: "USD", status: "Calculated", election: null, approval: "Not required" },
+      { id: "imp-hug-2", fund: "Northbridge Balanced Fund", account: "CUST-9227", eligibleQuantity: 65000, formula: "65,000 × USD 0.8000", expected: 52000, currency: "USD", status: "Calculated", election: null, approval: "Not required" },
+    ],
+    options: [],
+    instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "—", content: "Mandatory cash event. No instruction is submitted." },
+    reconciliation: { expected: 152000, actual: 151500, difference: -500, tolerance: 5, status: "Break", note: "Partial settlement received; USD 500 remains outstanding and requires custodian investigation." },
+    tasks: [{ id: "task-hug-1", eventId: "evt-harbor-break", title: "Investigate partial dividend settlement", detail: "Trace the USD 500 shortfall against the custodian cash statement and record the resolution.", priority: "High", owner: "Reconciliation", due: "Today · 15:00 ET", status: "Open", category: "Settlement break" }],
+    audit: [
+      { id: "audit-hug-1", eventId: "evt-harbor-break", action: "Settlement break recorded", actor: "Reconciliation", timestamp: "2026-08-26T08:10:00.000Z", detail: "Expected USD 152,000; custodian posted USD 151,500." },
+      { id: "audit-hug-2", eventId: "evt-harbor-break", action: "Break investigation opened", actor: "System", timestamp: "2026-08-26T08:12:00.000Z", detail: "A reconciliation task was created for the USD 500 outstanding amount." },
+    ],
+  },
 ];
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export async function ensureCorporateActionSeedData(): Promise<void> {
-  const existing = await db.select({ id: corporateActionEventsTable.id }).from(corporateActionEventsTable).limit(1);
-  if (existing.length > 0) return;
-  await db.insert(corporateActionEventsTable).values(
-    seedEvents.map((event) => ({ id: event.id, data: event })),
+  const existing = await db
+    .select({ id: corporateActionEventsTable.id, data: corporateActionEventsTable.data })
+    .from(corporateActionEventsTable);
+  const existingById = new Map(existing.map((row) => [row.id, row.data]));
+  const existingIds = new Set(existingById.keys());
+  const missingEvents = seedEvents.filter((event) => !existingIds.has(event.id));
+  if (missingEvents.length > 0) {
+    await db.insert(corporateActionEventsTable).values(
+      missingEvents.map((event) => ({ id: event.id, data: event })),
+    );
+  }
+
+  const revisedEvents = seedEvents.filter((event) => {
+    const storedEvent = existingById.get(event.id);
+    return event.seedRevision && storedEvent?.seedRevision !== event.seedRevision;
+  });
+  await Promise.all(
+    revisedEvents.map((event) =>
+      db
+        .update(corporateActionEventsTable)
+        .set({ data: event })
+        .where(eq(corporateActionEventsTable.id, event.id)),
+    ),
   );
 }
 

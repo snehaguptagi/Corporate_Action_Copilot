@@ -23,4 +23,8 @@ export interface EventSummary {
   isHero?: boolean;
   noticeReference?: string;
   settlementStage?: string;
+  cashAmount?: number;
+  cashCurrency?: string;
+  shareAmount?: number;
+  shareLabel?: string;
 }

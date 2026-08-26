@@ -16,6 +16,10 @@ export interface Impact {
   expected: number;
   currency: string;
   status: string;
+  expectedCash?: number;
+  cashCurrency?: string;
+  expectedShares?: number;
+  shareLabel?: string;
   /** @nullable */
   election?: string | null;
   approval?: string;

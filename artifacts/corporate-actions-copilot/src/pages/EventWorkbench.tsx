@@ -169,7 +169,9 @@ export default function EventWorkbench() {
         <Tabs defaultValue="overview" className="flex h-full flex-col">
           <div className="overflow-x-auto border-b bg-white px-4 pt-2">
             <TabsList className="h-auto min-w-max bg-transparent">
-              {["overview", "evidence", "positions", "calculation", "elections", "tasks", "instruction", "reconciliation", "audit"].map((tab) => <TabsTrigger key={tab} value={tab} className="capitalize">{tab === "instruction" ? "Instruction" : tab}</TabsTrigger>)}
+              {["overview", "evidence", "positions", "calculation", "elections", "tasks", "instruction", "reconciliation", "audit"]
+                .filter((tab) => tab !== "elections" || data.processingType !== "Mandatory")
+                .map((tab) => <TabsTrigger key={tab} value={tab} className="capitalize">{tab === "instruction" ? "Instruction" : tab}</TabsTrigger>)}
             </TabsList>
           </div>
           <div className="flex-1 overflow-y-auto p-6">

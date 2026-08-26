@@ -1,2 +1,3 @@
 - [Orval integer schema compatibility](orval-integer-zod.md) — Use OpenAPI number for counters until the generator/runtime versions are aligned.
 - [Event response schema completeness](event-response-schema.md) — Persisted event fields must be declared in OpenAPI before Zod response parsing, or generated validators strip them.
+- [POC seed evolution](poc-seed-evolution.md) — Demo seed data must backfill missing records when the database may already contain an earlier seed set.

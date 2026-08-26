@@ -50,6 +50,10 @@ export interface EventSummary {
   isHero?: boolean;
   noticeReference?: string;
   settlementStage?: string;
+  cashAmount?: number;
+  cashCurrency?: string;
+  shareAmount?: number;
+  shareLabel?: string;
 }
 
 export interface NoticePage {
@@ -108,6 +112,10 @@ export interface Impact {
   expected: number;
   currency: string;
   status: string;
+  expectedCash?: number;
+  cashCurrency?: string;
+  expectedShares?: number;
+  shareLabel?: string;
   /** @nullable */
   election?: string | null;
   approval?: string;
@@ -286,4 +294,3 @@ eventType?: string;
 export type ListAuditParams = {
 eventId?: string;
 };
-

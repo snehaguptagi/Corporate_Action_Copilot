@@ -3,3 +3,4 @@
 - [POC seed evolution](poc-seed-evolution.md) — Demo seed data must backfill missing records when the database may already contain an earlier seed set.
 - [Synthetic notice intake](synthetic-notice-intake.md) — Select named scenarios explicitly; do not imply generic document parsing from a filename.
 - [OpenAPI format compatibility](orval-auth-format-compatibility.md) — Avoid auth email/URI formats when this Orval/Zod generator emits unsupported runtime helpers.
+- [Server-side PDF intake](server-pdf-intake.md) — Use system PDF utilities for intake extraction; parser imports can crash the Replit Node runtime.

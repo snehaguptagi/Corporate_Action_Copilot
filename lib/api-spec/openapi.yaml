@@ -248,6 +248,116 @@ paths:
                 $ref: "#/components/schemas/EventDetail"
         "400":
           description: Invalid or duplicate notice
+  /intake/drafts:
+    post:
+      operationId: createIntakeDraft
+      tags: [copilot]
+      summary: Capture a corporate-action source before extraction
+      security:
+        - CorporateActionSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntakeDraftInput"
+      responses:
+        "201":
+          description: Captured intake source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntakeDraft"
+  /intake/drafts/{draftId}:
+    get:
+      operationId: getIntakeDraft
+      tags: [copilot]
+      summary: Get a captured corporate-action source
+      security:
+        - CorporateActionSession: []
+      parameters:
+        - $ref: "#/components/parameters/DraftId"
+      responses:
+        "200":
+          description: Intake source and extraction state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntakeDraft"
+  /intake/drafts/{draftId}/extract:
+    post:
+      operationId: extractIntakeDraft
+      tags: [copilot]
+      summary: Extract proposed corporate-action terms from a captured source
+      security:
+        - CorporateActionSession: []
+      parameters:
+        - $ref: "#/components/parameters/DraftId"
+      responses:
+        "200":
+          description: Extracted source details ready for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntakeDraft"
+  /intake/drafts/{draftId}/validate:
+    post:
+      operationId: validateIntakeDraft
+      tags: [copilot]
+      summary: Validate extracted corporate-action details before case creation
+      security:
+        - CorporateActionSession: []
+      parameters:
+        - $ref: "#/components/parameters/DraftId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntakeValidationInput"
+      responses:
+        "200":
+          description: Updated draft after analyst validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntakeDraft"
+  /intake/drafts/{draftId}/create-case:
+    post:
+      operationId: createCaseFromIntakeDraft
+      tags: [copilot]
+      summary: Create a controlled case from analyst-validated intake data
+      security:
+        - CorporateActionSession: []
+      parameters:
+        - $ref: "#/components/parameters/DraftId"
+      responses:
+        "201":
+          description: Created corporate-action event case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a protected document upload URL
+      security:
+        - CorporateActionSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlInput"
+      responses:
+        "200":
+          description: Presigned upload destination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResult"
   /events/{eventId}:
     get:
       operationId: getEvent
@@ -478,6 +588,12 @@ components:
       required: true
       schema:
         type: string
+    DraftId:
+      in: path
+      name: draftId
+      required: true
+      schema:
+        type: string
   schemas:
     AuthUser:
       type: object
@@ -641,6 +757,11 @@ components:
             $ref: "#/components/schemas/NoticePage"
         uploadState: { type: string }
         sourceDocumentId: { type: string }
+        sourcePath: { type: string }
+        sourceUrl: { type: string }
+        previewUrl: { type: string }
+        extractionMethod: { type: string }
+        extractionConfidence: { type: number }
     NoticePage:
       type: object
       required: [page, text]
@@ -885,3 +1006,90 @@ components:
         fileName: { type: string }
         source: { type: string }
         noticeText: { type: string }
+    RequestUploadUrlInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string }
+        size: { type: number }
+        contentType: { type: string }
+    RequestUploadUrlResult:
+      type: object
+      required: [uploadURL, objectPath, metadata]
+      properties:
+        uploadURL: { type: string }
+        objectPath: { type: string }
+        metadata:
+          $ref: "#/components/schemas/UploadMetadata"
+    UploadMetadata:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string }
+        size: { type: number }
+        contentType: { type: string }
+    IntakeDraftInput:
+      type: object
+      required: [sourceType, sourceLabel]
+      properties:
+        sourceType:
+          type: string
+          enum: [sample, upload, url, text, structured-feed]
+        sourceLabel: { type: string }
+        sampleId:
+          type: string
+          enum: [cash-dividend, rights-issue, stock-split, bonus-issue, tender-offer, merger]
+        objectPath: { type: string }
+        sourceUrl: { type: string }
+        sourceText: { type: string }
+        structuredPayload: { type: string }
+    IntakeValidationInput:
+      type: object
+      required: [terms]
+      properties:
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermUpdate"
+    IntakeDraft:
+      type: object
+      required: [id, source, extraction, terms, status]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        source:
+          $ref: "#/components/schemas/IntakeSource"
+        extraction:
+          $ref: "#/components/schemas/ExtractionResult"
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/Term"
+        title: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+    IntakeSource:
+      type: object
+      required: [type, label, receivedAt, preservation]
+      properties:
+        type: { type: string }
+        label: { type: string }
+        receivedAt: { type: string }
+        preservation: { type: string }
+        objectPath: { type: string }
+        sourceUrl: { type: string }
+        contentType: { type: string }
+        size: { type: number }
+        previewUrl: { type: string }
+        capturedText: { type: string }
+    ExtractionResult:
+      type: object
+      required: [status, method, confidence, errors]
+      properties:
+        status: { type: string }
+        method: { type: string }
+        confidence: { type: number }
+        errors:
+          type: array
+          items: { type: string }
+        extractedAt: { type: string }

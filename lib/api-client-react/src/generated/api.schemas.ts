@@ -115,6 +115,11 @@ export interface Notice {
   pages?: NoticePage[];
   uploadState?: string;
   sourceDocumentId?: string;
+  sourcePath?: string;
+  sourceUrl?: string;
+  previewUrl?: string;
+  extractionMethod?: string;
+  extractionConfidence?: number;
 }
 
 export interface Term {
@@ -333,6 +338,93 @@ export interface IntakeInput {
   fileName: string;
   source: string;
   noticeText?: string;
+}
+
+export interface RequestUploadUrlInput {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface UploadMetadata {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface RequestUploadUrlResult {
+  uploadURL: string;
+  objectPath: string;
+  metadata: UploadMetadata;
+}
+
+export type IntakeDraftInputSourceType = typeof IntakeDraftInputSourceType[keyof typeof IntakeDraftInputSourceType];
+
+
+export const IntakeDraftInputSourceType = {
+  sample: 'sample',
+  upload: 'upload',
+  url: 'url',
+  text: 'text',
+  'structured-feed': 'structured-feed',
+} as const;
+
+export type IntakeDraftInputSampleId = typeof IntakeDraftInputSampleId[keyof typeof IntakeDraftInputSampleId];
+
+
+export const IntakeDraftInputSampleId = {
+  'cash-dividend': 'cash-dividend',
+  'rights-issue': 'rights-issue',
+  'stock-split': 'stock-split',
+  'bonus-issue': 'bonus-issue',
+  'tender-offer': 'tender-offer',
+  merger: 'merger',
+} as const;
+
+export interface IntakeDraftInput {
+  sourceType: IntakeDraftInputSourceType;
+  sourceLabel: string;
+  sampleId?: IntakeDraftInputSampleId;
+  objectPath?: string;
+  sourceUrl?: string;
+  sourceText?: string;
+  structuredPayload?: string;
+}
+
+export interface IntakeValidationInput {
+  terms: TermUpdate[];
+}
+
+export interface IntakeSource {
+  type: string;
+  label: string;
+  receivedAt: string;
+  preservation: string;
+  objectPath?: string;
+  sourceUrl?: string;
+  contentType?: string;
+  size?: number;
+  previewUrl?: string;
+  capturedText?: string;
+}
+
+export interface ExtractionResult {
+  status: string;
+  method: string;
+  confidence: number;
+  errors: string[];
+  extractedAt?: string;
+}
+
+export interface IntakeDraft {
+  id: string;
+  status: string;
+  source: IntakeSource;
+  extraction: ExtractionResult;
+  terms: Term[];
+  title?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

@@ -12,13 +12,17 @@
     "test": "pnpm --filter @workspace/corporate-actions-copilot exec tsx --test ../api-server/test/*.test.ts"
   },
   "dependencies": {
+    "@google-cloud/storage": "^8.0.1",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
     "express": "^5.2.1",
+    "google-auth-library": "^11.0.2",
+    "openai": "^7.5.0",
     "openid-client": "^6.8.7",
+    "pdf-parse": "^2.4.5",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0"
   },

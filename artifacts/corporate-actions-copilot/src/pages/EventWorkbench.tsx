@@ -222,7 +222,8 @@ export default function EventWorkbench() {
 
   const renderStageContent = () => {
     switch (currentStageId) {
-      case "notice":
+      case "notice": {
+        const sourcePreview = data.notice.previewUrl || (data.isHero ? demoPdfPath : "");
         return (
           <div className="space-y-4">
             <Card className="border-primary/20 bg-white">
@@ -237,8 +238,8 @@ export default function EventWorkbench() {
                       The PDF remains visible beside the extracted terms so every review decision can be checked against source evidence.
                     </CardDescription>
                   </div>
-                  {data.isHero && (
-                    <a href={demoPdfPath} target="_blank" rel="noreferrer">
+                  {sourcePreview && (
+                    <a href={sourcePreview} target="_blank" rel="noreferrer">
                       <Button variant="outline" size="sm">
                         <ExternalLink className="mr-2 h-3.5 w-3.5" />
                         Open PDF
@@ -249,8 +250,8 @@ export default function EventWorkbench() {
               </CardHeader>
               <CardContent className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(240px,0.6fr)]">
                 <div className="overflow-hidden rounded border bg-slate-100">
-                  {data.isHero ? (
-                    <iframe title="Uploaded synthetic rights issue notice" src={demoPdfPath} className="h-[520px] w-full bg-white" />
+                  {sourcePreview ? (
+                    <iframe title="Original corporate action source" src={sourcePreview} className="h-[520px] w-full bg-white" />
                   ) : (
                     <div className="flex h-[520px] items-center justify-center text-sm text-slate-500 bg-white">
                       Document preview unavailable
@@ -292,6 +293,7 @@ export default function EventWorkbench() {
             </Card>
           </div>
         );
+      }
       
       case "validate":
         return (

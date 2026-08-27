@@ -17,4 +17,9 @@ export interface Notice {
   pages?: NoticePage[];
   uploadState?: string;
   sourceDocumentId?: string;
+  sourcePath?: string;
+  sourceUrl?: string;
+  previewUrl?: string;
+  extractionMethod?: string;
+  extractionConfidence?: number;
 }

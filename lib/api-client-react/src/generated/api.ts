@@ -34,7 +34,10 @@ import type {
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   InstructionInput,
+  IntakeDraft,
+  IntakeDraftInput,
   IntakeInput,
+  IntakeValidationInput,
   ListAuditParams,
   ListEventsParams,
   LogoutBrowserSessionParams,
@@ -43,6 +46,8 @@ import type {
   MobileTokenExchangeSuccess,
   OperationalActor,
   ReconciliationInput,
+  RequestUploadUrlInput,
+  RequestUploadUrlResult,
   SignInInput,
   Task
 } from './api.schemas';
@@ -1002,6 +1007,439 @@ export const useCreateIntake = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateIntakeMutationOptions(options));
+    }
+
+export const getCreateIntakeDraftUrl = () => {
+
+
+
+
+  return `/api/intake/drafts`
+}
+
+/**
+ * @summary Capture a corporate-action source before extraction
+ */
+export const createIntakeDraft = async (intakeDraftInput: IntakeDraftInput, options?: Parameters<typeof customFetch>[1]): Promise<IntakeDraft> => {
+
+  return customFetch<IntakeDraft>(getCreateIntakeDraftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(intakeDraftInput)
+  }
+);}
+
+
+
+
+
+export const getCreateIntakeDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIntakeDraft>>, TError,{data: BodyType<IntakeDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createIntakeDraft>>, TError,{data: BodyType<IntakeDraftInput>}, TContext> => {
+
+const mutationKey = ['createIntakeDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createIntakeDraft>>, {data: BodyType<IntakeDraftInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createIntakeDraft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateIntakeDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createIntakeDraft>>>
+    export type CreateIntakeDraftMutationBody = BodyType<IntakeDraftInput>
+    export type CreateIntakeDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Capture a corporate-action source before extraction
+ */
+export const useCreateIntakeDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIntakeDraft>>, TError,{data: BodyType<IntakeDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createIntakeDraft>>,
+        TError,
+        {data: BodyType<IntakeDraftInput>},
+        TContext
+      > => {
+      return useMutation(getCreateIntakeDraftMutationOptions(options));
+    }
+
+export const getGetIntakeDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/intake/drafts/${draftId}`
+}
+
+/**
+ * @summary Get a captured corporate-action source
+ */
+export const getIntakeDraft = async (draftId: string, options?: Parameters<typeof customFetch>[1]): Promise<IntakeDraft> => {
+
+  return customFetch<IntakeDraft>(getGetIntakeDraftUrl(draftId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIntakeDraftQueryKey = (draftId: string,) => {
+    return [
+    `/api/intake/drafts/${draftId}`
+    ] as const;
+    }
+
+
+export const getGetIntakeDraftQueryOptions = <TData = Awaited<ReturnType<typeof getIntakeDraft>>, TError = ErrorType<unknown>>(draftId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntakeDraft>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIntakeDraftQueryKey(draftId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntakeDraft>>> = ({ signal }) => getIntakeDraft(draftId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: draftId !== null && draftId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntakeDraft>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIntakeDraftQueryResult = NonNullable<Awaited<ReturnType<typeof getIntakeDraft>>>
+export type GetIntakeDraftQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a captured corporate-action source
+ */
+
+export function useGetIntakeDraft<TData = Awaited<ReturnType<typeof getIntakeDraft>>, TError = ErrorType<unknown>>(
+ draftId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntakeDraft>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIntakeDraftQueryOptions(draftId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExtractIntakeDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/intake/drafts/${draftId}/extract`
+}
+
+/**
+ * @summary Extract proposed corporate-action terms from a captured source
+ */
+export const extractIntakeDraft = async (draftId: string, options?: Parameters<typeof customFetch>[1]): Promise<IntakeDraft> => {
+
+  return customFetch<IntakeDraft>(getExtractIntakeDraftUrl(draftId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getExtractIntakeDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof extractIntakeDraft>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof extractIntakeDraft>>, TError,{draftId: string}, TContext> => {
+
+const mutationKey = ['extractIntakeDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof extractIntakeDraft>>, {draftId: string}> = (props) => {
+          const {draftId} = props ?? {};
+
+          return  extractIntakeDraft(draftId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExtractIntakeDraftMutationResult = NonNullable<Awaited<ReturnType<typeof extractIntakeDraft>>>
+
+    export type ExtractIntakeDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Extract proposed corporate-action terms from a captured source
+ */
+export const useExtractIntakeDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof extractIntakeDraft>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof extractIntakeDraft>>,
+        TError,
+        {draftId: string},
+        TContext
+      > => {
+      return useMutation(getExtractIntakeDraftMutationOptions(options));
+    }
+
+export const getValidateIntakeDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/intake/drafts/${draftId}/validate`
+}
+
+/**
+ * @summary Validate extracted corporate-action details before case creation
+ */
+export const validateIntakeDraft = async (draftId: string,
+    intakeValidationInput: IntakeValidationInput, options?: Parameters<typeof customFetch>[1]): Promise<IntakeDraft> => {
+
+  return customFetch<IntakeDraft>(getValidateIntakeDraftUrl(draftId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(intakeValidationInput)
+  }
+);}
+
+
+
+
+
+export const getValidateIntakeDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateIntakeDraft>>, TError,{draftId: string;data: BodyType<IntakeValidationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof validateIntakeDraft>>, TError,{draftId: string;data: BodyType<IntakeValidationInput>}, TContext> => {
+
+const mutationKey = ['validateIntakeDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof validateIntakeDraft>>, {draftId: string;data: BodyType<IntakeValidationInput>}> = (props) => {
+          const {draftId,data} = props ?? {};
+
+          return  validateIntakeDraft(draftId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ValidateIntakeDraftMutationResult = NonNullable<Awaited<ReturnType<typeof validateIntakeDraft>>>
+    export type ValidateIntakeDraftMutationBody = BodyType<IntakeValidationInput>
+    export type ValidateIntakeDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Validate extracted corporate-action details before case creation
+ */
+export const useValidateIntakeDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateIntakeDraft>>, TError,{draftId: string;data: BodyType<IntakeValidationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof validateIntakeDraft>>,
+        TError,
+        {draftId: string;data: BodyType<IntakeValidationInput>},
+        TContext
+      > => {
+      return useMutation(getValidateIntakeDraftMutationOptions(options));
+    }
+
+export const getCreateCaseFromIntakeDraftUrl = (draftId: string,) => {
+
+
+
+
+  return `/api/intake/drafts/${draftId}/create-case`
+}
+
+/**
+ * @summary Create a controlled case from analyst-validated intake data
+ */
+export const createCaseFromIntakeDraft = async (draftId: string, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
+
+  return customFetch<EventDetail>(getCreateCaseFromIntakeDraftUrl(draftId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateCaseFromIntakeDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCaseFromIntakeDraft>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCaseFromIntakeDraft>>, TError,{draftId: string}, TContext> => {
+
+const mutationKey = ['createCaseFromIntakeDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCaseFromIntakeDraft>>, {draftId: string}> = (props) => {
+          const {draftId} = props ?? {};
+
+          return  createCaseFromIntakeDraft(draftId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCaseFromIntakeDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createCaseFromIntakeDraft>>>
+
+    export type CreateCaseFromIntakeDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a controlled case from analyst-validated intake data
+ */
+export const useCreateCaseFromIntakeDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCaseFromIntakeDraft>>, TError,{draftId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCaseFromIntakeDraft>>,
+        TError,
+        {draftId: string},
+        TContext
+      > => {
+      return useMutation(getCreateCaseFromIntakeDraftMutationOptions(options));
+    }
+
+export const getRequestUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a protected document upload URL
+ */
+export const requestUploadUrl = async (requestUploadUrlInput: RequestUploadUrlInput, options?: Parameters<typeof customFetch>[1]): Promise<RequestUploadUrlResult> => {
+
+  return customFetch<RequestUploadUrlResult>(getRequestUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(requestUploadUrlInput)
+  }
+);}
+
+
+
+
+
+export const getRequestUploadUrlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<RequestUploadUrlInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<RequestUploadUrlInput>}, TContext> => {
+
+const mutationKey = ['requestUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestUploadUrl>>, {data: BodyType<RequestUploadUrlInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestUploadUrl>>>
+    export type RequestUploadUrlMutationBody = BodyType<RequestUploadUrlInput>
+    export type RequestUploadUrlMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request a protected document upload URL
+ */
+export const useRequestUploadUrl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<RequestUploadUrlInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestUploadUrl>>,
+        TError,
+        {data: BodyType<RequestUploadUrlInput>},
+        TContext
+      > => {
+      return useMutation(getRequestUploadUrlMutationOptions(options));
     }
 
 export const getGetEventUrl = (eventId: string,) => {

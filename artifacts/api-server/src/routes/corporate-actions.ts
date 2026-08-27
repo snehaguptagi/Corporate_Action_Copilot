@@ -8,9 +8,17 @@ import {
   CalculateEventResponse,
   CreateIntakeBody,
   CreateIntakeResponse,
+  CreateIntakeDraftBody,
+  CreateIntakeDraftResponse,
+  CreateCaseFromIntakeDraftParams,
+  CreateCaseFromIntakeDraftResponse,
+  ExtractIntakeDraftParams,
+  ExtractIntakeDraftResponse,
   GetDashboardResponse,
   GetEventParams,
   GetEventResponse,
+  GetIntakeDraftParams,
+  GetIntakeDraftResponse,
   ListAuditQueryParams,
   ListAuditResponse,
   ListEventsQueryParams,
@@ -31,6 +39,9 @@ import {
   UpdateInstructionBody,
   UpdateInstructionParams,
   UpdateInstructionResponse,
+  ValidateIntakeDraftBody,
+  ValidateIntakeDraftParams,
+  ValidateIntakeDraftResponse,
 } from "@workspace/api-zod";
 import {
   appendAudit,
@@ -47,6 +58,13 @@ import {
   simulateInstruction,
   toSummary,
 } from "../lib/corporate-actions-v2";
+import {
+  createCaseFromIntakeDraft,
+  createIntakeDraft,
+  extractIntakeDraft,
+  getIntakeDraft,
+  validateIntakeDraft,
+} from "../lib/source-intake";
 import { getAuthenticatedActor, isPocEnvironment, requireActor, signInDemoActor } from "../lib/actor-context";
 
 const router: IRouter = Router();
@@ -124,6 +142,72 @@ router.post("/intake", async (req, res): Promise<void> => {
   try {
     const event = await createIntakeEvent(body.sampleId, body.fileName, body.source, actor);
     res.status(201).json(CreateIntakeResponse.parse(event));
+  } catch (error) {
+    workflowError(res, error);
+  }
+});
+
+router.post("/intake/drafts", async (req, res): Promise<void> => {
+  const body = parse(CreateIntakeDraftBody, req.body, res);
+  if (!body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
+  try {
+    const draft = await createIntakeDraft(body, actor);
+    res.status(201).json(CreateIntakeDraftResponse.parse(draft));
+  } catch (error) {
+    workflowError(res, error);
+  }
+});
+
+router.get("/intake/drafts/:draftId", async (req, res): Promise<void> => {
+  const params = parse(GetIntakeDraftParams, req.params, res);
+  if (!params) return;
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const draft = await getIntakeDraft(params.draftId);
+  if (!draft) {
+    res.status(404).json({ error: "Intake draft not found." });
+    return;
+  }
+  res.json(GetIntakeDraftResponse.parse(draft));
+});
+
+router.post("/intake/drafts/:draftId/extract", async (req, res): Promise<void> => {
+  const params = parse(ExtractIntakeDraftParams, req.params, res);
+  if (!params) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
+  try {
+    const draft = await extractIntakeDraft(params.draftId, actor);
+    res.json(ExtractIntakeDraftResponse.parse(draft));
+  } catch (error) {
+    workflowError(res, error);
+  }
+});
+
+router.post("/intake/drafts/:draftId/validate", async (req, res): Promise<void> => {
+  const params = parse(ValidateIntakeDraftParams, req.params, res);
+  const body = parse(ValidateIntakeDraftBody, req.body, res);
+  if (!params || !body) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
+  try {
+    const draft = await validateIntakeDraft(params.draftId, body.terms, actor);
+    res.json(ValidateIntakeDraftResponse.parse(draft));
+  } catch (error) {
+    workflowError(res, error);
+  }
+});
+
+router.post("/intake/drafts/:draftId/create-case", async (req, res): Promise<void> => {
+  const params = parse(CreateCaseFromIntakeDraftParams, req.params, res);
+  if (!params) return;
+  const actor = requireActor(req, res, ["Operations Analyst"]);
+  if (!actor) return;
+  try {
+    const event = await createCaseFromIntakeDraft(params.draftId, actor);
+    res.status(201).json(CreateCaseFromIntakeDraftResponse.parse(event));
   } catch (error) {
     workflowError(res, error);
   }

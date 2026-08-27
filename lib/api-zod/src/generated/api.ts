@@ -240,7 +240,12 @@ export const CreateIntakeResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -385,6 +390,422 @@ export const CreateIntakeResponse = zod.object({
 
 
 /**
+ * @summary Capture a corporate-action source before extraction
+ */
+export const CreateIntakeDraftBody = zod.object({
+  "sourceType": zod.enum(['sample', 'upload', 'url', 'text', 'structured-feed']),
+  "sourceLabel": zod.string(),
+  "sampleId": zod.enum(['cash-dividend', 'rights-issue', 'stock-split', 'bonus-issue', 'tender-offer', 'merger']).optional(),
+  "objectPath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "sourceText": zod.string().optional(),
+  "structuredPayload": zod.string().optional()
+})
+
+export const CreateIntakeDraftResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "source": zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "receivedAt": zod.string(),
+  "preservation": zod.string(),
+  "objectPath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "contentType": zod.string().optional(),
+  "size": zod.number().optional(),
+  "previewUrl": zod.string().optional(),
+  "capturedText": zod.string().optional()
+}),
+  "extraction": zod.object({
+  "status": zod.string(),
+  "method": zod.string(),
+  "confidence": zod.number(),
+  "errors": zod.array(zod.string()),
+  "extractedAt": zod.string().optional()
+}),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "page": zod.string(),
+  "evidence": zod.string(),
+  "confidence": zod.number(),
+  "reviewStatus": zod.string(),
+  "sourceType": zod.string().optional(),
+  "manuallyCorrected": zod.boolean().optional(),
+  "oldValue": zod.string().optional(),
+  "correctionReason": zod.string().optional()
+})),
+  "title": zod.string().optional(),
+  "createdAt": zod.string().optional(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a captured corporate-action source
+ */
+export const GetIntakeDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+export const GetIntakeDraftResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "source": zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "receivedAt": zod.string(),
+  "preservation": zod.string(),
+  "objectPath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "contentType": zod.string().optional(),
+  "size": zod.number().optional(),
+  "previewUrl": zod.string().optional(),
+  "capturedText": zod.string().optional()
+}),
+  "extraction": zod.object({
+  "status": zod.string(),
+  "method": zod.string(),
+  "confidence": zod.number(),
+  "errors": zod.array(zod.string()),
+  "extractedAt": zod.string().optional()
+}),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "page": zod.string(),
+  "evidence": zod.string(),
+  "confidence": zod.number(),
+  "reviewStatus": zod.string(),
+  "sourceType": zod.string().optional(),
+  "manuallyCorrected": zod.boolean().optional(),
+  "oldValue": zod.string().optional(),
+  "correctionReason": zod.string().optional()
+})),
+  "title": zod.string().optional(),
+  "createdAt": zod.string().optional(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Extract proposed corporate-action terms from a captured source
+ */
+export const ExtractIntakeDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+export const ExtractIntakeDraftResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "source": zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "receivedAt": zod.string(),
+  "preservation": zod.string(),
+  "objectPath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "contentType": zod.string().optional(),
+  "size": zod.number().optional(),
+  "previewUrl": zod.string().optional(),
+  "capturedText": zod.string().optional()
+}),
+  "extraction": zod.object({
+  "status": zod.string(),
+  "method": zod.string(),
+  "confidence": zod.number(),
+  "errors": zod.array(zod.string()),
+  "extractedAt": zod.string().optional()
+}),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "page": zod.string(),
+  "evidence": zod.string(),
+  "confidence": zod.number(),
+  "reviewStatus": zod.string(),
+  "sourceType": zod.string().optional(),
+  "manuallyCorrected": zod.boolean().optional(),
+  "oldValue": zod.string().optional(),
+  "correctionReason": zod.string().optional()
+})),
+  "title": zod.string().optional(),
+  "createdAt": zod.string().optional(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Validate extracted corporate-action details before case creation
+ */
+export const ValidateIntakeDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+export const ValidateIntakeDraftBody = zod.object({
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "value": zod.string(),
+  "reason": zod.string().optional()
+}))
+})
+
+export const ValidateIntakeDraftResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "source": zod.object({
+  "type": zod.string(),
+  "label": zod.string(),
+  "receivedAt": zod.string(),
+  "preservation": zod.string(),
+  "objectPath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "contentType": zod.string().optional(),
+  "size": zod.number().optional(),
+  "previewUrl": zod.string().optional(),
+  "capturedText": zod.string().optional()
+}),
+  "extraction": zod.object({
+  "status": zod.string(),
+  "method": zod.string(),
+  "confidence": zod.number(),
+  "errors": zod.array(zod.string()),
+  "extractedAt": zod.string().optional()
+}),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "page": zod.string(),
+  "evidence": zod.string(),
+  "confidence": zod.number(),
+  "reviewStatus": zod.string(),
+  "sourceType": zod.string().optional(),
+  "manuallyCorrected": zod.boolean().optional(),
+  "oldValue": zod.string().optional(),
+  "correctionReason": zod.string().optional()
+})),
+  "title": zod.string().optional(),
+  "createdAt": zod.string().optional(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Create a controlled case from analyst-validated intake data
+ */
+export const CreateCaseFromIntakeDraftParams = zod.object({
+  "draftId": zod.coerce.string()
+})
+
+export const CreateCaseFromIntakeDraftResponse = zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "security": zod.string(),
+  "eventType": zod.string(),
+  "processingType": zod.string(),
+  "status": zod.string(),
+  "risk": zod.string(),
+  "marketDeadline": zod.string(),
+  "internalDeadline": zod.string(),
+  "affectedAccounts": zod.number(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "isHero": zod.boolean().optional(),
+  "noticeReference": zod.string().optional(),
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional()
+}).and(zod.object({
+  "notice": zod.object({
+  "documentName": zod.string(),
+  "source": zod.string(),
+  "receivedAt": zod.string(),
+  "version": zod.string(),
+  "role": zod.string(),
+  "excerpt": zod.string(),
+  "pages": zod.array(zod.object({
+  "page": zod.number(),
+  "text": zod.string()
+})).optional(),
+  "uploadState": zod.string().optional(),
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
+}),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "page": zod.string(),
+  "evidence": zod.string(),
+  "confidence": zod.number(),
+  "reviewStatus": zod.string(),
+  "sourceType": zod.string().optional(),
+  "manuallyCorrected": zod.boolean().optional(),
+  "oldValue": zod.string().optional(),
+  "correctionReason": zod.string().optional()
+})),
+  "positions": zod.array(zod.object({
+  "id": zod.string(),
+  "fund": zod.string(),
+  "account": zod.string(),
+  "isin": zod.string(),
+  "securityId": zod.string().optional(),
+  "settledQuantity": zod.number().optional(),
+  "unsettledQuantity": zod.number().optional(),
+  "eligibleQuantity": zod.number(),
+  "positionDate": zod.string(),
+  "eligibilityStatus": zod.string(),
+  "dataQualityWarning": zod.string().optional()
+})),
+  "impacts": zod.array(zod.object({
+  "id": zod.string(),
+  "fund": zod.string(),
+  "account": zod.string(),
+  "eligibleQuantity": zod.number(),
+  "formula": zod.string(),
+  "expected": zod.number(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "election": zod.string().nullish(),
+  "approval": zod.string().optional(),
+  "expectedCash": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "expectedSecurityQuantity": zod.number().optional(),
+  "expectedShares": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
+  "entitlement": zod.number().optional(),
+  "securityMovement": zod.string().optional(),
+  "positionDate": zod.string().optional(),
+  "securityId": zod.string().optional(),
+  "eligibilityStatus": zod.string().optional(),
+  "dataQualityWarning": zod.string().optional(),
+  "electionDecision": zod.record(zod.string(), zod.unknown()).optional()
+})),
+  "options": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "result": zod.string(),
+  "default": zod.boolean(),
+  "fundingFormula": zod.string().optional()
+})),
+  "instruction": zod.object({
+  "status": zod.string(),
+  "destination": zod.string(),
+  "reference": zod.string(),
+  "generatedAt": zod.string(),
+  "content": zod.string(),
+  "approvalActor": zod.string().optional(),
+  "simulated": zod.boolean().optional()
+}),
+  "reconciliation": zod.object({
+  "expected": zod.number(),
+  "actual": zod.number(),
+  "difference": zod.number(),
+  "tolerance": zod.number(),
+  "status": zod.string(),
+  "note": zod.string(),
+  "expectedCash": zod.number().optional(),
+  "actualCash": zod.number().optional(),
+  "expectedSecurityQuantity": zod.number().optional(),
+  "actualSecurityQuantity": zod.number().optional(),
+  "expectedCurrency": zod.string().optional(),
+  "actualCurrency": zod.string().optional(),
+  "expectedSettlementDate": zod.string().optional(),
+  "actualSettlementDate": zod.string().optional(),
+  "expectedAccount": zod.string().optional(),
+  "actualAccount": zod.string().optional(),
+  "classification": zod.string().optional(),
+  "investigationSteps": zod.array(zod.string()).optional()
+}),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "eventId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "priority": zod.string(),
+  "owner": zod.string(),
+  "due": zod.string(),
+  "status": zod.string(),
+  "category": zod.string(),
+  "dependency": zod.string().optional(),
+  "sourceRule": zod.string().optional(),
+  "escalationPath": zod.string().optional(),
+  "eventReference": zod.string().optional()
+})),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "eventId": zod.string(),
+  "action": zod.string(),
+  "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
+  "timestamp": zod.string(),
+  "detail": zod.string(),
+  "actorType": zod.string().optional(),
+  "previousValue": zod.string().optional(),
+  "newValue": zod.string().optional(),
+  "reason": zod.string().optional(),
+  "evidenceId": zod.string().optional(),
+  "workflowStatus": zod.string().optional()
+})),
+  "validation": zod.object({
+  "missingTerms": zod.array(zod.string()),
+  "isReady": zod.boolean()
+}),
+  "calculation": zod.object({
+  "calculationRunAt": zod.string().optional(),
+  "rounding": zod.string(),
+  "assumptions": zod.string(),
+  "sourceRule": zod.string()
+}),
+  "securityMaster": zod.object({
+  "securityId": zod.string(),
+  "isin": zod.string(),
+  "ticker": zod.string(),
+  "securityName": zod.string(),
+  "issuer": zod.string().optional(),
+  "currency": zod.string(),
+  "market": zod.string(),
+  "status": zod.string(),
+  "aliases": zod.array(zod.string()).optional()
+}).optional()
+}))
+
+
+/**
+ * @summary Request a protected document upload URL
+ */
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
+})
+
+
+/**
  * @summary Get a corporate action event and its workbench data
  */
 export const GetEventParams = zod.object({
@@ -425,7 +846,12 @@ export const GetEventResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -619,7 +1045,12 @@ export const UpdateEventResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -808,7 +1239,12 @@ export const CalculateEventResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -1000,7 +1436,12 @@ export const SaveElectionResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -1190,7 +1631,12 @@ export const ApproveEventResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -1379,7 +1825,12 @@ export const UpdateInstructionResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),
@@ -1573,7 +2024,12 @@ export const SaveReconciliationResponse = zod.object({
   "text": zod.string()
 })).optional(),
   "uploadState": zod.string().optional(),
-  "sourceDocumentId": zod.string().optional()
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
 }),
   "terms": zod.array(zod.object({
   "key": zod.string(),

@@ -4,7 +4,7 @@ import test, { after, afterEach, before, beforeEach, describe } from "node:test"
 import { inArray } from "drizzle-orm";
 import { corporateActionEventsTable, db, pool } from "@workspace/db";
 import app from "../src/app";
-import { demoUsers } from "../src/lib/corporate-actions-v2";
+import { demoUsers, ensureCorporateActionSeedData } from "../src/lib/corporate-actions-v2";
 
 process.env.CORPORATE_ACTIONS_POC = "true";
 
@@ -100,6 +100,7 @@ async function resetFixture(): Promise<void> {
 }
 
 before(async () => {
+  await ensureCorporateActionSeedData();
   server = app.listen(0);
   await once(server, "listening");
   const address = server.address();

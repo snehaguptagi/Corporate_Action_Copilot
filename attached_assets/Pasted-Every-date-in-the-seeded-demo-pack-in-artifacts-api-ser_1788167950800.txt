@@ -1,0 +1,38 @@
+Every date in the seeded demo pack in
+artifacts/api-server/src/lib/corporate-actions-v2.ts is in the past
+(4 to 29 August 2026), so the workbench presents dead deadlines as live ones.
+
+Task: derive all seeded dates from a single anchor so the pack is always
+near today.
+
+Add one exported anchor constant near the top of the file (default: today at
+process start) and derive every seeded date from it as an offset, keeping the
+same relative spacing the pack has now (record dates a few days back, market
+deadlines a few days forward, payment dates a few weeks forward).
+
+Critical invariant, do not break it: each term's value must stay consistent
+with BOTH the evidence quote stored on that term AND the notice page text it
+was quoted from. These three currently agree, for example the hero rights
+issue has term value "29 Aug 2026 · 10:00 CEST", evidence quote
+"Instructions must be received by 29 August 2026 at 10:00 CEST", and page 3
+of notice text saying the same. If you shift the date you must regenerate all
+three from the same source value, or the evidence viewer will show an analyst
+a quote that contradicts the term.
+
+Two date formats are in play and both must be preserved exactly:
+- Display strings on terms and deadlines: "29 Aug 2026 · 10:00 CEST",
+  including the middot separator and the market timezone label. These are
+  rendered raw by the frontend and must never become Date objects.
+- ISO strings in calculationInputs.recordDate and on positions
+  (positionDate): "2026-08-24". These are compared as strings in
+  eligiblePositions, so the format must stay sortable ISO or eligibility
+  breaks silently.
+
+Also preserve the deliberate position traps: one position must still be dated
+AFTER its event's record date so it stays excluded.
+
+Bump SEED_VERSION so the new pack replaces the old rows.
+
+Verify: every event's marketDeadline is in the future, internalDeadline is
+about 24 hours before its marketDeadline, and the hero rights issue still
+excludes exactly three of its five positions for the three stated reasons.

@@ -2,6 +2,7 @@ import {
   useApproveEvent,
   useCalculateEvent,
   useGetEvent,
+  useGetSession,
   useSaveElection,
   useSaveReconciliation,
   useUpdateEvent,
@@ -13,7 +14,7 @@ import {
   type EventDetail,
 } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -44,7 +45,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { getDemoRole } from "@/lib/demo-role";
 import { getCaseStages, getPriorityReason } from "@/lib/case-journey";
 
 const money = (amount: number, currency: string) => currency === "Shares"
@@ -64,6 +64,7 @@ export default function EventWorkbench() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: event, isLoading, isError } = useGetEvent(eventId);
+  const { data: actor, isLoading: actorLoading, isError: actorError } = useGetSession();
   const updateEvent = useUpdateEvent();
   const calculateEvent = useCalculateEvent();
   const saveElection = useSaveElection();
@@ -81,13 +82,6 @@ export default function EventWorkbench() {
   const [actual, setActual] = useState("");
   const [actualSecurity, setActualSecurity] = useState("");
   const [reconNote, setReconNote] = useState("");
-  const [actor, setActor] = useState(getDemoRole);
-
-  useEffect(() => {
-    const refreshActor = () => setActor(getDemoRole());
-    window.addEventListener("demo-role-change", refreshActor);
-    return () => window.removeEventListener("demo-role-change", refreshActor);
-  }, []);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
@@ -102,12 +96,13 @@ export default function EventWorkbench() {
     variant: "destructive",
   });
 
-  if (isLoading) return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading workbench…</div>;
-  if (isError || !event) return <div className="flex flex-1 items-center justify-center text-sm text-destructive">The workbench could not be loaded.</div>;
+  if (isLoading || actorLoading) return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading workbench…</div>;
+  if (isError || actorError || !event || !actor) return <div className="flex flex-1 items-center justify-center text-sm text-destructive">The workbench could not be loaded.</div>;
 
   const data: EventDetail = event;
   const isAnalyst = actor.role === "Operations Analyst";
   const isReviewer = actor.role === "Reviewer";
+  const isManager = actor.role === "Operations Manager";
   const isCashDividend = data.eventType === "Cash dividend";
   const missingTerms = data.validation?.missingTerms ?? [];
   const canCalculate = data.validation?.isReady && isAnalyst;
@@ -541,7 +536,7 @@ export default function EventWorkbench() {
                 <div className="space-y-2"><Label>Actual cash</Label><Input type="number" value={actual} placeholder={String(data.reconciliation.actualCash ?? 0)} onChange={(change) => setActual(change.target.value)} /></div>
                 <div className="space-y-2"><Label>Actual security quantity</Label><Input type="number" value={actualSecurity} placeholder={String(data.reconciliation.actualSecurityQuantity ?? 0)} onChange={(change) => setActualSecurity(change.target.value)} /></div>
                 <div className="space-y-2 md:col-span-2"><Label>Reconciliation note</Label><Textarea value={reconNote} onChange={(change) => setReconNote(change.target.value)} placeholder="Describe the synthetic custodian result; the system will classify, not infer a cause." /></div>
-                <div className="md:col-span-2">{(isAnalyst || actor.role === "Operations Manager") && <Button onClick={reconcile} disabled={saveReconciliation.isPending}>Record and classify settlement</Button>}</div>
+                <div className="md:col-span-2">{(isAnalyst || isManager) && <Button onClick={reconcile} disabled={saveReconciliation.isPending}>Record and classify settlement</Button>}</div>
               </CardContent>
             </Card>
             {(data.reconciliation.investigationSteps?.length ?? 0) > 0 && (

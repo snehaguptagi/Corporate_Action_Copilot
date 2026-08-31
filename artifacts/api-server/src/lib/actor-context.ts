@@ -81,25 +81,27 @@ function actorFromRoleDirectory(user: AuthUser): OperationalActor | null {
 }
 
 export function getAuthenticatedActor(req: Request): OperationalActor | null {
+  if (isPocEnvironment()) {
+    const rawActor = req.signedCookies?.[actorCookieName];
+    if (typeof rawActor === "string") {
+      try {
+        const session = JSON.parse(rawActor) as { id?: unknown };
+        if (typeof session.id === "string") {
+          const actor = demoUsers.find((candidate) => candidate.id === session.id);
+          if (actor && isOperationalRole(actor.role)) {
+            return { id: actor.id, name: actor.name, role: actor.role };
+          }
+        }
+      } catch {
+        // Fall through to the authenticated role directory identity.
+      }
+    }
+  }
+
   if (req.isAuthenticated?.()) {
     return actorFromRoleDirectory(req.user);
   }
-  if (!isPocEnvironment()) return null;
-
-  const rawActor = req.signedCookies?.[actorCookieName];
-  if (typeof rawActor !== "string") return null;
-
-  try {
-    const session = JSON.parse(rawActor) as { id?: unknown };
-    if (typeof session.id !== "string") {
-      return null;
-    }
-    const actor = demoUsers.find((candidate) => candidate.id === session.id);
-    if (!actor || !isOperationalRole(actor.role)) return null;
-    return { id: actor.id, name: actor.name, role: actor.role };
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function signInDemoActor(res: Response, actorId: string): OperationalActor | null {

@@ -1,46 +1,39 @@
-import { ReactNode, useEffect, useState } from "react"
+import { ReactNode } from "react"
 import { Link, useLocation } from "wouter"
 import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload, LogIn, LogOut } from "lucide-react"
 import { useAuth } from "@workspace/replit-auth-web"
-import { getOperationalSession, type OperationalSession } from "@/lib/demo-role"
+import {
+  getGetSessionQueryKey,
+  useGetSession,
+  useSignInSession,
+  type OperationalActor,
+} from "@workspace/api-client-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { demoRoles } from "@/lib/demo-role"
 
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation()
   const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth()
-  const [activeRole, setActiveRole] = useState<OperationalSession | null>(null)
-  const [roleLoading, setRoleLoading] = useState(false)
-  const [roleError, setRoleError] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-    if (authLoading || !isAuthenticated) {
-      setActiveRole(null)
-      setRoleError(false)
-      setRoleLoading(false)
-      return () => { mounted = false }
-    }
-
-    const loadOperationalRole = async () => {
-      setRoleLoading(true)
-      try {
-        const session = await getOperationalSession()
-        if (mounted) {
-          setActiveRole(session)
-          setRoleError(false)
-        }
-      } catch {
-        if (mounted) {
-          setActiveRole(null)
-          setRoleError(true)
-        }
-      } finally {
-        if (mounted) setRoleLoading(false)
-      }
-    }
-
-    void loadOperationalRole()
-    return () => { mounted = false }
-  }, [authLoading, isAuthenticated])
+  const queryClient = useQueryClient()
+  const {
+    data: activeRole,
+    isLoading: roleLoading,
+    isError: roleError,
+  } = useGetSession({
+    query: {
+      queryKey: getGetSessionQueryKey(),
+      enabled: !authLoading && isAuthenticated,
+      retry: false,
+    },
+  })
+  const switchOperator = useSignInSession({
+    mutation: {
+      onSuccess: (session) => {
+        queryClient.setQueryData(getGetSessionQueryKey(), session)
+        void queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey() })
+      },
+    },
+  })
   
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -127,6 +120,17 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="mt-1 truncate text-xs text-sidebar-foreground">{activeRole.name}</div>
           <div className="mt-0.5 text-[11px] text-sidebar-foreground/60">{activeRole.role}</div>
         </div>
+        {import.meta.env.DEV && (
+          <div className="mx-3 mb-3">
+            <OperatorSwitcher
+              id="desktop-demo-operator"
+              activeRole={activeRole}
+              disabled={switchOperator.isPending}
+              hasError={switchOperator.isError}
+              onChange={(actorId) => switchOperator.mutate({ data: { actorId } })}
+            />
+          </div>
+        )}
         <div className="p-4 border-t border-sidebar-border/50 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-sm font-medium">
@@ -171,9 +175,54 @@ export function Shell({ children }: { children: ReactNode }) {
               )
             })}
           </nav>
+          {import.meta.env.DEV && (
+            <div className="px-3 pb-3">
+              <OperatorSwitcher
+                id="mobile-demo-operator"
+                activeRole={activeRole}
+                disabled={switchOperator.isPending}
+                hasError={switchOperator.isError}
+                onChange={(actorId) => switchOperator.mutate({ data: { actorId } })}
+              />
+            </div>
+          )}
         </div>
         {children}
       </main>
+    </div>
+  )
+}
+
+function OperatorSwitcher({
+  id,
+  activeRole,
+  disabled,
+  hasError,
+  onChange,
+}: {
+  id: string
+  activeRole: OperationalActor
+  disabled: boolean
+  hasError: boolean
+  onChange: (actorId: string) => void
+}) {
+  return (
+    <div className="rounded border border-sidebar-border/80 bg-sidebar-accent/50 px-3 py-2">
+      <label htmlFor={id} className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+        Demo operator
+      </label>
+      <select
+        id={id}
+        value={activeRole.id}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1.5 w-full rounded border border-sidebar-border bg-sidebar px-2 py-1.5 text-xs text-sidebar-foreground disabled:opacity-60"
+      >
+        {demoRoles.map((role) => (
+          <option key={role.id} value={role.id}>{role.name} · {role.role}</option>
+        ))}
+      </select>
+      {hasError && <p className="mt-1 text-[11px] text-rose-300">Could not switch operator.</p>}
     </div>
   )
 }

@@ -43,19 +43,20 @@ function rightsFixture(): EventData {
       version: "v1",
       role: "New",
       excerpt: "One right for every five shares at EUR 8.50.",
-      pages: [{ page: 1, text: "Rights ratio: 1 for 5. Subscription price: EUR 8.50." }],
+      pages: [{ page: 1, text: "Rights ratio: 1 for 5. Subscription price: EUR 8.50. Record date: 24 August 2026." }],
     },
     terms: [
       { key: "rightsRatio", label: "Rights ratio", value: "1 for 5", page: "p. 1", evidence: "Rights ratio: 1 for 5.", confidence: 1, reviewStatus: "Validated" },
       { key: "subscriptionPrice", label: "Subscription price", value: "EUR 8.50", page: "p. 1", evidence: "Subscription price: EUR 8.50.", confidence: 1, reviewStatus: "Validated" },
+      { key: "recordDate", label: "Record date", value: "24 Aug 2026", page: "p. 1", evidence: "Record date: 24 August 2026.", confidence: 1, reviewStatus: "Validated" },
     ],
     positions: [
       { id: "test-position-1", fund: "Test Fund", account: "TEST-001", isin: "FR001400TEST", securityId: "SEC-TEST", eligibleQuantity: 100_000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
         { id: "test-position-2", fund: "Test Fund", account: "TEST-002", isin: "FR001400TEST", securityId: "SEC-TEST", eligibleQuantity: 50_000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
     ],
     securityMaster: { securityId: "SEC-TEST", isin: "FR001400TEST", ticker: "TRS", securityName: "Test Rights Security", currency: "EUR", market: "France", status: "Active" },
-    requiredTermKeys: ["rightsRatio", "subscriptionPrice"],
-    calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 8.5, currency: "EUR" },
+    requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate"],
+    calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 8.5, currency: "EUR", recordDate: "2026-08-24" },
     impacts: [],
     options: [
       { id: "exercise", label: "Exercise rights", description: "Subscribe for new shares.", result: "Funding is required.", default: false },

@@ -11,7 +11,7 @@ import {
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = new Date();
-export const SEED_VERSION = "rolling-demo-pack-v3";
+export const SEED_VERSION = "rolling-demo-pack-v5";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -256,11 +256,12 @@ const preloadedEvents: EventData[] = [
     amount: 420000,
     currency: "Shares",
     securityMaster: { securityId: "SEC-003", isin: "US24703D1072", ticker: "DGT", securityName: "Delta Grid Technologies", currency: "USD", market: "United States", status: "Active" },
-    requiredTermKeys: ["splitRatio", "effectiveDate"],
+    requiredTermKeys: ["splitRatio", "effectiveDate", "recordDate"],
     calculationInputs: { splitFactor: 4, recordDate: isoDate(seedTimeline.delta.record), fractionalTreatment: "Round down" },
-    notice: notice("stock-split-notice.pdf", "Four new shares replace each existing share at the effective date.", ["NOTICE CA-2026-0809-DL\nDelta Grid Technologies\nMandatory 4-for-1 forward split.\nEach holder receives four new shares for each existing share.", `Effective before market open on ${longDate(seedTimeline.delta.market)}. Fractional share entitlements are rounded down.`]),
+    notice: notice("stock-split-notice.pdf", "Four new shares replace each existing share at the effective date.", [`NOTICE CA-2026-0809-DL\nDelta Grid Technologies\nMandatory 4-for-1 forward split.\nRecord date: ${longDate(seedTimeline.delta.record)}.\nEach holder receives four new shares for each existing share.`, `Effective before market open on ${longDate(seedTimeline.delta.market)}. Fractional share entitlements are rounded down.`]),
     terms: [
       term("splitRatio", "Split ratio", "4 for 1", 1, "“Each holder receives four new shares for each existing share.”"),
+      term("recordDate", "Record date", shortDate(seedTimeline.delta.record), 1, `“Record date: ${longDate(seedTimeline.delta.record)}.”`, "Needs review"),
       term("effectiveDate", "Effective date", shortDate(seedTimeline.delta.market), 2, `“Effective before market open on ${longDate(seedTimeline.delta.market)}.”`),
     ],
     positions: [
@@ -292,10 +293,10 @@ const preloadedEvents: EventData[] = [
     amount: 5000,
     currency: "Shares",
     securityMaster: { securityId: "SEC-004", isin: "NL000NIMB001", ticker: "NMB", securityName: "Nimbus Logistics SA", currency: "EUR", market: "Netherlands", status: "Active" },
-    requiredTermKeys: ["bonusRatio", "paymentDate"],
+    requiredTermKeys: ["bonusRatio", "paymentDate", "recordDate"],
     calculationInputs: { ratioNumerator: 1, ratioDenominator: 10, recordDate: isoDate(seedTimeline.nimbus.record), fractionalTreatment: "Round down" },
-    notice: notice("nimbus-bonus-issue.pdf", "One bonus share is issued for every ten ordinary shares held.", ["BONUS ISSUE\nNimbus Logistics SA\nMandatory bonus issue of one new ordinary share for every ten existing shares.", `Payment date: ${longDate(seedTimeline.nimbus.settlement)}. Fractions are paid in cash at the agent's determination.`]),
-    terms: [term("bonusRatio", "Bonus ratio", "1 for 10", 1, "“One new ordinary share for every ten existing shares.”"), term("paymentDate", "Settlement date", shortDate(seedTimeline.nimbus.settlement), 2, `“Payment date: ${longDate(seedTimeline.nimbus.settlement)}.”`)],
+    notice: notice("nimbus-bonus-issue.pdf", "One bonus share is issued for every ten ordinary shares held.", [`BONUS ISSUE\nNimbus Logistics SA\nMandatory bonus issue of one new ordinary share for every ten existing shares.\nRecord date: ${longDate(seedTimeline.nimbus.record)}.`, `Payment date: ${longDate(seedTimeline.nimbus.settlement)}. Fractions are paid in cash at the agent's determination.`]),
+    terms: [term("bonusRatio", "Bonus ratio", "1 for 10", 1, "“One new ordinary share for every ten existing shares.”"), term("paymentDate", "Settlement date", shortDate(seedTimeline.nimbus.settlement), 2, `“Payment date: ${longDate(seedTimeline.nimbus.settlement)}.”`), term("recordDate", "Record date", shortDate(seedTimeline.nimbus.record), 1, `“Record date: ${longDate(seedTimeline.nimbus.record)}.”`, "Needs review")],
     positions: [position("POS-NMB-1", "European Opportunities Fund", "CUST-6632", "NL000NIMB001", 50000, isoDate(seedTimeline.nimbus.record))],
     impacts: [{ id: "imp-nmb-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 50000, positionDate: isoDate(seedTimeline.nimbus.record), securityId: "SEC-004", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "floor(50,000 × 1 ÷ 10)", expected: 5000, expectedCash: 0, expectedSecurityQuantity: 5000, securityMovement: "5,000 bonus shares", currency: "Shares", status: "Reconciled", election: null, approval: "Not required" }],
     options: [],
@@ -346,10 +347,10 @@ const preloadedEvents: EventData[] = [
     amount: 55271.25,
     currency: "EUR",
     securityMaster: { securityId: "SEC-006", isin: "FR001400VMH4", ticker: "VMH", securityName: "Verdant Mobility Holdings", currency: "EUR", market: "France", status: "Active" },
-    requiredTermKeys: ["cashRate", "shareExchangeRatio", "marketDeadline"],
+    requiredTermKeys: ["cashRate", "shareExchangeRatio", "marketDeadline", "recordDate"],
     calculationInputs: { cashRate: 4.25, shareExchangeRatio: 0.333, recordDate: isoDate(seedTimeline.merger.record), fractionalTreatment: "Cash in lieu at EUR 3.00" },
-    notice: notice("verdant-mobility-merger.pdf", "Holders receive EUR 4.25 cash and 0.333 New Horizon shares for each share. Fractions are settled in cash.", ["MERGER CONSIDERATION\nEach Verdant Mobility share receives EUR 4.25 in cash and 0.333 New Horizon shares.", `Market deadline: ${longDate(seedTimeline.merger.market)} 10:00 CEST. Fractional New Horizon shares will be paid in cash in lieu at EUR 3.00.`]),
-    terms: [term("cashRate", "Cash consideration", "EUR 4.25", 1, "“Receives EUR 4.25 in cash.”"), term("shareExchangeRatio", "Share exchange ratio", "0.333", 1, "“0.333 New Horizon shares for each share.”"), term("marketDeadline", "Market deadline", `${shortDate(seedTimeline.merger.market)} · 10:00 CEST`, 2, `“Market deadline: ${longDate(seedTimeline.merger.market)} 10:00 CEST.”`)],
+    notice: notice("verdant-mobility-merger.pdf", "Holders receive EUR 4.25 cash and 0.333 New Horizon shares for each share. Fractions are settled in cash.", [`MERGER CONSIDERATION\nEach Verdant Mobility share receives EUR 4.25 in cash and 0.333 New Horizon shares.\nRecord date: ${longDate(seedTimeline.merger.record)}.`, `Market deadline: ${longDate(seedTimeline.merger.market)} 10:00 CEST. Fractional New Horizon shares will be paid in cash in lieu at EUR 3.00.`]),
+    terms: [term("cashRate", "Cash consideration", "EUR 4.25", 1, "“Receives EUR 4.25 in cash.”"), term("shareExchangeRatio", "Share exchange ratio", "0.333", 1, "“0.333 New Horizon shares for each share.”"), term("recordDate", "Record date", shortDate(seedTimeline.merger.record), 1, `“Record date: ${longDate(seedTimeline.merger.record)}.”`, "Needs review"), term("marketDeadline", "Market deadline", `${shortDate(seedTimeline.merger.market)} · 10:00 CEST`, 2, `“Market deadline: ${longDate(seedTimeline.merger.market)} 10:00 CEST.”`)],
     positions: [
       position("POS-VMH-1", "European Opportunities Fund", "CUST-6632", "FR001400VMH4", 13005, isoDate(seedTimeline.merger.record)),
       position("POS-VMH-X", "Closed Legacy Fund", "CUST-0000", "FR001400VMH4", 100, isoDate(seedTimeline.merger.record), "Excluded", "Account closed"),
@@ -536,7 +537,7 @@ function eligiblePositions(event: EventData): any[] {
   const recordDate = event.calculationInputs?.recordDate;
   return (event.positions ?? []).filter((item: any) => {
     const accountClosed = /closed|inactive/i.test(item.accountStatus ?? "") || /account closed/i.test(item.dataQualityWarning ?? "");
-    const afterRecordDate = recordDate && item.positionDate > recordDate;
+    const afterRecordDate = item.positionDate > recordDate;
     return item.eligibilityStatus === "Eligible"
       && item.eligibleQuantity > 0
       && (!expectedIsin || item.isin === expectedIsin)
@@ -553,6 +554,9 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
   if (!event.validation.isReady) throw new Error(`Calculation is blocked until these terms are validated: ${event.validation.missingTerms.join(", ")}.`);
 
   const inputs = event.calculationInputs ?? {};
+  if (typeof inputs.recordDate !== "string" || !inputs.recordDate.trim()) {
+    throw new Error("Calculation is blocked because the record date is required to determine eligibility.");
+  }
   const positions = eligiblePositions(event);
   if (positions.length === 0) throw new Error("Calculation is blocked because no eligible positions were found.");
 

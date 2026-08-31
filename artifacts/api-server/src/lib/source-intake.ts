@@ -59,6 +59,24 @@ function limitedText(value?: string): string {
   return (value ?? "").trim().slice(0, maxSourceCharacters);
 }
 
+const canonicalEventTypes = ["Cash dividend", "Stock split", "Stock dividend / bonus issue", "Rights issue", "Tender offer", "Merger / acquisition"] as const;
+
+export function normalizeEventType(raw: string): string | null {
+  const value = raw.trim().toLowerCase();
+  if (!value) return null;
+  const exact = canonicalEventTypes.find((candidate) => candidate.toLowerCase() === value);
+  if (exact) return exact;
+  const matches = new Set<string>();
+  if (/\brights\b/.test(value)) matches.add("Rights issue");
+  if (/\btender\b|\bbuy-?backs?\b|\brepurchases?\b/.test(value)) matches.add("Tender offer");
+  if (/\bmergers?\b|\bacquisitions?\b|\btakeovers?\b/.test(value)) matches.add("Merger / acquisition");
+  if (/\bsplits?\b/.test(value)) matches.add("Stock split");
+  const stockDividendIndicator = /\bbonus\b|\bscrip\b|\bstock dividends?\b|\bshare dividends?\b/.test(value);
+  if (stockDividendIndicator) matches.add("Stock dividend / bonus issue");
+  if (/\bdividends?\b|\bcash distributions?\b/.test(value) && (!stockDividendIndicator || /\bcash\b/.test(value))) matches.add("Cash dividend");
+  return matches.size === 1 ? [...matches][0] : null;
+}
+
 function term(key: string, label: string, value: string, page = "p. 1", evidence = value, confidence = 0.72): DraftTerm {
   return {
     key,
@@ -321,7 +339,18 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
   if (!draft) throw new Error("Intake draft not found.");
   if (draft.status !== "Ready to create case") throw new Error("Validate every extracted term before creating a case.");
   const values = Object.fromEntries(draft.terms.map((item) => [item.key, item.value]));
-  const eventType = values.eventType || "Corporate action";
+  const rawEventType = values.eventType ?? "";
+  const eventType = normalizeEventType(rawEventType);
+  if (!eventType) {
+    const eventTypeTerm = draft.terms.find((item) => item.key === "eventType");
+    if (eventTypeTerm) eventTypeTerm.reviewStatus = "Needs review";
+    else draft.terms.push(term("eventType", "Event type", "", "p. 1", "Event type could not be determined from the source.", 0));
+    draft.status = "Validation required";
+    draft.updatedAt = new Date().toISOString();
+    draft.audit.unshift({ timestamp: draft.updatedAt, action: "Case creation blocked", actor: actor.name, detail: `Event type "${rawEventType || "not provided"}" could not be mapped to a supported corporate action type.` });
+    await persistDraft(draft);
+    throw new Error(`The extracted event type "${rawEventType || "not provided"}" could not be mapped to a supported corporate action type. Classify the event type as one of: ${canonicalEventTypes.join(", ")}.`);
+  }
   const voluntary = /rights|tender|merger|election/i.test(eventType);
   const eventId = `evt-intake-${randomUUID()}`;
   const event = {

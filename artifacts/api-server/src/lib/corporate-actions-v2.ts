@@ -556,6 +556,17 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
   const positions = eligiblePositions(event);
   if (positions.length === 0) throw new Error("Calculation is blocked because no eligible positions were found.");
 
+  const requireTermValue = (key: string, label: string): string => {
+    const matched = event.terms?.find((term: any) => term.key === key);
+    if (!matched?.value) throw new Error(`Calculation is blocked because the ${label} term ("${key}") is missing from this ${event.eventType} event. Capture and validate it before calculating.`);
+    return matched.value;
+  };
+  const requireInput = (key: string, label: string): number => {
+    const value = (inputs as Record<string, unknown>)[key];
+    if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(`Calculation is blocked because the ${label} input ("${key}") is missing for this ${event.eventType} event. Validate the term so the calculation input is populated.`);
+    return value;
+  };
+
   event.impacts = positions.map((item: any) => {
     const common = {
       id: `imp-${event.id}-${item.account}`,
@@ -572,42 +583,57 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
     };
 
     if (event.eventType === "Cash dividend") {
-      const expectedCash = calculateDividend(item.eligibleQuantity, inputs.rate);
-      return { ...common, formula: `${item.eligibleQuantity.toLocaleString()} × ${event.terms.find((term: any) => term.key === "rate").value}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: inputs.currency ?? event.currency };
+      const rateTermValue = requireTermValue("rate", "cash rate");
+      const rate = requireInput("rate", "cash rate");
+      const expectedCash = calculateDividend(item.eligibleQuantity, rate);
+      return { ...common, formula: `${item.eligibleQuantity.toLocaleString()} × ${rateTermValue}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: inputs.currency ?? event.currency };
     }
     if (event.eventType === "Stock split") {
-      const expectedSecurityQuantity = calculateSplit(item.eligibleQuantity, inputs.splitFactor, 1);
-      return { ...common, formula: `${item.eligibleQuantity.toLocaleString()} × ${inputs.splitFactor}`, expected: expectedSecurityQuantity, expectedCash: 0, expectedSecurityQuantity, securityMovement: `${expectedSecurityQuantity - item.eligibleQuantity} additional shares`, currency: "Shares" };
+      const splitFactor = requireInput("splitFactor", "split factor");
+      const expectedSecurityQuantity = calculateSplit(item.eligibleQuantity, splitFactor, 1);
+      return { ...common, formula: `${item.eligibleQuantity.toLocaleString()} × ${splitFactor}`, expected: expectedSecurityQuantity, expectedCash: 0, expectedSecurityQuantity, securityMovement: `${expectedSecurityQuantity - item.eligibleQuantity} additional shares`, currency: "Shares" };
     }
     if (event.eventType === "Stock dividend / bonus issue") {
-      const expectedSecurityQuantity = calculateSplit(item.eligibleQuantity, inputs.ratioNumerator, inputs.ratioDenominator);
-      return { ...common, formula: `floor(${item.eligibleQuantity.toLocaleString()} × ${inputs.ratioNumerator} ÷ ${inputs.ratioDenominator})`, expected: expectedSecurityQuantity, expectedCash: 0, expectedSecurityQuantity, securityMovement: `${expectedSecurityQuantity} bonus shares`, currency: "Shares" };
+      const ratioNumerator = requireInput("ratioNumerator", "bonus ratio numerator");
+      const ratioDenominator = requireInput("ratioDenominator", "bonus ratio denominator");
+      const expectedSecurityQuantity = calculateSplit(item.eligibleQuantity, ratioNumerator, ratioDenominator);
+      return { ...common, formula: `floor(${item.eligibleQuantity.toLocaleString()} × ${ratioNumerator} ÷ ${ratioDenominator})`, expected: expectedSecurityQuantity, expectedCash: 0, expectedSecurityQuantity, securityMovement: `${expectedSecurityQuantity} bonus shares`, currency: "Shares" };
     }
     if (event.eventType === "Rights issue") {
+      const ratioNumerator = requireInput("ratioNumerator", "rights ratio numerator");
+      const ratioDenominator = requireInput("ratioDenominator", "rights ratio denominator");
+      const subscriptionPrice = requireInput("subscriptionPrice", "subscription price");
       const rightsCalculation = calculateRights(
         item.eligibleQuantity,
-        inputs.ratioNumerator,
-        inputs.ratioDenominator,
-        inputs.subscriptionPrice,
+        ratioNumerator,
+        ratioDenominator,
+        subscriptionPrice,
       );
       const entitlement = rightsCalculation.rights;
       const expectedCash = rightsCalculation.funding;
-      return { ...common, formula: `floor(${item.eligibleQuantity.toLocaleString()} × ${inputs.ratioNumerator} ÷ ${inputs.ratioDenominator}) × EUR ${inputs.subscriptionPrice.toFixed(2)}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: entitlement, securityMovement: `${entitlement.toLocaleString()} subscription rights`, currency: inputs.currency ?? "EUR", entitlement };
+      return { ...common, formula: `floor(${item.eligibleQuantity.toLocaleString()} × ${ratioNumerator} ÷ ${ratioDenominator}) × EUR ${subscriptionPrice.toFixed(2)}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: entitlement, securityMovement: `${entitlement.toLocaleString()} subscription rights`, currency: inputs.currency ?? "EUR", entitlement };
     }
     if (event.eventType === "Tender offer") {
-      const tenderable = Math.floor(item.eligibleQuantity * inputs.maximumPercentage);
-      const expectedCash = calculateTender(item.eligibleQuantity, inputs.maximumPercentage, inputs.offerPrice);
-      return { ...common, formula: `${tenderable.toLocaleString()} × AUD ${inputs.offerPrice.toFixed(2)}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: 0, securityMovement: `Tender up to ${tenderable.toLocaleString()} shares`, currency: "AUD", entitlement: tenderable };
+      const maximumPercentage = requireInput("maximumPercentage", "maximum acceptance percentage");
+      const offerPrice = requireInput("offerPrice", "offer price");
+      const tenderable = Math.floor(item.eligibleQuantity * maximumPercentage);
+      const expectedCash = calculateTender(item.eligibleQuantity, maximumPercentage, offerPrice);
+      return { ...common, formula: `${tenderable.toLocaleString()} × AUD ${offerPrice.toFixed(2)}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: 0, securityMovement: `Tender up to ${tenderable.toLocaleString()} shares`, currency: "AUD", entitlement: tenderable };
     }
-    const mergerCalculation = calculateMixedMerger(
-      item.eligibleQuantity,
-      inputs.shareExchangeRatio,
-      inputs.cashRate,
-    );
-    const securityQuantity = Math.floor(mergerCalculation.shares);
-    const fractional = roundCalculation(mergerCalculation.shares - securityQuantity, 3);
-    const expectedCash = roundCalculation(mergerCalculation.cash + fractional * 3, 2);
-    return { ...common, formula: `(${item.eligibleQuantity.toLocaleString()} × EUR ${inputs.cashRate.toFixed(2)}) + fractional cash in lieu`, expected: expectedCash, expectedCash, expectedSecurityQuantity: securityQuantity, securityMovement: `${securityQuantity.toLocaleString()} shares; ${fractional} fractional share paid in cash`, currency: "EUR" };
+    if (event.eventType === "Merger / acquisition") {
+      const shareExchangeRatio = requireInput("shareExchangeRatio", "share exchange ratio");
+      const cashRate = requireInput("cashRate", "cash consideration rate");
+      const mergerCalculation = calculateMixedMerger(
+        item.eligibleQuantity,
+        shareExchangeRatio,
+        cashRate,
+      );
+      const securityQuantity = Math.floor(mergerCalculation.shares);
+      const fractional = roundCalculation(mergerCalculation.shares - securityQuantity, 3);
+      const expectedCash = roundCalculation(mergerCalculation.cash + fractional * 3, 2);
+      return { ...common, formula: `(${item.eligibleQuantity.toLocaleString()} × EUR ${cashRate.toFixed(2)}) + fractional cash in lieu`, expected: expectedCash, expectedCash, expectedSecurityQuantity: securityQuantity, securityMovement: `${securityQuantity.toLocaleString()} shares; ${fractional} fractional share paid in cash`, currency: "EUR" };
+    }
+    throw new Error(`Calculation is not supported for event type "${event.eventType}". Supported event types: Cash dividend, Stock split, Stock dividend / bonus issue, Rights issue, Tender offer, Merger / acquisition.`);
   });
 
   event.affectedAccounts = event.impacts.length;

@@ -1,3 +1,5 @@
+import type { EventDetail } from "@workspace/api-client-react";
+
 export type CaseStageId =
   | "notice"
   | "validate"
@@ -22,6 +24,11 @@ export type CaseStage = {
   detail: string;
 };
 
+export type CaseJourney = {
+  recommendedStage: CaseStageId;
+  stages: CaseStage[];
+};
+
 const baseStages: Array<Pick<CaseStage, "id" | "label">> = [
   { id: "notice", label: "Notice" },
   { id: "validate", label: "Validate" },
@@ -36,7 +43,7 @@ export function isElective(processingType: string) {
   return processingType !== "Mandatory";
 }
 
-export function getCaseStages(event: any): CaseStage[] {
+export function getCaseStages(event: EventDetail): CaseJourney {
   const elective = isElective(event.processingType);
   const missingTerms = event.validation?.missingTerms?.length ?? 0;
   const hasImpacts = (event.impacts?.length ?? 0) > 0;
@@ -53,7 +60,7 @@ export function getCaseStages(event: any): CaseStage[] {
 
   const currentIndex = baseStages.findIndex((stage) => stage.id === current);
 
-  return baseStages.map((stage, index) => {
+  const stages: CaseStage[] = baseStages.map((stage, index): CaseStage => {
     if (!elective && (stage.id === "decision" || stage.id === "execute")) {
       return {
         ...stage,
@@ -83,9 +90,11 @@ export function getCaseStages(event: any): CaseStage[] {
     if (stage.id === current) return { ...stage, state: "current", detail: "Current operational control point." };
     return { ...stage, state: "future", detail: "Available when prior controls are complete." };
   });
+
+  return { recommendedStage: current, stages };
 }
 
-export function getPriorityReason(event: any) {
+export function getPriorityReason(event: EventDetail) {
   if (event.status === "Break identified") return "Settlement break: investigate the variance";
   if (event.status === "Under review") return "Blocked: a critical term needs validation";
   if (event.status === "Received") return "Review required: validate the extracted notice terms";

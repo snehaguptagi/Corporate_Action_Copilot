@@ -10,6 +10,7 @@ import {
   getGetDashboardQueryKey,
   getListEventsQueryKey,
   getListTasksQueryKey,
+  type EventDetail,
 } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { useEffect, useState } from "react";
@@ -104,38 +105,12 @@ export default function EventWorkbench() {
   if (isLoading) return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading workbench…</div>;
   if (isError || !event) return <div className="flex flex-1 items-center justify-center text-sm text-destructive">The workbench could not be loaded.</div>;
 
-  const data = event as any;
+  const data: EventDetail = event;
   const isAnalyst = actor.role === "Operations Analyst";
   const isReviewer = actor.role === "Reviewer";
   const isCashDividend = data.eventType === "Cash dividend";
   const missingTerms = data.validation?.missingTerms ?? [];
   const canCalculate = data.validation?.isReady && isAnalyst;
-
-  // Determine active flow stage
-  const getRecommendedStage = () => {
-    if (data.status === "Received" || data.status === "Under review" || data.status === "Validated") {
-      if (missingTerms.length > 0) return "validate";
-      if (data.status === "Validated") return "impact";
-      if (data.impacts.length === 0) return "impact";
-    }
-    if (data.status === "Election required") return "decision";
-    if (data.status === "Awaiting approval") return "decision";
-    
-    // For Mandatory events, execution might be the next direct step or settlement
-    if (data.processingType === "Mandatory" && data.impacts.length > 0 && missingTerms.length === 0) {
-      if (data.status === "Awaiting settlement" || data.status === "Break identified" || data.status === "Reconciled" || data.status === "Closed") return "reconcile";
-      if (data.status === "Approved" && !data.instruction.simulated) return "execute";
-      return "execute"; 
-    }
-
-    if (data.status === "Approved" && !data.instruction.simulated) return "execute";
-    if (data.status === "Awaiting settlement" || data.status === "Break identified" || data.status === "Reconciled" || data.status === "Closed") return "reconcile";
-    
-    return "notice";
-  };
-
-  const recommendedStage = getRecommendedStage();
-  const currentStageId = activeStageId || recommendedStage;
 
   const updateTerm = (term: any) => {
     const nextValue = values[term.key] ?? term.value;
@@ -220,7 +195,8 @@ export default function EventWorkbench() {
   }
 
   // Determine completed stages up to the recommended
-  const caseStages = getCaseStages(data);
+  const { stages: caseStages, recommendedStage } = getCaseStages(data);
+  const currentStageId = activeStageId || recommendedStage;
 
   const renderStageContent = () => {
     switch (currentStageId) {
@@ -568,10 +544,10 @@ export default function EventWorkbench() {
                 <div className="md:col-span-2">{(isAnalyst || actor.role === "Operations Manager") && <Button onClick={reconcile} disabled={saveReconciliation.isPending}>Record and classify settlement</Button>}</div>
               </CardContent>
             </Card>
-            {data.reconciliation.investigationSteps?.length > 0 && (
+            {(data.reconciliation.investigationSteps?.length ?? 0) > 0 && (
               <Card className="border-rose-300 bg-white">
                 <CardHeader><CardTitle className="text-base text-rose-900">Suggested investigation steps</CardTitle></CardHeader>
-                <CardContent><ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">{data.reconciliation.investigationSteps.map((step: string) => <li key={step}>{step}</li>)}</ul></CardContent>
+                <CardContent><ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">{data.reconciliation.investigationSteps?.map((step) => <li key={step}>{step}</li>)}</ul></CardContent>
               </Card>
             )}
           </div>

@@ -21,12 +21,13 @@ function rightsEvent() {
     processingType: "Voluntary",
     risk: "High",
     currency: "EUR",
-    requiredTermKeys: ["rightsRatio", "subscriptionPrice"],
+    requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate"],
     terms: [
       { key: "rightsRatio", label: "Rights ratio", value: "1 for 5", reviewStatus: "Validated" },
       { key: "subscriptionPrice", label: "Subscription price", value: "EUR 8.50", reviewStatus: "Validated" },
+      { key: "recordDate", label: "Record date", value: "24 Aug 2026", reviewStatus: "Validated" },
     ],
-    calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 8.5, currency: "EUR" },
+    calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 8.5, currency: "EUR", recordDate: "2026-08-24" },
     positions: [
       { id: "p-1", fund: "European Opportunities Fund", account: "CUST-6632", isin: "FR001400VRN5", securityId: "SEC-001", eligibleQuantity: 100000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
       { id: "p-2", fund: "Closed Fund", account: "CUST-0000", securityId: "SEC-001", eligibleQuantity: 1000, positionDate: "2026-08-25", eligibilityStatus: "Excluded", dataQualityWarning: "Closed" },
@@ -48,6 +49,75 @@ function rightsEvent() {
     instruction: {},
   } as any;
 }
+
+function dividendEvent() {
+  return {
+    ...rightsEvent(),
+    id: "test-dividend",
+    reference: "TEST-DIVIDEND",
+    eventType: "Cash dividend",
+    processingType: "Mandatory",
+    currency: "GBP",
+    status: "Under review",
+    settlementStage: "Under review",
+    requiredTermKeys: ["rate", "withholding", "recordDate"],
+    terms: [
+      { key: "rate", label: "Cash rate", value: "GBP 0.4250", reviewStatus: "Validated" },
+      { key: "withholding", label: "Withholding tax", value: "Rate required", reviewStatus: "Needs review" },
+      { key: "recordDate", label: "Record date", value: "24 Aug 2026", reviewStatus: "Validated" },
+    ],
+    calculationInputs: { rate: 0.425, currency: "GBP", cashDecimals: 2, recordDate: "2026-08-24" },
+    positions: [
+      { id: "p-dividend", fund: "Income Fund", account: "CUST-4081", isin: "FR001400VRN5", securityId: "SEC-TEST", eligibleQuantity: 450000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
+    ],
+    impacts: [],
+    tasks: [],
+    audit: [],
+    validation: { missingTerms: ["withholding"], isReady: false },
+    reconciliation: {
+      expected: 0, expectedCash: 0, expectedSecurityQuantity: 0, expectedCurrency: "GBP",
+      expectedSettlementDate: "2026-09-05", expectedAccount: "CUST-4081", actual: 0, actualCash: 0,
+      actualSecurityQuantity: 0, actualCurrency: "GBP", actualSettlementDate: "", actualAccount: "",
+      tolerance: 0.01, status: "Not due", classification: "Not due", note: "", investigationSteps: [],
+    },
+  } as any;
+}
+
+test("cash dividend blocks calculation until withholding is corrected and validated", () => {
+  const event = dividendEvent();
+  assert.throws(() => calculateEventImpacts(event, analyst), /withholding/);
+  assert.throws(() => applyTermUpdates(event, [{ key: "withholding", value: "15%" }], analyst, ""), /reason is required/);
+  applyTermUpdates(event, [{ key: "withholding", value: "15%", reason: "Validated against market tax guidance" }], analyst, "");
+  calculateEventImpacts(event, analyst);
+  assert.equal(event.calculationInputs.withholdingRate, 0.15);
+  assert.equal(event.impacts[0].grossCash, 191250);
+  assert.equal(event.impacts[0].withholdingAmount, 28687.5);
+  assert.equal(event.impacts[0].netCash, 162562.5);
+  assert.equal(event.impacts[0].expectedCash, 162562.5);
+  assert.equal(event.reconciliation.expectedGrossCash, 191250);
+  assert.equal(event.reconciliation.expectedWithholdingAmount, 28687.5);
+  assert.equal(event.reconciliation.expectedNetCash, 162562.5);
+});
+
+test("percentage and fractional withholding inputs normalize to the same rate", () => {
+  const percentage = dividendEvent();
+  const fraction = dividendEvent();
+  applyTermUpdates(percentage, [{ key: "withholding", value: "15%", reason: "Validated percentage" }], analyst, "");
+  applyTermUpdates(fraction, [{ key: "withholding", value: "0.15", reason: "Validated fraction" }], analyst, "");
+  assert.equal(percentage.calculationInputs.withholdingRate, 0.15);
+  assert.equal(fraction.calculationInputs.withholdingRate, 0.15);
+});
+
+test("cash reconciliation compares actual settlement with expected net cash", () => {
+  const event = dividendEvent();
+  applyTermUpdates(event, [{ key: "withholding", value: "15%", reason: "Validated tax guidance" }], analyst, "");
+  calculateEventImpacts(event, analyst);
+  event.status = "Awaiting settlement";
+  reconcileEvent(event, { actual: 160562.5, actualCurrency: "GBP", actualSettlementDate: "2026-09-05", actualAccount: "CUST-4081", note: "Synthetic custodian feed" }, analyst);
+  assert.equal(event.reconciliation.difference, -2000);
+  assert.equal(event.reconciliation.classification, "Under-settled");
+  assert.match(event.reconciliation.investigationSteps[2], /withholding rate/);
+});
 
 test("rights calculation uses eligible positions and rounds deterministic entitlements", () => {
   const event = rightsEvent();
@@ -94,7 +164,7 @@ test("a term editor cannot approve the same event under a checker role", () => {
 test("under-settlement creates an investigation task instead of silently matching", () => {
   const event = rightsEvent();
   event.status = "Received";
-  assert.throws(() => reconcileEvent(event, { actual: 0, actualSecurityQuantity: 0, actualCurrency: "EUR", actualSettlementDate: "2026-09-05", actualAccount: "CUST-6632", note: "Attempted bypass" }, analyst), /simulated instruction is required/);
+  assert.throws(() => reconcileEvent(event, { actual: 0, actualSecurityQuantity: 0, actualCurrency: "EUR", actualSettlementDate: "2026-09-05", actualAccount: "CUST-6632", note: "Attempted bypass" }, analyst), /must be ready for settlement/);
   event.status = "Awaiting settlement";
   reconcileEvent(event, { actual: 169000, actualSecurityQuantity: 19800, actualCurrency: "EUR", actualSettlementDate: "2026-09-05", actualAccount: "CUST-6632", note: "Synthetic custodian feed" }, analyst);
   assert.equal(event.reconciliation.classification, "Under-settled");

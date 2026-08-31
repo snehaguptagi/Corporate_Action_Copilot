@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import {
-  calculateDividend,
+  calculateDividendWithholding,
   calculateMixedMerger,
   calculateRights,
   calculateSplit,
@@ -11,7 +11,7 @@ import {
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = new Date();
-export const SEED_VERSION = "rolling-demo-pack-v5";
+export const SEED_VERSION = "rolling-demo-pack-v6";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -202,10 +202,10 @@ const preloadedEvents: EventData[] = [
     marketDeadline: `${shortDate(seedTimeline.aurora.market)} · 16:00 BST`,
     internalDeadline: `${shortDate(seedTimeline.aurora.internal)} · 16:00 BST`,
     affectedAccounts: 2,
-    amount: 191250,
+    amount: 0,
     currency: "GBP",
     securityMaster: { securityId: "SEC-002", isin: "GB00AUR00018", ticker: "AUR", securityName: "Aurora Global plc", currency: "GBP", market: "United Kingdom", status: "Active" },
-    requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"],
+    requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"],
     calculationInputs: { rate: 0.425, currency: "GBP", cashDecimals: 2, recordDate: isoDate(seedTimeline.aurora.record) },
     notice: notice(
       "cash-dividend-notice.pdf",
@@ -220,22 +220,20 @@ const preloadedEvents: EventData[] = [
       term("recordDate", "Record date", shortDate(seedTimeline.aurora.record), 1, `“Record date: ${longDate(seedTimeline.aurora.record)}.”`),
       term("paymentDate", "Payment date", shortDate(seedTimeline.aurora.payment), 2, `“Payment date: ${longDate(seedTimeline.aurora.payment)}.”`),
       term("currency", "Payment currency", "GBP", 2, "“All payments will be made in pound sterling (GBP).”", "Needs review", 0.71),
+      term("withholding", "Withholding tax", "Rate required from market documentation", 2, "“Withholding treatment remains subject to market documentation.”", "Needs review", 0.42),
     ],
     positions: [
       position("POS-AUR-1", "Northbridge Income Fund", "CUST-8101", "GB00AUR00018", 300000, isoDate(seedTimeline.aurora.record)),
       position("POS-AUR-2", "Northbridge Balanced Fund", "CUST-9227", "GB00AUR00018", 150000, isoDate(seedTimeline.aurora.record)),
       position("POS-AUR-X", "Northbridge Income Fund", "CUST-8102", "GB00AUR00099", 25000, isoDate(seedTimeline.aurora.record), "Not matched", "Same issuer but different ISIN"),
     ],
-    impacts: [
-      { id: "imp-aur-1", fund: "Northbridge Income Fund", account: "CUST-8101", eligibleQuantity: 300000, positionDate: isoDate(seedTimeline.aurora.record), securityId: "SEC-002", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "300,000 × GBP 0.4250", expected: 127500, expectedCash: 127500, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "GBP", status: "Calculated", election: null, approval: "Not required" },
-      { id: "imp-aur-2", fund: "Northbridge Balanced Fund", account: "CUST-9227", eligibleQuantity: 150000, positionDate: isoDate(seedTimeline.aurora.record), securityId: "SEC-002", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "150,000 × GBP 0.4250", expected: 63750, expectedCash: 63750, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "GBP", status: "Calculated", election: null, approval: "Not required" },
-    ],
+    impacts: [],
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
-    reconciliation: { expected: 191250, actual: 0, difference: -191250, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Awaiting payment date.", expectedCash: 191250, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.aurora.payment), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
+    reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Expected net cash is pending withholding-rate validation.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.aurora.payment), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
     tasks: [
       task("task-aur-1", "evt-aurora-review", "CA-2026-0814-AX", "Validate payment currency", "Aisha Mehta", "Today · 11:00 BST", "High", "Term validation", "Confirm the currency evidence before calculation can be released."),
-      task("task-aur-2", "evt-aurora-review", "CA-2026-0814-AX", "Review withholding guidance", "Tax Operations", `${taskDate(seedTimeline.aurora.market)} · 09:00 BST`, "Medium", "Risk", "Document the tax assumption or escalate it.", "Open", "Validate payment currency", "CA-CONTROL-008"),
+      task("task-aur-2", "evt-aurora-review", "CA-2026-0814-AX", "Supply withholding rate", "Tax Operations", `${taskDate(seedTimeline.aurora.market)} · 09:00 BST`, "High", "Term validation", "Provide the event-level withholding rate from market documentation. The analyst must record the correction reason before calculation.", "Open", "Validate payment currency", "CA-CONTROL-008"),
     ],
     audit: [
       { id: "audit-aur-1", eventId: "evt-aurora-review", action: "Notice extracted", actor: "System", actorType: "system", timestamp: seedTimestamp(seedTimeline.aurora.audit, "05:44:00"), detail: "Terms extracted with evidence; payment currency remains unvalidated.", previousValue: "", newValue: "Under review", reason: "", evidenceId: "EVD-AUR-04", workflowStatus: "Under review" },
@@ -374,19 +372,19 @@ const preloadedEvents: EventData[] = [
     marketDeadline: `${shortDate(seedTimeline.harbor.market)} · EOD BST`,
     internalDeadline: `${shortDate(seedTimeline.harbor.internal)} · EOD BST`,
     affectedAccounts: 1,
-    amount: 191250,
+    amount: 162562.5,
     currency: "GBP",
     securityMaster: { securityId: "SEC-007", isin: "GB00HARB0007", ticker: "HBR", securityName: "Harbor Utilities plc", currency: "GBP", market: "United Kingdom", status: "Active" },
-    requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"],
-    calculationInputs: { rate: 0.425, currency: "GBP", cashDecimals: 2, recordDate: isoDate(seedTimeline.harbor.record) },
-    notice: notice("harbor-dividend-notice.pdf", "A mandatory cash dividend is payable in GBP.", [`CASH DIVIDEND\nRate: GBP 0.425 per ordinary share.\nRecord date: ${longDate(seedTimeline.harbor.record)}.`, `Payment date: ${longDate(seedTimeline.harbor.settlement)}.\nCurrency: GBP.`]),
-    terms: [term("rate", "Cash rate", "GBP 0.4250", 1, "“Rate: GBP 0.425 per ordinary share.”"), term("recordDate", "Record date", shortDate(seedTimeline.harbor.record), 1, `“Record date: ${longDate(seedTimeline.harbor.record)}.”`), term("paymentDate", "Payment date", shortDate(seedTimeline.harbor.settlement), 2, `“Payment date: ${longDate(seedTimeline.harbor.settlement)}.”`), term("currency", "Payment currency", "GBP", 2, "“Currency: GBP.”")],
+    requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"],
+    calculationInputs: { rate: 0.425, withholdingRate: 0.15, currency: "GBP", cashDecimals: 2, recordDate: isoDate(seedTimeline.harbor.record) },
+    notice: notice("harbor-dividend-notice.pdf", "A mandatory cash dividend is payable in GBP after withholding tax.", [`CASH DIVIDEND\nRate: GBP 0.425 per ordinary share.\nRecord date: ${longDate(seedTimeline.harbor.record)}.`, `Payment date: ${longDate(seedTimeline.harbor.settlement)}.\nCurrency: GBP.\nWithholding rate: 15% of gross dividend.`]),
+    terms: [term("rate", "Cash rate", "GBP 0.4250", 1, "“Rate: GBP 0.425 per ordinary share.”"), term("recordDate", "Record date", shortDate(seedTimeline.harbor.record), 1, `“Record date: ${longDate(seedTimeline.harbor.record)}.”`), term("paymentDate", "Payment date", shortDate(seedTimeline.harbor.settlement), 2, `“Payment date: ${longDate(seedTimeline.harbor.settlement)}.”`), term("currency", "Payment currency", "GBP", 2, "“Currency: GBP.”"), term("withholding", "Withholding tax", "15%", 2, "“Withholding rate: 15% of gross dividend.”")],
     positions: [position("POS-HBR-1", "Northbridge Income Fund", "CUST-4081", "GB00HARB0007", 450000, isoDate(seedTimeline.harbor.record))],
-    impacts: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: isoDate(seedTimeline.harbor.record), securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "450,000 × GBP 0.4250", expected: 191250, expectedCash: 191250, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
+    impacts: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: isoDate(seedTimeline.harbor.record), securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "Gross GBP 191,250.00; withholding 15% = GBP 28,687.50; net GBP 162,562.50", expected: 162562.5, expectedCash: 162562.5, grossCash: 191250, withholdingRate: 0.15, withholdingAmount: 28687.5, netCash: 162562.5, expectedSecurityQuantity: 0, securityMovement: "Net cash receipt after withholding", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory cash event. No instruction is submitted.", simulated: false, approvalActor: "" },
-    reconciliation: { expected: 191250, actual: 189250, difference: -2000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is GBP 2,000 below expected.", expectedCash: 191250, actualCash: 189250, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.harbor.settlement), actualSettlementDate: isoDate(seedTimeline.harbor.settlement), expectedAccount: "CUST-4081", actualAccount: "CUST-4081", investigationSteps: ["Verify eligible quantity.", "Check withholding tax treatment.", "Confirm the announced dividend rate.", "Confirm whether one account settled separately.", "Contact the custodian if unexplained."] },
-    tasks: [task("task-hbr-1", "evt-harbor-break", "CA-2026-0804-HB", "Investigate custodian payment", "Aisha Mehta", "Today · 14:00 BST", "High", "Reconciliation", "Expected GBP 191,250; actual GBP 189,250. Verify tax, rate, quantity, and separate settlement.", "Open", "", "CA-CONTROL-007")],
+    reconciliation: { expected: 162562.5, actual: 160562.5, difference: -2000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is GBP 2,000 below the expected net cash after 15% withholding.", expectedCash: 162562.5, expectedGrossCash: 191250, expectedWithholdingAmount: 28687.5, expectedNetCash: 162562.5, actualCash: 160562.5, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.harbor.settlement), actualSettlementDate: isoDate(seedTimeline.harbor.settlement), expectedAccount: "CUST-4081", actualAccount: "CUST-4081", investigationSteps: ["Verify the eligible quantity and record date.", "Confirm the GBP 0.425 gross dividend rate.", "Confirm the validated 15% withholding rate and GBP 28,687.50 tax amount.", "Compare the expected net GBP 162,562.50 with the custodian's GBP 160,562.50 payment.", "Contact the synthetic custodian about the remaining GBP 2,000 shortfall."] },
+    tasks: [task("task-hbr-1", "evt-harbor-break", "CA-2026-0804-HB", "Investigate post-tax payment shortfall", "Aisha Mehta", "Today · 14:00 BST", "High", "Reconciliation", "Expected net GBP 162,562.50 after GBP 28,687.50 withholding; actual GBP 160,562.50. Investigate the remaining GBP 2,000 shortfall.", "Open", "", "CA-CONTROL-007")],
     audit: [{ id: "audit-hbr-1", eventId: "evt-harbor-break", action: "Settlement break identified", actor: "System", actorType: "system", timestamp: seedTimestamp(seedTimeline.harbor.audit, "10:00:00"), detail: "Under-settlement of GBP 2,000 detected; exception task generated.", previousValue: "Awaiting settlement", newValue: "Break identified", reason: "Actual cash below expected", evidenceId: "SET-HBR-01", workflowStatus: "Break identified" }],
   }),
 ];
@@ -490,6 +488,14 @@ function syncCalculationInput(event: EventData, key: string, value: string): voi
     if (!Number.isFinite(parsed) || parsed < 0) throw new Error(`${key} must contain a valid non-negative number.`);
     event.calculationInputs[valueMap[key]] = key === "maximumAcceptance" && parsed > 1 ? parsed / 100 : parsed;
   }
+  if (key === "withholding") {
+    const parsed = numeric(value);
+    const withholdingRate = value.includes("%") ? parsed / 100 : parsed;
+    if (!Number.isFinite(withholdingRate) || withholdingRate < 0 || withholdingRate > 1) {
+      throw new Error("withholding must be a rate between 0 and 1, or a percentage such as 15%.");
+    }
+    event.calculationInputs.withholdingRate = withholdingRate;
+  }
   if (["recordDate", "paymentDate", "settlementDate", "marketDeadline"].includes(key)) {
     const date = new Date(value.replace(/[·]/g, " "));
     if (Number.isNaN(date.getTime())) throw new Error(`${key} must contain a valid date or date-time.`);
@@ -589,8 +595,18 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
     if (event.eventType === "Cash dividend") {
       const rateTermValue = requireTermValue("rate", "cash rate");
       const rate = requireInput("rate", "cash rate");
-      const expectedCash = calculateDividend(item.eligibleQuantity, rate);
-      return { ...common, formula: `${item.eligibleQuantity.toLocaleString()} × ${rateTermValue}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: inputs.currency ?? event.currency };
+      const withholdingRate = requireInput("withholdingRate", "withholding rate");
+      if (withholdingRate < 0 || withholdingRate > 1) throw new Error("Calculation is blocked because the withholding rate must be between 0 and 1.");
+      const currency = inputs.currency ?? event.currency;
+      const { grossCash, withholdingAmount, netCash } = calculateDividendWithholding(
+        item.eligibleQuantity,
+        rate,
+        withholdingRate,
+        inputs.cashDecimals ?? 2,
+      );
+      const withholdingPercent = withholdingRate * 100;
+      const formula = `${item.eligibleQuantity.toLocaleString()} × ${rateTermValue} = ${currency} ${grossCash.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}; withholding ${withholdingPercent.toLocaleString("en-GB", { maximumFractionDigits: 4 })}% = ${currency} ${withholdingAmount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}; net = ${currency} ${netCash.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return { ...common, formula, expected: netCash, expectedCash: netCash, grossCash, withholdingRate, withholdingAmount, netCash, expectedSecurityQuantity: 0, securityMovement: "Net cash receipt after withholding", currency };
     }
     if (event.eventType === "Stock split") {
       const splitFactor = requireInput("splitFactor", "split factor");
@@ -642,6 +658,18 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
 
   event.affectedAccounts = event.impacts.length;
   event.amount = sum(event.impacts, "expectedCash") || sum(event.impacts, "expectedSecurityQuantity");
+  if (event.eventType === "Cash dividend") {
+    const expectedGrossCash = sum(event.impacts, "grossCash");
+    const expectedWithholdingAmount = sum(event.impacts, "withholdingAmount");
+    const expectedNetCash = sum(event.impacts, "netCash");
+    Object.assign(event.reconciliation, {
+      expected: expectedNetCash,
+      expectedCash: expectedNetCash,
+      expectedGrossCash,
+      expectedWithholdingAmount,
+      expectedNetCash,
+    });
+  }
   event.currency = event.eventType === "Stock split" || event.eventType === "Stock dividend / bonus issue" ? "Shares" : event.currency;
   event.calculation.calculationRunAt = now();
   event.calculation.assumptions = `${event.calculation.assumptions} ${positions.length} eligible positions matched by ISIN and record date.`;
@@ -747,7 +775,11 @@ export function reconcileEvent(event: EventData, body: any, actor: any): void {
     status: classification,
     classification,
     note: body.note,
-    investigationSteps: classification === "Matched" ? [] : ["Verify the eligible quantity and position date.", "Confirm the announced rate or ratio.", "Check currency, account, and settlement date.", "Check whether a separate transaction settled.", "Contact the synthetic custodian if unexplained."],
+    investigationSteps: classification === "Matched"
+      ? []
+      : event.eventType === "Cash dividend"
+        ? ["Verify the eligible quantity and record date.", "Confirm the announced gross dividend rate.", "Confirm the validated withholding rate and tax amount.", "Compare expected net cash with the custodian payment.", "Contact the synthetic custodian if the post-tax difference remains unexplained."]
+        : ["Verify the eligible quantity and position date.", "Confirm the announced rate or ratio.", "Check currency, account, and settlement date.", "Check whether a separate transaction settled.", "Contact the synthetic custodian if unexplained."],
   });
   if (classification === "Matched") {
     event.status = "Reconciled";

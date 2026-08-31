@@ -20,6 +20,10 @@ export interface Impact {
   election?: string | null;
   approval?: string;
   expectedCash?: number;
+  grossCash?: number;
+  withholdingRate?: number;
+  withholdingAmount?: number;
+  netCash?: number;
   cashCurrency?: string;
   expectedSecurityQuantity?: number;
   expectedShares?: number;

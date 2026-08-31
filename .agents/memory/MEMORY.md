@@ -4,3 +4,4 @@
 - [Synthetic notice intake](synthetic-notice-intake.md) — Select named scenarios explicitly; do not imply generic document parsing from a filename.
 - [OpenAPI format compatibility](orval-auth-format-compatibility.md) — Avoid auth email/URI formats when this Orval/Zod generator emits unsupported runtime helpers.
 - [Server-side PDF intake](server-pdf-intake.md) — Use system PDF utilities for intake extraction; parser imports can crash the Replit Node runtime.
+- [Dividend withholding scope](dividend-withholding-scope.md) — Model withholding as a validated event-level rate; reconcile settlement against net cash.

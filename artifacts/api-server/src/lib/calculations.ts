@@ -8,6 +8,12 @@ export type MixedMergerCalculation = {
   cash: number;
 };
 
+export type DividendWithholdingCalculation = {
+  grossCash: number;
+  withholdingAmount: number;
+  netCash: number;
+};
+
 const assertFiniteNonNegative = (value: number, name: string): void => {
   if (!Number.isFinite(value) || value < 0) {
     throw new RangeError(`${name} must be a finite, non-negative number`);
@@ -65,6 +71,21 @@ export function calculateDividend(
   assertFiniteNonNegative(eligibleQuantity, "eligibleQuantity");
   assertFiniteNonNegative(cashRate, "cashRate");
   return roundCalculation(eligibleQuantity * cashRate, currencyDecimals);
+}
+
+export function calculateDividendWithholding(
+  eligibleQuantity: number,
+  cashRate: number,
+  withholdingRate: number,
+  currencyDecimals = 2,
+): DividendWithholdingCalculation {
+  if (!Number.isFinite(withholdingRate) || withholdingRate < 0 || withholdingRate > 1) {
+    throw new RangeError("withholdingRate must be between zero and one");
+  }
+  const grossCash = calculateDividend(eligibleQuantity, cashRate, currencyDecimals);
+  const withholdingAmount = roundCalculation(grossCash * withholdingRate, currencyDecimals);
+  const netCash = roundCalculation(grossCash - withholdingAmount, currencyDecimals);
+  return { grossCash, withholdingAmount, netCash };
 }
 
 export function calculateSplit(

@@ -106,6 +106,7 @@ export default function EventWorkbench() {
   const data = event as any;
   const isAnalyst = actor.role === "Operations Analyst";
   const isReviewer = actor.role === "Reviewer";
+  const isCashDividend = data.eventType === "Cash dividend";
   const missingTerms = data.validation?.missingTerms ?? [];
   const canCalculate = data.validation?.isReady && isAnalyst;
 
@@ -394,14 +395,22 @@ export default function EventWorkbench() {
                       <TableHead>Fund / account</TableHead>
                       <TableHead className="text-right">Eligible qty</TableHead>
                       <TableHead>Formula</TableHead>
-                      <TableHead className="text-right">Expected cash</TableHead>
+                      {isCashDividend ? (
+                        <>
+                          <TableHead className="text-right">Gross cash</TableHead>
+                          <TableHead className="text-right">Withholding</TableHead>
+                          <TableHead className="text-right">Net cash</TableHead>
+                        </>
+                      ) : (
+                        <TableHead className="text-right">Expected cash</TableHead>
+                      )}
                       <TableHead className="text-right">Expected securities</TableHead>
                       <TableHead>Assumption</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.impacts.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="h-24 text-center text-slate-500">Validate required terms, then run calculation to produce impacts.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={isCashDividend ? 8 : 6} className="h-24 text-center text-slate-500">Validate required terms, then run calculation to produce impacts.</TableCell></TableRow>
                     ) : data.impacts.map((impact: any) => (
                       <TableRow key={impact.id}>
                         <TableCell>
@@ -410,7 +419,18 @@ export default function EventWorkbench() {
                         </TableCell>
                         <TableCell className="text-right font-mono">{impact.eligibleQuantity.toLocaleString()}</TableCell>
                         <TableCell className="font-mono text-xs">{impact.formula}</TableCell>
-                        <TableCell className="text-right font-mono">{money(impact.expectedCash ?? 0, data.currency === "Shares" ? "EUR" : data.currency)}</TableCell>
+                        {isCashDividend ? (
+                          <>
+                            <TableCell className="text-right font-mono">{money(impact.grossCash ?? 0, data.currency)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              <div>{money(impact.withholdingAmount ?? 0, data.currency)}</div>
+                              <div className="text-xs text-slate-500">{Number((impact.withholdingRate ?? 0) * 100).toLocaleString("en-GB", { maximumFractionDigits: 4 })}%</div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-semibold">{money(impact.netCash ?? impact.expectedCash ?? 0, data.currency)}</TableCell>
+                          </>
+                        ) : (
+                          <TableCell className="text-right font-mono">{money(impact.expectedCash ?? 0, data.currency === "Shares" ? "EUR" : data.currency)}</TableCell>
+                        )}
                         <TableCell className="text-right font-mono">{(impact.expectedSecurityQuantity ?? 0).toLocaleString()}</TableCell>
                         <TableCell className="text-xs">{impact.securityMovement}</TableCell>
                       </TableRow>
@@ -522,8 +542,10 @@ export default function EventWorkbench() {
       case "reconcile":
         return (
           <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-4">
-              <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected cash</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedCash ?? data.reconciliation.expected, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>
+            <div className={`grid gap-4 ${isCashDividend ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
+              {isCashDividend && <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected gross cash</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedGrossCash ?? 0, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>}
+              {isCashDividend && <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected withholding</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedWithholdingAmount ?? 0, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>}
+              <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>{isCashDividend ? "Expected net cash" : "Expected cash"}</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedCash ?? data.reconciliation.expected, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>
               <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected securities</CardDescription><CardTitle className="text-lg">{Number(data.reconciliation.expectedSecurityQuantity ?? 0).toLocaleString()}</CardTitle></CardHeader></Card>
               <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Actual cash</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.actualCash ?? data.reconciliation.actual, data.reconciliation.actualCurrency ?? data.currency)}</CardTitle></CardHeader></Card>
               <Card className={data.reconciliation.classification === "Matched" ? "bg-white" : "border-rose-300 bg-rose-50/40"}>

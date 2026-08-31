@@ -844,6 +844,10 @@ components:
         election: { type: ["string", "null"] }
         approval: { type: string }
         expectedCash: { type: number }
+        grossCash: { type: number }
+        withholdingRate: { type: number }
+        withholdingAmount: { type: number }
+        netCash: { type: number }
         cashCurrency: { type: string }
         expectedSecurityQuantity: { type: number }
         expectedShares: { type: number }
@@ -889,6 +893,9 @@ components:
         status: { type: string }
         note: { type: string }
         expectedCash: { type: number }
+        expectedGrossCash: { type: number }
+        expectedWithholdingAmount: { type: number }
+        expectedNetCash: { type: number }
         actualCash: { type: number }
         expectedSecurityQuantity: { type: number }
         actualSecurityQuantity: { type: number }

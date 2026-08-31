@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateDividend,
+  calculateDividendWithholding,
   calculateMixedMerger,
   calculateRights,
   calculateSplit,
@@ -12,6 +13,20 @@ import {
 test("calculates a cash dividend to currency precision", () => {
   assert.equal(calculateDividend(220_000, 0.425), 93_500);
   assert.equal(calculateDividend(3, 0.335), 1.01);
+});
+
+test("calculates gross dividend, withholding, and net cash at currency precision", () => {
+  assert.deepEqual(calculateDividendWithholding(450_000, 0.425, 0.15), {
+    grossCash: 191_250,
+    withholdingAmount: 28_687.5,
+    netCash: 162_562.5,
+  });
+  assert.deepEqual(calculateDividendWithholding(3, 0.335, 0.15), {
+    grossCash: 1.01,
+    withholdingAmount: 0.15,
+    netCash: 0.86,
+  });
+  assert.throws(() => calculateDividendWithholding(100, 1, 1.01), /between zero and one/);
 });
 
 test("calculates a stock split entitlement", () => {

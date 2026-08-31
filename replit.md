@@ -40,7 +40,7 @@ An internal operations workbench for validating corporate-action notices, calcul
 - `lib/api-spec/openapi.yaml` — source of truth for the API contract and generated clients.
 - `artifacts/corporate-actions-copilot/` — analyst-facing React workbench.
 - `artifacts/api-server/src/routes/corporate-actions.ts` — operations API routes.
-- `artifacts/api-server/src/lib/corporate-actions.ts` — synthetic POC scenarios and workflow logic.
+- `artifacts/api-server/src/lib/corporate-actions-v2.ts` — synthetic POC scenarios and workflow logic.
 - `lib/db/src/schema/corporate-actions.ts` — persisted event records.
 
 ## Architecture decisions

@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm --parallel --filter @workspace/api-server --filter @workspace/corporate-actions-copilot run dev:local",
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "dev": "node ./scripts/dev.mjs",
     "test": "pnpm --filter @workspace/api-server run test",

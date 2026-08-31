@@ -124,6 +124,12 @@ after(async () => {
 });
 
 describe("corporate-action API workflow", { concurrency: false }, () => {
+  test("returns a safe JSON response for unmatched API routes", async () => {
+    const response = await request("/not-a-real-route");
+    assert.equal(response.status, 404);
+    assert.deepEqual(response.body, { error: "API route not found." });
+  });
+
   test("derives workflow roles from signed sessions and blocks maker self-approval", async () => {
     const unauthenticated = await request(`/events/${eventId}/calculate`, {
       method: "POST",

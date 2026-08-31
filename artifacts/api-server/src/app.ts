@@ -64,5 +64,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(authMiddleware);
 
 app.use("/api", router);
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "API route not found." });
+});
+app.use((error: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+  req.log.error({ err: error }, "Unhandled application error");
+  res.status(500).json({ error: "Internal server error." });
+});
 
 export default app;

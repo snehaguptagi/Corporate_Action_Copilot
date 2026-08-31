@@ -17,10 +17,16 @@
     "finalWorkflowStatus": "Reconciled"
   },
   "CA-2026-0804-HB": {
-    "expectedCash": 191250,
-    "actualCash": 189250,
+    "grossCash": 191250,
+    "withholdingRate": 0.15,
+    "withholdingAmount": 28687.5,
+    "expectedNetCash": 162562.5,
+    "expectedCash": 162562.5,
+    "actualNetCash": 160562.5,
+    "actualCash": 160562.5,
+    "difference": -2000,
     "settlementClassification": "Under-settled",
-    "exceptionTask": "Investigate custodian payment"
+    "exceptionTask": "Investigate post-tax payment shortfall"
   },
   "CA-2026-0812-NB": {
     "expectedSecurityQuantity": 5000,

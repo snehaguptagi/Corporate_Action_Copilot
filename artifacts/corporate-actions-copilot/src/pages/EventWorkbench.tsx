@@ -129,9 +129,15 @@ export default function EventWorkbench() {
 
   const saveAnElection = (impact: any) => {
     const optionId = electionOptions[impact.id];
-    const quantityElected = Number(electionQuantities[impact.id] ?? "");
-    if (!optionId || Number.isNaN(quantityElected)) {
+    const rawQuantity = electionQuantities[impact.id]?.trim() ?? "";
+    const quantityElected = Number(rawQuantity);
+    if (!optionId || rawQuantity === "" || !Number.isFinite(quantityElected)) {
       toast({ title: "Election details needed", description: "Select an option and enter a valid quantity.", variant: "destructive" });
+      return;
+    }
+    const entitlement = Number(impact.entitlement ?? impact.eligibleQuantity);
+    if (quantityElected < 0 || !Number.isFinite(entitlement) || quantityElected > entitlement) {
+      toast({ title: "Election quantity is outside the entitlement", description: `Enter a quantity from 0 to ${entitlement.toLocaleString()}.`, variant: "destructive" });
       return;
     }
     saveElection.mutate({ eventId, data: { impactId: impact.id, optionId, quantityElected, comment: electionComments[impact.id] ?? "" } }, {
@@ -151,14 +157,21 @@ export default function EventWorkbench() {
   });
 
   const reconcile = () => {
-    const amount = Number(actual);
-    if (Number.isNaN(amount)) {
+    const rawAmount = actual.trim();
+    const amount = Number(rawAmount);
+    if (rawAmount === "" || !Number.isFinite(amount)) {
       toast({ title: "Actual cash is required", variant: "destructive" });
+      return;
+    }
+    const rawSecurityQuantity = actualSecurity.trim();
+    const securityQuantity = rawSecurityQuantity === "" ? undefined : Number(rawSecurityQuantity);
+    if (securityQuantity !== undefined && !Number.isFinite(securityQuantity)) {
+      toast({ title: "Actual security quantity must be a valid number", variant: "destructive" });
       return;
     }
     saveReconciliation.mutate({ eventId, data: {
       actual: amount,
-      actualSecurityQuantity: actualSecurity ? Number(actualSecurity) : undefined,
+      actualSecurityQuantity: securityQuantity,
       actualCurrency: data.reconciliation.expectedCurrency,
       actualSettlementDate: data.reconciliation.expectedSettlementDate,
       actualAccount: data.reconciliation.expectedAccount,

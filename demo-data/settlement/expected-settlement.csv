@@ -1,5 +1,5 @@
-event_id,account_id,expected_cash,expected_security_quantity,currency,expected_settlement_date
-EVT-RIGHTS-001,CUST-6632,170000,20000,EUR,2026-09-05
-EVT-RIGHTS-001,CUST-7741,85000,10000,EUR,2026-09-05
-EVT-DIV-001,CUST-4081,191250,0,GBP,2026-08-22
-EVT-SPLIT-001,CUST-4410,0,320000,Shares,2026-08-28
+event_id,account_id,expected_gross_cash,expected_withholding_amount,expected_net_cash,expected_security_quantity,currency,expected_settlement_date
+EVT-RIGHTS-001,CUST-6632,170000,0,170000,20000,EUR,2026-09-05
+EVT-RIGHTS-001,CUST-7741,85000,0,85000,10000,EUR,2026-09-05
+EVT-DIV-001,CUST-4081,191250,28687.5,162562.5,0,GBP,2026-08-22
+EVT-SPLIT-001,CUST-4410,0,0,0,320000,Shares,2026-08-28

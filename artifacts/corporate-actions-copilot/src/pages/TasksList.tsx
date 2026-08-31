@@ -85,7 +85,7 @@ export default function TasksList() {
                       {task.due}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={task.status === 'OPEN' ? 'warning' : 'success'}>
+                      <Badge variant={task.status === "Open" ? "warning" : "success"}>
                         {task.status}
                       </Badge>
                     </TableCell>
@@ -93,7 +93,7 @@ export default function TasksList() {
                       <Button 
                         size="sm" 
                         variant="outline"
-                        disabled={task.status !== 'OPEN' || resolveTask.isPending}
+                        disabled={task.status !== "Open" || resolveTask.isPending}
                         onClick={() => handleResolve(task.id)}
                       >
                         Resolve

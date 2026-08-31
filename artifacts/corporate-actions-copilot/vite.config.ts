@@ -19,6 +19,13 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+const rawApiPort = process.env.API_PORT ?? '8080';
+const apiPort = Number(rawApiPort);
+
+if (!Number.isInteger(apiPort) || apiPort <= 0) {
+  throw new Error(`Invalid API_PORT value: "${rawApiPort}"`);
+}
+
 const basePath = process.env.BASE_PATH;
 
 if (!basePath) {
@@ -73,7 +80,7 @@ export default defineConfig({
       strict: true,
     },
     proxy: {
-      '/api': 'http://127.0.0.1:3001',
+      '/api': `http://127.0.0.1:${apiPort}`,
     },
   },
   preview: {

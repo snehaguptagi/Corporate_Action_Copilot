@@ -14,7 +14,7 @@ An internal operations POC for moving a synthetic corporate-action notice from i
 pnpm dev
 ```
 
-This starts the API on port 8080 and the web application on port 25700. Open `http://localhost:25700`.
+This starts the API on `API_PORT` (port 8080 by default) and the web application on `WEB_PORT` (port 25700 by default). The Vite `/api` proxy uses the same `API_PORT`, so the workbench and API stay aligned. Open `http://localhost:25700`.
 
 ## Demo users
 
@@ -79,11 +79,16 @@ additional environment variables are needed for this verification command.
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
-| `API_PORT` | No | `8080` | Port used by the API in `pnpm dev` |
+| `DATABASE_URL` | Yes | None | PostgreSQL connection string |
+| `SESSION_SECRET` | Yes | None | Signs application session cookies. The API refuses to start without it. |
+| `API_PORT` | No | `8080` | Port used by the API and the Vite `/api` proxy in `pnpm dev` |
 | `WEB_PORT` | No | `25700` | Port used by the Vite workbench in `pnpm dev` |
 | `BASE_PATH` | No | `/` | Vite base path for the workbench |
 | `NODE_ENV` | No | set by scripts | Runtime mode |
+| `CORPORATE_ACTIONS_POC` | POC only | `false` | Set to `true` only in a non-production demo environment to enable signed demo operator sessions. Without a demo session or approved authenticated role, mutations return 401. |
+| `CORPORATE_ACTIONS_ROLE_DIRECTORY` | Production | None | JSON role directory that maps exactly one authenticated OIDC user ID or normalized email to an operational role. Production mutations return 401 when no unique entry matches. |
+| `CORS_ALLOWED_ORIGINS` | No | Same origin only | Comma-separated trusted origins allowed to call the API from a separate browser client |
+| `OPENAI_API_KEY` | Notice extraction only | None | Enables OpenAI notice extraction. Other deterministic workflows can run without it. |
 
 
 ## Seeded demo roles
@@ -109,5 +114,5 @@ workbench with one command:
 pnpm dev
 ```
 
-Open the workbench at `http://localhost:25700`. The API health check is
-available at `http://localhost:8080/api/healthz`.
+Open the workbench at `http://localhost:${WEB_PORT:-25700}`. The API health
+check is available at `http://localhost:${API_PORT:-8080}/api/healthz`.

@@ -692,6 +692,7 @@ components:
         affectedAccounts: { type: number }
         amount: { type: number }
         currency: { type: string }
+        cashDirection: { type: string, enum: [Receivable, Payable] }
         isHero: { type: boolean }
         noticeReference: { type: string }
         settlementStage: { type: string }
@@ -839,6 +840,7 @@ components:
         eligibleQuantity: { type: number }
         formula: { type: string }
         expected: { type: number }
+        cashDirection: { type: string, enum: [Receivable, Payable] }
         currency: { type: string }
         status: { type: string }
         election: { type: ["string", "null"] }

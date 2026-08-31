@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ImpactCashDirection } from './impactCashDirection';
 import type { ImpactElectionDecision } from './impactElectionDecision';
 
 export interface Impact {
@@ -14,6 +15,7 @@ export interface Impact {
   eligibleQuantity: number;
   formula: string;
   expected: number;
+  cashDirection?: ImpactCashDirection;
   currency: string;
   status: string;
   /** @nullable */

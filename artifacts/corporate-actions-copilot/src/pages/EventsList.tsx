@@ -8,6 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+function cashDirectionLabel(direction?: string) {
+  if (direction === "Payable") return "Funding required";
+  if (direction === "Receivable") return "Entitlement";
+  return "";
+}
+
 export default function EventsList() {
   const { data: events, isLoading, isError, refetch } = useListEvents();
   const [search, setSearch] = useState("");
@@ -84,7 +90,10 @@ export default function EventsList() {
                   <TableRow key={event.id} className="group">
                     <TableCell className="font-mono text-xs">{event.reference}</TableCell>
                     <TableCell><div className="font-medium">{event.issuer}</div><div className="text-xs text-slate-500">{event.eventType} · {event.security}</div></TableCell>
-                    <TableCell><Badge variant="outline">{event.processingType}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{event.processingType}</Badge>
+                      {cashDirectionLabel(event.cashDirection) && <div className="mt-1 text-xs font-medium text-slate-600">{cashDirectionLabel(event.cashDirection)}</div>}
+                    </TableCell>
                     <TableCell><Badge variant={event.risk === "High" ? "destructive" : event.risk === "Medium" ? "warning" : "secondary"}>{event.risk}</Badge></TableCell>
                     <TableCell className="text-sm text-slate-600">{event.internalDeadline}</TableCell>
                     <TableCell><Badge variant="secondary">{event.status}</Badge></TableCell>

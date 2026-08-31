@@ -77,6 +77,14 @@ export interface Dashboard {
   recentActivity: AuditEntry[];
 }
 
+export type EventSummaryCashDirection = typeof EventSummaryCashDirection[keyof typeof EventSummaryCashDirection];
+
+
+export const EventSummaryCashDirection = {
+  Receivable: 'Receivable',
+  Payable: 'Payable',
+} as const;
+
 export interface EventSummary {
   id: string;
   reference: string;
@@ -91,6 +99,7 @@ export interface EventSummary {
   affectedAccounts: number;
   amount: number;
   currency: string;
+  cashDirection?: EventSummaryCashDirection;
   isHero?: boolean;
   noticeReference?: string;
   settlementStage?: string;
@@ -150,6 +159,14 @@ export interface Position {
   dataQualityWarning?: string;
 }
 
+export type ImpactCashDirection = typeof ImpactCashDirection[keyof typeof ImpactCashDirection];
+
+
+export const ImpactCashDirection = {
+  Receivable: 'Receivable',
+  Payable: 'Payable',
+} as const;
+
 export type ImpactElectionDecision = { [key: string]: unknown };
 
 export interface Impact {
@@ -159,6 +176,7 @@ export interface Impact {
   eligibleQuantity: number;
   formula: string;
   expected: number;
+  cashDirection?: ImpactCashDirection;
   currency: string;
   status: string;
   /** @nullable */

@@ -94,6 +94,7 @@ test("cash dividend blocks calculation until withholding is corrected and valida
   assert.equal(event.impacts[0].withholdingAmount, 28687.5);
   assert.equal(event.impacts[0].netCash, 162562.5);
   assert.equal(event.impacts[0].expectedCash, 162562.5);
+  assert.equal(event.cashDirection, "Receivable");
   assert.equal(event.reconciliation.expectedGrossCash, 191250);
   assert.equal(event.reconciliation.expectedWithholdingAmount, 28687.5);
   assert.equal(event.reconciliation.expectedNetCash, 162562.5);
@@ -125,6 +126,7 @@ test("rights calculation uses eligible positions and rounds deterministic entitl
   assert.equal(event.impacts.length, 1);
   assert.equal(event.impacts[0].expectedSecurityQuantity, 20000);
   assert.equal(event.impacts[0].expectedCash, 170000);
+  assert.equal(event.cashDirection, "Payable");
   assert.equal(event.status, "Election required");
 });
 

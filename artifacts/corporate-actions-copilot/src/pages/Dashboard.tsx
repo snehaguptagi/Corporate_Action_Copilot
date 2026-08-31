@@ -57,11 +57,16 @@ type DashboardEvent = EventSummary & {
   shareAmount?: number;
   cashAmount?: number;
   cashCurrency?: string;
+  cashDirection?: "Receivable" | "Payable";
 };
 
 function formatExposure(event: DashboardEvent) {
-  if (event.shareAmount === undefined) return formatCurrency(event.amount, event.currency);
-  return `${formatCurrency(event.cashAmount ?? event.amount, event.cashCurrency ?? event.currency)} + ${formatCurrency(event.shareAmount, "Shares")}`;
+  const exposure = event.shareAmount === undefined
+    ? formatCurrency(event.amount, event.currency)
+    : `${formatCurrency(event.cashAmount ?? event.amount, event.cashCurrency ?? event.currency)} + ${formatCurrency(event.shareAmount, "Shares")}`;
+  if (event.cashDirection === "Payable") return `Funding required: ${exposure}`;
+  if (event.cashDirection === "Receivable") return `Entitlement: ${exposure}`;
+  return exposure;
 }
 
 function formatActivityTime(timestamp: string) {

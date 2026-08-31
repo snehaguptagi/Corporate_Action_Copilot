@@ -11,7 +11,7 @@ import {
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = new Date();
-export const SEED_VERSION = "rolling-demo-pack-v6";
+export const SEED_VERSION = "rolling-demo-pack-v7";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -171,8 +171,14 @@ const task = (
   escalationPath: "Escalate to Operations Manager",
 });
 
+function eventCashDirection(eventType: string): "Receivable" | "Payable" | undefined {
+  if (eventType === "Rights issue") return "Payable";
+  if (["Cash dividend", "Tender offer", "Merger / acquisition"].includes(eventType)) return "Receivable";
+  return undefined;
+}
+
 function eventBase(input: Record<string, any>): EventData {
-  return {
+  const event: EventData = {
     seedVersion: SEED_VERSION,
     isHero: false,
     noticeReference: input.reference,
@@ -187,6 +193,8 @@ function eventBase(input: Record<string, any>): EventData {
     },
     ...input,
   };
+  if (!event.cashDirection) event.cashDirection = eventCashDirection(event.eventType);
+  return event;
 }
 
 const preloadedEvents: EventData[] = [
@@ -323,7 +331,7 @@ const preloadedEvents: EventData[] = [
     notice: notice("meridian-tender-offer.pdf", "The company offers to acquire up to twenty per cent of each eligible holding at AUD 8.50 per share.", ["OFF-MARKET TENDER OFFER\nMaximum acceptance: 20% of each eligible holding.\nOffer price: AUD 8.50 per share.", `Market deadline: ${longDate(seedTimeline.meridian.market)}, 19:00 AEST. Default option: do not tender.`]),
     terms: [term("offerPrice", "Offer price", "AUD 8.50", 1, "“Offer price: AUD 8.50 per share.”"), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "“Up to twenty per cent of each eligible holding.”"), term("marketDeadline", "Market deadline", `${shortDate(seedTimeline.meridian.market)} · 19:00 AEST`, 2, `“Market deadline: ${longDate(seedTimeline.meridian.market)}, 19:00 AEST.”`)],
     positions: [position("POS-MRL-1", "Sovereign Select Mandate", "CUST-1138", "AU0000MERID2", 40000, isoDate(seedTimeline.meridian.record))],
-    impacts: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: isoDate(seedTimeline.meridian.record), securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-001", analyst: "Aisha Mehta", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
+    impacts: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: isoDate(seedTimeline.meridian.record), securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, cashDirection: "Receivable", expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-001", analyst: "Aisha Mehta", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
     options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20% of the eligible position.", result: "Expected cash proceeds at the offer price.", default: false, fundingFormula: "Quantity elected × offer price" }, { id: "decline", label: "Do not tender", description: "Retain the current holding.", result: "No cash proceeds.", default: true, fundingFormula: "No funding" }],
     instruction: { status: "DRAFT", destination: "Synthetic custodian gateway", reference: "DRAFT-MRL-0818", generatedAt: seedTimestamp(seedTimeline.meridian.audit, "06:40:00"), content: "DRAFT ONLY - awaiting reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 68000, actual: 0, difference: -68000, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Tender outcome pending.", expectedCash: 68000, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "AUD", actualCurrency: "AUD", expectedSettlementDate: isoDate(seedTimeline.meridian.settlement), actualSettlementDate: "", expectedAccount: "CUST-1138", actualAccount: "", investigationSteps: [] },
@@ -353,7 +361,7 @@ const preloadedEvents: EventData[] = [
       position("POS-VMH-1", "European Opportunities Fund", "CUST-6632", "FR001400VMH4", 13005, isoDate(seedTimeline.merger.record)),
       position("POS-VMH-X", "Closed Legacy Fund", "CUST-0000", "FR001400VMH4", 100, isoDate(seedTimeline.merger.record), "Excluded", "Account closed"),
     ],
-    impacts: [{ id: "imp-vmh-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 13005, positionDate: isoDate(seedTimeline.merger.record), securityId: "SEC-006", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "(13,005 × EUR 4.25) + floor(13,005 × 0.333) shares + cash in lieu", expected: 55271.25, expectedCash: 55271.25, expectedSecurityQuantity: 4330, securityMovement: "4,330 New Horizon shares; fraction paid in cash", currency: "EUR", status: "Calculated", election: null, approval: "Pending" }],
+    impacts: [{ id: "imp-vmh-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 13005, positionDate: isoDate(seedTimeline.merger.record), securityId: "SEC-006", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "(13,005 × EUR 4.25) + floor(13,005 × 0.333) shares + cash in lieu", expected: 55271.25, expectedCash: 55271.25, cashDirection: "Receivable", expectedSecurityQuantity: 4330, securityMovement: "4,330 New Horizon shares; fraction paid in cash", currency: "EUR", status: "Calculated", election: null, approval: "Pending" }],
     options: [{ id: "default-consideration", label: "Accept default consideration", description: "Receive the announced cash and share consideration.", result: "Cash plus shares; fractional share settled in cash.", default: true, fundingFormula: "No funding" }, { id: "cash-only", label: "Cash alternative", description: "Elect the optional all-cash consideration.", result: "Cash consideration subject to offer terms.", default: false, fundingFormula: "No funding" }],
     instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VMH-0820", generatedAt: seedTimestamp(seedTimeline.merger.audit, "07:00:00"), content: "DRAFT ONLY - election required before any simulated instruction.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 55271.25, actual: 0, difference: -55271.25, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement follows election deadline.", expectedCash: 55271.25, actualCash: 0, expectedSecurityQuantity: 4330, actualSecurityQuantity: 0, expectedCurrency: "EUR", actualCurrency: "EUR", expectedSettlementDate: isoDate(seedTimeline.merger.settlement), actualSettlementDate: "", expectedAccount: "CUST-6632", actualAccount: "", investigationSteps: [] },
@@ -380,7 +388,7 @@ const preloadedEvents: EventData[] = [
     notice: notice("harbor-dividend-notice.pdf", "A mandatory cash dividend is payable in GBP after withholding tax.", [`CASH DIVIDEND\nRate: GBP 0.425 per ordinary share.\nRecord date: ${longDate(seedTimeline.harbor.record)}.`, `Payment date: ${longDate(seedTimeline.harbor.settlement)}.\nCurrency: GBP.\nWithholding rate: 15% of gross dividend.`]),
     terms: [term("rate", "Cash rate", "GBP 0.4250", 1, "“Rate: GBP 0.425 per ordinary share.”"), term("recordDate", "Record date", shortDate(seedTimeline.harbor.record), 1, `“Record date: ${longDate(seedTimeline.harbor.record)}.”`), term("paymentDate", "Payment date", shortDate(seedTimeline.harbor.settlement), 2, `“Payment date: ${longDate(seedTimeline.harbor.settlement)}.”`), term("currency", "Payment currency", "GBP", 2, "“Currency: GBP.”"), term("withholding", "Withholding tax", "15%", 2, "“Withholding rate: 15% of gross dividend.”")],
     positions: [position("POS-HBR-1", "Northbridge Income Fund", "CUST-4081", "GB00HARB0007", 450000, isoDate(seedTimeline.harbor.record))],
-    impacts: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: isoDate(seedTimeline.harbor.record), securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "Gross GBP 191,250.00; withholding 15% = GBP 28,687.50; net GBP 162,562.50", expected: 162562.5, expectedCash: 162562.5, grossCash: 191250, withholdingRate: 0.15, withholdingAmount: 28687.5, netCash: 162562.5, expectedSecurityQuantity: 0, securityMovement: "Net cash receipt after withholding", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
+    impacts: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: isoDate(seedTimeline.harbor.record), securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "Gross GBP 191,250.00; withholding 15% = GBP 28,687.50; net GBP 162,562.50", expected: 162562.5, expectedCash: 162562.5, cashDirection: "Receivable", grossCash: 191250, withholdingRate: 0.15, withholdingAmount: 28687.5, netCash: 162562.5, expectedSecurityQuantity: 0, securityMovement: "Net cash receipt after withholding", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory cash event. No instruction is submitted.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 162562.5, actual: 160562.5, difference: -2000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is GBP 2,000 below the expected net cash after 15% withholding.", expectedCash: 162562.5, expectedGrossCash: 191250, expectedWithholdingAmount: 28687.5, expectedNetCash: 162562.5, actualCash: 160562.5, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.harbor.settlement), actualSettlementDate: isoDate(seedTimeline.harbor.settlement), expectedAccount: "CUST-4081", actualAccount: "CUST-4081", investigationSteps: ["Verify the eligible quantity and record date.", "Confirm the GBP 0.425 gross dividend rate.", "Confirm the validated 15% withholding rate and GBP 28,687.50 tax amount.", "Compare the expected net GBP 162,562.50 with the custodian's GBP 160,562.50 payment.", "Contact the synthetic custodian about the remaining GBP 2,000 shortfall."] },
@@ -560,6 +568,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
   if (!event.validation.isReady) throw new Error(`Calculation is blocked until these terms are validated: ${event.validation.missingTerms.join(", ")}.`);
 
   const inputs = event.calculationInputs ?? {};
+  event.cashDirection = eventCashDirection(event.eventType);
   if (typeof inputs.recordDate !== "string" || !inputs.recordDate.trim()) {
     throw new Error("Calculation is blocked because the record date is required to determine eligibility.");
   }
@@ -590,6 +599,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
       election: null,
       approval: event.processingType === "Mandatory" ? "Not required" : "Pending",
       status: "Calculated",
+        cashDirection: eventCashDirection(event.eventType),
     };
 
     if (event.eventType === "Cash dividend") {
@@ -631,7 +641,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
       );
       const entitlement = rightsCalculation.rights;
       const expectedCash = rightsCalculation.funding;
-      return { ...common, formula: `floor(${item.eligibleQuantity.toLocaleString()} × ${ratioNumerator} ÷ ${ratioDenominator}) × EUR ${subscriptionPrice.toFixed(2)}`, expected: expectedCash, expectedCash, expectedSecurityQuantity: entitlement, securityMovement: `${entitlement.toLocaleString()} subscription rights`, currency: inputs.currency ?? "EUR", entitlement };
+      return { ...common, formula: `floor(${item.eligibleQuantity.toLocaleString()} × ${ratioNumerator} ÷ ${ratioDenominator}) × EUR ${subscriptionPrice.toFixed(2)}`, expected: expectedCash, expectedCash, cashDirection: "Payable", expectedSecurityQuantity: entitlement, securityMovement: `${entitlement.toLocaleString()} subscription rights`, currency: inputs.currency ?? "EUR", entitlement };
     }
     if (event.eventType === "Tender offer") {
       const maximumPercentage = requireInput("maximumPercentage", "maximum acceptance percentage");

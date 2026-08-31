@@ -49,6 +49,7 @@ import { getCaseStages, getPriorityReason } from "@/lib/case-journey";
 const money = (amount: number, currency: string) => currency === "Shares"
   ? `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(amount)} shares`
   : new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+const cashDirectionLabel = (direction?: string) => direction === "Payable" ? "Funding required" : direction === "Receivable" ? "Entitlement" : "";
 
 const demoPdfPath = `${import.meta.env.BASE_URL}demo-notices/rights-issue-notice.pdf`;
 
@@ -402,7 +403,7 @@ export default function EventWorkbench() {
                           <TableHead className="text-right">Net cash</TableHead>
                         </>
                       ) : (
-                        <TableHead className="text-right">Expected cash</TableHead>
+                        <TableHead className="text-right">{cashDirectionLabel(data.cashDirection) || "Expected cash"}</TableHead>
                       )}
                       <TableHead className="text-right">Expected securities</TableHead>
                       <TableHead>Assumption</TableHead>
@@ -429,7 +430,10 @@ export default function EventWorkbench() {
                             <TableCell className="text-right font-mono font-semibold">{money(impact.netCash ?? impact.expectedCash ?? 0, data.currency)}</TableCell>
                           </>
                         ) : (
-                          <TableCell className="text-right font-mono">{money(impact.expectedCash ?? 0, data.currency === "Shares" ? "EUR" : data.currency)}</TableCell>
+                          <TableCell className="text-right font-mono">
+                            <div>{money(impact.expectedCash ?? 0, data.currency === "Shares" ? "EUR" : data.currency)}</div>
+                            {cashDirectionLabel(impact.cashDirection ?? data.cashDirection) && <div className="text-xs font-sans font-medium text-slate-600">{cashDirectionLabel(impact.cashDirection ?? data.cashDirection)}</div>}
+                          </TableCell>
                         )}
                         <TableCell className="text-right font-mono">{(impact.expectedSecurityQuantity ?? 0).toLocaleString()}</TableCell>
                         <TableCell className="text-xs">{impact.securityMovement}</TableCell>
@@ -660,7 +664,10 @@ export default function EventWorkbench() {
                 <Badge variant={data.risk === "High" ? "destructive" : data.risk === "Medium" ? "warning" : "secondary"}>{data.risk} risk</Badge>
                 <Badge variant="outline">{data.status}</Badge>
               </div>
-              <p className="mt-1 text-sm text-slate-500">{data.eventType} · {data.processingType} · {data.security}</p>
+               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                 <span>{data.eventType} · {data.processingType} · {data.security}</span>
+                 {cashDirectionLabel(data.cashDirection) && <span className="font-medium text-slate-700">{cashDirectionLabel(data.cashDirection)}</span>}
+               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">

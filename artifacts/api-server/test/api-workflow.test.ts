@@ -136,15 +136,17 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       body: JSON.stringify({}),
     }, analystSession);
     assert.equal(calculated.status, 200);
+    assert.equal(calculated.body.cashDirection, "Payable");
     assert.deepEqual(
       calculated.body.impacts.map((impact: EventData) => ({
         account: impact.account,
         expectedCash: impact.expectedCash,
+        cashDirection: impact.cashDirection,
         expectedSecurityQuantity: impact.expectedSecurityQuantity,
       })),
       [
-        { account: "TEST-001", expectedCash: 170_000, expectedSecurityQuantity: 20_000 },
-        { account: "TEST-002", expectedCash: 85_000, expectedSecurityQuantity: 10_000 },
+        { account: "TEST-001", expectedCash: 170_000, cashDirection: "Payable", expectedSecurityQuantity: 20_000 },
+        { account: "TEST-002", expectedCash: 85_000, cashDirection: "Payable", expectedSecurityQuantity: 10_000 },
       ],
     );
     const impact = calculated.body.impacts[0];

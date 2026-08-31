@@ -51,6 +51,7 @@ function rightsFixture(): EventData {
     ],
     positions: [
       { id: "test-position-1", fund: "Test Fund", account: "TEST-001", isin: "FR001400TEST", securityId: "SEC-TEST", eligibleQuantity: 100_000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
+        { id: "test-position-2", fund: "Test Fund", account: "TEST-002", isin: "FR001400TEST", securityId: "SEC-TEST", eligibleQuantity: 50_000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
     ],
     securityMaster: { securityId: "SEC-TEST", isin: "FR001400TEST", ticker: "TRS", securityName: "Test Rights Security", currency: "EUR", market: "France", status: "Active" },
     requiredTermKeys: ["rightsRatio", "subscriptionPrice"],
@@ -133,6 +134,17 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       body: JSON.stringify({}),
     }, analystSession);
     assert.equal(calculated.status, 200);
+    assert.deepEqual(
+      calculated.body.impacts.map((impact: EventData) => ({
+        account: impact.account,
+        expectedCash: impact.expectedCash,
+        expectedSecurityQuantity: impact.expectedSecurityQuantity,
+      })),
+      [
+        { account: "TEST-001", expectedCash: 170_000, expectedSecurityQuantity: 20_000 },
+        { account: "TEST-002", expectedCash: 85_000, expectedSecurityQuantity: 10_000 },
+      ],
+    );
     const impact = calculated.body.impacts[0];
 
     const election = await request(`/events/${eventId}/election`, {
@@ -145,7 +157,19 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       }),
     }, analystSession);
     assert.equal(election.status, 200);
-    assert.equal(election.body.status, "Awaiting approval");
+    assert.equal(election.body.status, "Election required");
+
+    const secondElection = await request(`/events/${eventId}/election`, {
+      method: "POST",
+      body: JSON.stringify({
+        impactId: calculated.body.impacts[1].id,
+        optionId: "exercise",
+        quantityElected: 10_000,
+        comment: "Exercise full entitlement.",
+      }),
+    }, analystSession);
+    assert.equal(secondElection.status, 200);
+    assert.equal(secondElection.body.status, "Awaiting approval");
 
     const spoofedReviewer = await request(`/events/${eventId}/approval`, {
       method: "POST",

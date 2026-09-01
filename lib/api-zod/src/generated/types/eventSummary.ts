@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardSchemeImpact } from './dashboardSchemeImpact';
 import type { EventSummaryCashDirection } from './eventSummaryCashDirection';
+import type { EventSummarySource } from './eventSummarySource';
 
 export interface EventSummary {
   id: string;
@@ -21,6 +23,9 @@ export interface EventSummary {
   affectedAccounts: number;
   amount: number;
   currency: string;
+  receivedAt: string;
+  source: EventSummarySource;
+  schemeImpacts: DashboardSchemeImpact[];
   cashDirection?: EventSummaryCashDirection;
   isHero?: boolean;
   noticeReference?: string;

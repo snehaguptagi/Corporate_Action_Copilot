@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ARKA_EVENT, ARKA_SCHEME_SEED, calculateArkaFixtureValues } from "../src/lib/arka-desk";
-import { getSeededEventSnapshot, syncCalculationInput } from "../src/lib/corporate-actions-v2";
+import { countArrivalsOnDate, getSeededEventSnapshot, SEED_DATE_ANCHOR, syncCalculationInput } from "../src/lib/corporate-actions-v2";
 
 const parseDisplayDate = (value: string) => {
   const [day, month, year] = value.split(" ");
@@ -56,11 +56,42 @@ test("NAV impact units are distinct and fixture inputs are round", () => {
   }
 });
 
-test("Arka eligibility fixture represents the ordered 10 → 8 → 7 → 6 funnel", () => {
+test("Arka eligibility fixture represents one honest ordered population", () => {
   assert.equal(ARKA_SCHEME_SEED.length, 10);
-  assert.equal(ARKA_SCHEME_SEED.filter((scheme) => scheme.quantity > 0n).length, 8);
-  assert.equal(ARKA_SCHEME_SEED.filter((scheme) => scheme.id !== "arka-value" && scheme.quantity > 0n).length, 7);
+  assert.equal(ARKA_SCHEME_SEED.filter((scheme) => scheme.quantity > 0n).length, 7);
+  assert.equal(ARKA_SCHEME_SEED.filter((scheme) => scheme.id !== "arka-value" && scheme.quantity > 0n).length, 6);
   assert.equal(ARKA_SCHEME_SEED.filter((scheme) => scheme.eligibilityStatus === "Eligible").length, 6);
+  const banking = ARKA_SCHEME_SEED.find((scheme) => scheme.id === "arka-banking-financial");
+  assert.equal(banking?.quantity, 0n);
+});
+
+test("Arka scheme seed has ten unique scheme categories and the expected rights totals", () => {
+  assert.equal(ARKA_SCHEME_SEED.length, 10);
+  assert.equal(new Set(ARKA_SCHEME_SEED.map((scheme) => scheme.category)).size, 10);
+  const fixture = calculateArkaFixtureValues();
+  assert.equal(fixture.totalRights, 2_640_000);
+  assert.equal(fixture.totalExerciseCashCrore, 22.44);
+});
+
+test("every active event has a distinct deadline, arrival metadata, and ten scheme impacts", () => {
+  const events = getSeededEventSnapshot();
+  assert.equal(new Set(events.map((event) => event.marketDeadline)).size, events.length);
+  for (const event of events) {
+    assert.ok(event.receivedAt);
+    assert.ok(event.source);
+    assert.equal(event.schemeImpacts.length, ARKA_SCHEME_SEED.length);
+  }
+  for (const event of events.filter((current) => ["Stock split", "Bonus issue"].includes(current.eventType))) {
+    assert.ok(event.schemeImpacts.every((impact: Record<string, unknown>) => impact.navImpactPaise === null));
+  }
+});
+
+test("today arrival count is derived from receivedAt", () => {
+  const events = getSeededEventSnapshot();
+  const before = countArrivalsOnDate(events, SEED_DATE_ANCHOR);
+  assert.equal(before, 3);
+  events[0].receivedAt = "2026-08-20T08:45:00.000Z";
+  assert.equal(countArrivalsOnDate(events, SEED_DATE_ANCHOR), before - 1);
 });
 
 test("IST deadline and IST-midnight record date validate without changing calendar date", () => {

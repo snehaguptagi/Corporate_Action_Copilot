@@ -13,7 +13,7 @@ import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = sharedSeedDateAnchor;
-export const SEED_VERSION = "india-only-coherence-v8";
+export const SEED_VERSION = "fund-manager-dashboard-v9";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -64,11 +64,22 @@ const indianSecurity = (isin: string, ticker: string, issuer: string) => ({
   securityId: `SEC-${ticker}`, isin, ticker, securityName: issuer, currency: "INR", market: "India", status: "Active",
 });
 const istDeadline = (offset: number, time = "15:30") => `${shortDate(offset)} · ${time} IST`;
+const INDIAN_EVENT_META: Record<string, { deadlineOffset: number; receivedOffset: number; receivedTime: string; source: string }> = {
+  "evt-ind-dividend-review": { deadlineOffset: 12, receivedOffset: 0, receivedTime: "08:45:00", source: "NSE corporate filing" },
+  "evt-ind-split": { deadlineOffset: 14, receivedOffset: 0, receivedTime: "10:20:00", source: "BSE corporate filing" },
+  "evt-ind-bonus": { deadlineOffset: 6, receivedOffset: -1, receivedTime: "11:10:00", source: "RTA notice" },
+  "evt-ind-buyback": { deadlineOffset: 16, receivedOffset: 0, receivedTime: "13:05:00", source: "NSDL/CDSL corporate action file" },
+  "evt-ind-scheme": { deadlineOffset: 17, receivedOffset: -2, receivedTime: "15:40:00", source: "Manual upload" },
+  "evt-ind-dividend-break": { deadlineOffset: 1, receivedOffset: -1, receivedTime: "09:30:00", source: "RTA notice" },
+  "evt-bharat-rights": { deadlineOffset: 15, receivedOffset: -1, receivedTime: "14:15:00", source: "NSE corporate filing" },
+};
 const indianEvent = (input: EventData): EventData => eventBase({
   currency: "INR",
-  marketDeadline: istDeadline(input.deadlineOffset ?? 15),
-  internalDeadline: istDeadline((input.deadlineOffset ?? 15) - 1, "15:00"),
+  marketDeadline: istDeadline(INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15),
+  internalDeadline: istDeadline((INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15) - 1, "15:00"),
   affectedAccounts: input.positions?.length ?? 1,
+  receivedAt: seedTimestamp(INDIAN_EVENT_META[input.id]?.receivedOffset ?? -1, INDIAN_EVENT_META[input.id]?.receivedTime ?? "09:00:00"),
+  source: INDIAN_EVENT_META[input.id]?.source ?? "NSE corporate filing",
   calculationInputs: { recordDate: isoDate(input.recordOffset ?? 10), currency: "INR", cashDecimals: 2, ...input.calculationInputs },
   reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement pending.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate((input.deadlineOffset ?? 15) + 7), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
   instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
@@ -87,9 +98,101 @@ const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-bharat-rights", reference: ARKA_EVENT.reference, issuer: ARKA_EVENT.issuer, security: `ISIN ${ARKA_EVENT.isin} · ${ARKA_EVENT.ticker}`, eventType: "Rights issue", processingType: "Voluntary", status: "Validated", risk: "High", amount: 0, securityMaster: indianSecurity(ARKA_EVENT.isin, ARKA_EVENT.ticker, ARKA_EVENT.issuer), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 85 }, notice: notice("bharat-rights-issue-notice.pdf", "Rights issue 1:5 at ₹85.", ["Bharat Renewables rights issue: 1 for 5 at ₹85."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5", 1, "Ratio."), term("subscriptionPrice", "Subscription price", "₹85", 1, "Price."), term("recordDate", "Record date", ARKA_EVENT.recordDate, 1, "Record."), term("marketDeadline", "Market deadline", ARKA_EVENT.marketDeadline, 1, "IST.")], positions: projectArkaBharatPositions(), options: [{ id: "exercise", label: "Exercise", description: "Subscribe.", result: "Funding required.", default: true, fundingFormula: "Rights × ₹85" }] }),
 ];
 
+function buildSchemeImpacts(event: EventData): EventData[] {
+  const positionByScheme = new Map<string, EventData>(
+    (event.positions ?? []).map((current: EventData): [string, EventData] => [String(current.fund), current]),
+  );
+  return ARKA_SCHEME_SEED.map((scheme) => {
+    const position = positionByScheme.get(scheme.schemeName);
+    const eligible = position?.eligibilityStatus !== "Excluded";
+    const quantity = eligible ? Number(position?.eligibleQuantity ?? position?.settledQuantity ?? 0) : 0;
+    let cashAmount = 0;
+    let direction = "Neutral";
+    let quantityResult: number | null = null;
+    let navImpactPaise: number | null = null;
+
+    if (event.eventType === "Cash dividend") {
+      cashAmount = quantity * Number(event.calculationInputs?.rate ?? 0);
+      direction = cashAmount > 0 ? "Receivable" : "Neutral";
+    } else if (event.eventType === "Stock split") {
+      quantityResult = quantity * Number(event.calculationInputs?.splitFactor ?? 1);
+    } else if (event.eventType === "Bonus issue") {
+      quantityResult = Math.floor(
+        quantity
+        * Number(event.calculationInputs?.ratioNumerator ?? 0)
+        / Number(event.calculationInputs?.ratioDenominator ?? 1),
+      );
+    } else if (event.eventType === "Rights issue") {
+      const rights = Math.floor(
+        quantity
+        * Number(event.calculationInputs?.ratioNumerator ?? 0)
+        / Number(event.calculationInputs?.ratioDenominator ?? 1),
+      );
+      cashAmount = rights * Number(event.calculationInputs?.subscriptionPrice ?? 0);
+      direction = cashAmount > 0 ? "Funding" : "Neutral";
+      quantityResult = rights;
+      if (quantity > 0) {
+        const unitsOutstanding = Number(scheme.aumPaise) / Number(scheme.navPaise);
+        navImpactPaise = Number(((quantity * (120 - 685 / 6)) / unitsOutstanding * 100).toFixed(2));
+      }
+    } else if (event.eventType === "Tender offer") {
+      const accepted = Math.floor(quantity * Number(event.calculationInputs?.maximumPercentage ?? 0));
+      cashAmount = accepted * Number(event.calculationInputs?.offerPrice ?? 0);
+      direction = cashAmount > 0 ? "Receivable" : "Neutral";
+      quantityResult = accepted;
+    } else if (event.eventType === "Merger / demerger") {
+      cashAmount = quantity * Number(event.calculationInputs?.cashRate ?? 0);
+      direction = cashAmount > 0 ? "Receivable" : "Neutral";
+      quantityResult = Math.floor(quantity * Number(event.calculationInputs?.shareExchangeRatio ?? 0));
+    }
+
+    const affected = quantity > 0;
+    return {
+      schemeId: scheme.id,
+      schemeName: scheme.schemeName,
+      affected,
+      eligibleQuantity: quantity,
+      direction,
+      cashAmount: Number(cashAmount.toFixed(2)),
+      quantityResult,
+      navImpactPaise,
+      navImpactTreatment: event.eventType === "Rights issue" ? "Dilution" : "Neutral",
+      flag: event.eventType === "Rights issue" && scheme.id === "arka-focused-25"
+        ? "SEBI 10% headroom"
+        : event.eventType === "Rights issue" && scheme.id === "arka-small-cap"
+          ? "Cash budget"
+          : null,
+    };
+  });
+}
+
+for (const event of preloadedEvents) {
+  event.schemeImpacts = buildSchemeImpacts(event);
+  event.affectedAccounts = event.schemeImpacts.filter((impact: EventData) => impact.affected).length;
+}
+
 /** Read-only deterministic fixture snapshot for coherence/control regression tests. */
 export function getSeededEventSnapshot(): EventData[] {
   return JSON.parse(JSON.stringify(preloadedEvents)) as EventData[];
+}
+
+export function countArrivalsOnDate(events: EventData[], date: Date): number {
+  const dateKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+  return events.filter((event) => {
+    const received = new Date(event.receivedAt);
+    return !Number.isNaN(received.getTime())
+      && new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(received) === dateKey;
+  }).length;
 }
 
 function now() { return new Date().toISOString(); }
@@ -228,6 +331,9 @@ function eventBase(input: Record<string, any>): EventData {
   const event: EventData = {
     seedVersion: SEED_VERSION,
     isHero: false,
+    receivedAt: input.notice?.receivedAt ?? seedTimestamp(seedTimeline.noticeReceived, "04:06:00"),
+    source: "Manual upload",
+    schemeImpacts: [],
     noticeReference: input.reference,
     settlementStage: input.status,
     users: demoUsers,

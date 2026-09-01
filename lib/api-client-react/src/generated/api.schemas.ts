@@ -239,6 +239,42 @@ export interface ArkaDeskApprovalInput {
   status: ArkaDeskApprovalInputStatus;
 }
 
+export type DashboardSchemeImpactDirection = typeof DashboardSchemeImpactDirection[keyof typeof DashboardSchemeImpactDirection];
+
+
+export const DashboardSchemeImpactDirection = {
+  Receivable: 'Receivable',
+  Funding: 'Funding',
+  Neutral: 'Neutral',
+} as const;
+
+export interface DashboardSchemeImpact {
+  schemeId: string;
+  schemeName: string;
+  affected: boolean;
+  eligibleQuantity: number;
+  direction: DashboardSchemeImpactDirection;
+  cashAmount: number;
+  /** @nullable */
+  quantityResult: number | null;
+  /** @nullable */
+  navImpactPaise: number | null;
+  navImpactTreatment: string;
+  /** @nullable */
+  flag: string | null;
+}
+
+export type EventSummarySource = typeof EventSummarySource[keyof typeof EventSummarySource];
+
+
+export const EventSummarySource = {
+  NSE_corporate_filing: 'NSE corporate filing',
+  BSE_corporate_filing: 'BSE corporate filing',
+  RTA_notice: 'RTA notice',
+  'NSDL/CDSL_corporate_action_file': 'NSDL/CDSL corporate action file',
+  Manual_upload: 'Manual upload',
+} as const;
+
 export type EventSummaryCashDirection = typeof EventSummaryCashDirection[keyof typeof EventSummaryCashDirection];
 
 
@@ -261,6 +297,9 @@ export interface EventSummary {
   affectedAccounts: number;
   amount: number;
   currency: string;
+  receivedAt: string;
+  source: EventSummarySource;
+  schemeImpacts: DashboardSchemeImpact[];
   cashDirection?: EventSummaryCashDirection;
   isHero?: boolean;
   noticeReference?: string;

@@ -36,6 +36,9 @@ function rightsFixture(): EventData {
     affectedAccounts: 0,
     amount: 0,
     currency: "EUR",
+    receivedAt: "2026-08-26T08:00:00.000Z",
+    source: "Manual upload",
+    schemeImpacts: [],
     notice: {
       documentName: "test-rights-notice.pdf",
       source: "API workflow test",
@@ -141,7 +144,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       method: "POST",
       body: JSON.stringify({}),
     }, analystSession);
-    assert.equal(calculated.status, 200);
+    assert.equal(calculated.status, 200, JSON.stringify(calculated.body));
     assert.equal(calculated.body.cashDirection, "Payable");
     assert.deepEqual(
       calculated.body.impacts.map((impact: EventData) => ({
@@ -223,7 +226,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       method: "PATCH",
       body: JSON.stringify({ terms: [{ key: "subscriptionPrice", value: "EUR 8.50" }] }),
     }, analystSession);
-    assert.equal(updated.status, 200);
+    assert.equal(updated.status, 200, JSON.stringify(updated.body));
     assert.equal(updated.body.audit[0].actor, "Aisha Mehta");
     assert.equal(updated.body.audit[0].actorId, "USR-001");
     assert.equal(updated.body.audit[0].actorRole, "Operations Analyst");

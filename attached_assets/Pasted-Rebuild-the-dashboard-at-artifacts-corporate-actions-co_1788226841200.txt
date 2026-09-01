@@ -1,0 +1,181 @@
+Rebuild the dashboard at artifacts/corporate-actions-copilot/src/pages/Dashboard.tsx.
+The user is a FUND MANAGER at Arka Mutual Fund. The dashboard answers exactly
+two questions and nothing else:
+
+  1. What corporate actions came in, and how did they arrive?
+  2. What did they touch in my portfolio, and what does it cost me?
+
+Anything that does not serve those two questions must be deleted, not moved
+around. The current page is a workflow monitor for an ops supervisor and shows
+the same seven events four different ways. Read the DELETE list below carefully
+— removing things is most of this task.
+
+═══ STEP 0 — PREREQUISITE: THERE ARE 16 SCHEMES, THERE MUST BE 10 ═══
+The last change appended ten new schemes to the six that already existed
+instead of replacing them. ARKA_SCHEME_SEED now has 16 entries, including two
+Value schemes (Arka Value Discovery + Arka Value Fund) and two mid-cap schemes
+(Arka Midcap Opportunities + Arka Mid Cap Fund). Totals are wrong as a result:
+33,20,000 rights and ₹28.22 cr, where the correct figures for the ten-scheme
+book are 26,40,000 rights and ₹22.44 cr.
+
+Delete these six outright: Arka Equity Savings, Arka Large & Mid Cap, Arka
+Balanced Advantage, Arka Value Discovery, Arka Midcap Opportunities, Arka
+Arbitrage. Keep exactly the ten schemes whose AUM and NAV already match spec.
+
+Also: Arka Banking & Financial currently holds 1 share so that the folio-active
+test has a subject. Remove the fabricated holding — it holds nothing, and its
+exclusion reason is "no Bharat Renewables equity holding". If that leaves the
+folio-active test without a case, leave it without a case; do not invent a
+holding to populate it.
+
+The eligibility funnel must then report ONE population: universe 10, then
+holds-equity-ISIN, then held-on-record-date, then folio-active. Right now it
+reports universe 16 with a 8→7→6 chain and separately claims eligible 10, which
+cannot all be true.
+
+═══ STEP 1 — THREE DATA GAPS THAT BLOCK AN HONEST DASHBOARD ═══
+
+(a) Events have no arrival information. Add to every corporate action:
+      receivedAt   — a real timestamp
+      source       — one of: NSE corporate filing | BSE corporate filing |
+                     RTA notice | NSDL/CDSL corporate action file | Manual upload
+    Seed these so arrivals are spread across the last several days, with two or
+    three landing today. "How many arrived today" must be a real count, not a
+    constant.
+
+(b) Every deadline is currently identical — all seven events read
+    "15 Sep 2026 · 15:00 IST". Derive each event's calendar from its OWN record
+    date so deadlines differ, urgency sorting means something, and the
+    dashboard does not contradict the Fund Manager Desk (which says the
+    Bharat Renewables market deadline is 08 Sep).
+
+(c) Only the Bharat Renewables rights issue computes scheme-level impact. The
+    other six have none, which is why the dashboard renders "Exposure: ₹0".
+    Run the same scheme-impact calculation for EVERY event, against the same
+    ten-scheme book.
+
+    Each event type has genuinely different economics. Do NOT invent a NAV hit
+    where there isn't one:
+      Cash dividend   — entitlement receivable = shares × rate. The ex-date
+                        price drop is offset by the receivable, so NAV impact is
+                        neutral. Report the receivable, not a loss.
+      Stock split     — quantity changes, value does not. NAV impact is zero by
+                        construction. Report the new quantity.
+      Bonus issue     — same as split: value-neutral, quantity changes.
+      Rights issue    — the only case with real dilution. Funding required, and
+                        value at risk if the entitlement lapses.
+      Buyback/tender  — optional cash exit on the accepted portion.
+      Merger/demerger — share swap into the new security, plus any cash leg.
+
+    Where an event type has no NAV impact, the field must be empty or explicitly
+    "neutral". Never render 0.00 as though it were a measurement.
+
+═══ STEP 2 — THE PAGE: THREE BLOCKS, IN THIS ORDER ═══
+
+BLOCK 1 — Status as one sentence, not four tiles
+Render the four numbers as a linked funnel, because that is the fund manager's
+actual morning question:
+
+  "3 notices arrived today. 2 affect your schemes. 5 of 10 schemes impacted.
+   ₹22.44 cr to fund by 07 Sep."
+
+The conversion from "arrived" to "affects us" is the most important number on
+the page and currently does not exist anywhere in the product. Every figure must
+be derived from the event set, never hardcoded. Show the nearest real deadline
+and which event it belongs to.
+
+BLOCK 2 — Inbound corporate actions
+One row per corporate action. This single table replaces Priority queue, All
+demo cases, Demo coverage and Risk mix. Columns:
+
+  Issuer + ISIN
+  Action              Dividend / Bonus issue / Split / Rights issue /
+                      Buyback / Merger
+  Arrived             relative time + the source channel from Step 1(a)
+  Schemes impacted    "4 of 10", linking to the drill-down
+  Impact              amount AND direction, as separate concepts:
+                        "Receivable ₹1.91 cr"  or  "Funding ₹22.44 cr"
+                      never a single unsigned "Exposure" column
+  NAV impact          worst-affected scheme's paise per unit, or blank where
+                      the event type has none
+  Needs from you      "Decide by 07 Sep" / "Nothing — mandatory" /
+                      "With Compliance" / "Settled"
+
+Sort by decision urgency first, then by materiality. An event needing no action
+must not appear at the top of an urgency-sorted list — the current page ranks
+Bharat Renewables HIGH while its own reason text says "No action currently
+required".
+
+BLOCK 3 — Your schemes, the other way round
+The reverse view, which does not exist today at all. A fund manager owns
+schemes, not events. Ten rows:
+
+  Scheme | AUM | Open corporate actions touching it | Total NAV impact
+         | Funding needed | Flag (e.g. SEBI 10% headroom)
+
+This is where the answer to "is my fund okay" lives.
+
+Nothing else goes on this page.
+
+═══ STEP 3 — DELETE THESE ═══
+- The "CONTROL ROOM" eyebrow.
+- The heading "Operations dashboard" and its subtitle about "what is moving,
+  what is blocked, and where the synthetic cases are in the lifecycle".
+- The "Demo dataset: synthetic operational cases" banner and the "7 cases /
+  4 high risk / 1 live break" strip.
+- The "Demo coverage" panel entirely — "where the seeded cases sit in the
+  workflow" is a statistic about the fixture, not about the portfolio.
+- The "Risk mix" panel.
+- The "Workload to clear" panel. It duplicates the Open tasks tile, and both
+  currently show zero.
+- The "Recent control activity" panel. It currently renders five identical rows
+  ("Notice received / System / Synthetic NSE notice captured / 31 Aug, 14:30").
+  Audit history has its own page.
+- The "5 of 6 lifecycle stages currently represented" line.
+- The "Action or monitoring" tile — not a category anyone uses.
+- The "Open tasks / 0 due today" tile. Approvals have their own page.
+
+═══ STEP 4 — RENAME ═══
+  case, "cases in workspace"  -> corporate action, "open corporate actions"
+  affected accounts           -> schemes impacted
+  Exposure                    -> Entitlement / Funding required (by direction)
+  Event Inbox      (nav)      -> Corporate actions
+  Notice Intake    (nav)      -> Add a notice
+  Tasks & Risk     (nav)      -> Approvals
+A fund manager does not have "cases" or "accounts". They have corporate actions
+and schemes.
+
+═══ STEP 5 — HONESTY RULES ═══
+- Units must be true. The bonus issue currently shows "₹5,000" for what is
+  5,000 SHARES. Quantities are not currency.
+- Never print 0 or ₹0 as if it were a measurement. If a figure does not apply,
+  say so or omit it.
+- Cash in and cash out are different columns or carry an explicit direction.
+- Every count on the page must be derived. No hardcoded "seven", "six" or
+  "10 of 10".
+- If an event needs no action, it must not be styled or sorted as urgent.
+
+═══ DO NOT ═══
+- Do not add tabs, sub-navigation, or a stage rail to this page.
+- Do not touch EventWorkbench.tsx, FundManagerDesk.tsx, NoticeIntake.tsx,
+  TasksList.tsx or AuditLog.tsx beyond the nav renames.
+- Do not add charts, sparklines, or a "demo" or "coverage" panel of any kind.
+- Do not keep a panel merely because it currently exists.
+
+Declare every new field (receivedAt, source, per-event scheme impact) in
+lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+before wiring the frontend — undeclared fields are stripped from responses by
+the generated Zod validators.
+
+═══ VERIFY ═══
+pnpm run typecheck and pnpm test pass, plus tests asserting:
+- ARKA_SCHEME_SEED has exactly 10 schemes with no duplicated category, and the
+  ten-scheme book totals 26,40,000 rights and ₹22.44 cr;
+- the eligibility funnel reports a universe of 10 and one consistent chain;
+- no two events share a market deadline;
+- "notices arrived today" is computed from receivedAt, and changes if a seeded
+  arrival time moves;
+- every event returns a scheme-impact result, and split and bonus issues return
+  a zero-or-absent NAV impact rather than a fabricated one;
+- no scheme holds a quantity that exists only to satisfy a test.

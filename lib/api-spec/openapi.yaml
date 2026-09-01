@@ -933,9 +933,25 @@ components:
         status:
           type: string
           enum: [Approved, Returned]
+    DashboardSchemeImpact:
+      type: object
+      required: [schemeId, schemeName, affected, eligibleQuantity, direction, cashAmount, quantityResult, navImpactPaise, navImpactTreatment, flag]
+      properties:
+        schemeId: { type: string }
+        schemeName: { type: string }
+        affected: { type: boolean }
+        eligibleQuantity: { type: number }
+        direction:
+          type: string
+          enum: [Receivable, Funding, Neutral]
+        cashAmount: { type: number }
+        quantityResult: { type: ["number", "null"] }
+        navImpactPaise: { type: ["number", "null"] }
+        navImpactTreatment: { type: string }
+        flag: { type: ["string", "null"] }
     EventSummary:
       type: object
-      required: [id, reference, issuer, security, eventType, processingType, status, risk, marketDeadline, internalDeadline, affectedAccounts, amount, currency]
+      required: [id, reference, issuer, security, eventType, processingType, status, risk, marketDeadline, internalDeadline, affectedAccounts, amount, currency, receivedAt, source, schemeImpacts]
       properties:
         id: { type: string }
         reference: { type: string }
@@ -950,6 +966,14 @@ components:
         affectedAccounts: { type: number }
         amount: { type: number }
         currency: { type: string }
+        receivedAt: { type: string }
+        source:
+          type: string
+          enum: [NSE corporate filing, BSE corporate filing, RTA notice, NSDL/CDSL corporate action file, Manual upload]
+        schemeImpacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardSchemeImpact"
         cashDirection: { type: string, enum: [Receivable, Payable] }
         isHero: { type: boolean }
         noticeReference: { type: string }

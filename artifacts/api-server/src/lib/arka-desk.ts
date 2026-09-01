@@ -43,7 +43,7 @@ export const ARKA_SCHEME_SEED = [
   { id: "arka-value", schemeCode: "ARKA-VALUE", schemeName: "Arka Value Fund", category: "Value", aumPaise: 1_480_000_000_000n, navPaise: 6_120, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed record-date test: sold 6,00,000 equity shares before ex-date", quantity: 600_000n },
   { id: "arka-elss-tax-saver", schemeCode: "ARKA-ELSS", schemeName: "Arka ELSS Tax Saver", category: "ELSS", aumPaise: 2_650_000_000_000n, navPaise: 8_840, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed equity-ISIN test: holds issuer NCD only", quantity: 0n },
   { id: "arka-mid-cap", schemeCode: "ARKA-MC", schemeName: "Arka Mid Cap Fund", category: "Mid cap", aumPaise: 4_100_000_000_000n, navPaise: 6_710, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed equity-ISIN test: no Bharat Renewables equity holding", quantity: 0n },
-  { id: "arka-banking-financial", schemeCode: "ARKA-BF", schemeName: "Arka Banking & Financial", category: "Sectoral", aumPaise: 1_900_000_000_000n, navPaise: 4_470, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed folio-active test: folio inactive", quantity: 1n },
+  { id: "arka-banking-financial", schemeCode: "ARKA-BF", schemeName: "Arka Banking & Financial", category: "Banking", aumPaise: 1_900_000_000_000n, navPaise: 4_470, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed folio-active test: folio inactive", quantity: 0n },
 ] as const;
 
 export const ARKA_EVENT = {
@@ -141,6 +141,13 @@ function decisionForScheme(
 }
 
 export async function ensureArkaDeskSeedData(): Promise<void> {
+  const seedIds = new Set<string>(ARKA_SCHEME_SEED.map((scheme) => scheme.id));
+  const persistedSchemes = await db.select({ id: arkaMutualFundSchemesTable.id }).from(arkaMutualFundSchemesTable);
+  for (const persisted of persistedSchemes) {
+    if (seedIds.has(persisted.id)) continue;
+    await db.delete(arkaSchemeHoldingsTable).where(eq(arkaSchemeHoldingsTable.schemeId, persisted.id));
+    await db.delete(arkaMutualFundSchemesTable).where(eq(arkaMutualFundSchemesTable.id, persisted.id));
+  }
   for (const scheme of ARKA_SCHEME_SEED) {
       await db.insert(arkaMutualFundSchemesTable).values({
         id: scheme.id,
@@ -309,9 +316,9 @@ export async function getArkaDesk() {
     },
     funnel: {
       universe: schemeRows.length,
-      holdsEquityIsin: 8,
-      heldOnRecordDate: 7,
-      folioActive: 6,
+      holdsEquityIsin: schemeRows.filter((scheme) => scheme.holdingQuantity > 0).length,
+      heldOnRecordDate: schemeRows.filter((scheme) => scheme.id !== "arka-value" && scheme.holdingQuantity > 0).length,
+      folioActive: eligible.length,
       eligible: eligible.length,
       excluded: schemeRows.length - eligible.length,
       blocked: blockedSchemes.length,

@@ -40,7 +40,7 @@ test("seeded INR amounts have no sub-paise precision", () => {
 test("Arka dividend treatment is zero TDS and net equals gross", () => {
   const dividends = getSeededEventSnapshot().filter((event) => event.eventType === "Cash dividend");
   assert.ok(dividends.length > 0);
-  for (const event of dividends) for (const impact of event.impacts ?? []) {
+  for (const event of dividends) for (const impact of event.schemeImpacts?.filter((candidate: EventData) => candidate.affected) ?? []) {
     assert.equal(impact.withholdingRate, 0);
     assert.equal(impact.withholdingAmount, 0);
     assert.equal(impact.netCash, impact.grossCash);

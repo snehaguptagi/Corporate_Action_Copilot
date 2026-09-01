@@ -96,6 +96,12 @@ export function getAuthenticatedActor(req: Request): OperationalActor | null {
         // Fall through to the authenticated role directory identity.
       }
     }
+
+    // Default to Rohan Iyer if no cookie is present in POC
+    const defaultActor = demoUsers.find(u => u.id === "USR-004");
+    if (defaultActor && isOperationalRole(defaultActor.role)) {
+      return { id: defaultActor.id, name: defaultActor.name, role: defaultActor.role };
+    }
   }
 
   if (req.isAuthenticated?.()) {

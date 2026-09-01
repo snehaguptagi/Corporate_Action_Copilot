@@ -13,7 +13,7 @@ import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = sharedSeedDateAnchor;
-export const SEED_VERSION = "computed-attention-v10";
+export const SEED_VERSION = "single-scheme-impact-model-v11";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -83,7 +83,7 @@ const indianEvent = (input: EventData): EventData => eventBase({
   calculationInputs: { recordDate: isoDate(input.recordOffset ?? 10), currency: "INR", cashDecimals: 2, ...input.calculationInputs },
   reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement pending.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate((input.deadlineOffset ?? 15) + 7), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
   instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
-  options: [], impacts: [], tasks: [],
+  options: [], tasks: [],
   audit: [{ id: `audit-${input.id}`, eventId: input.id, action: "Notice received", actor: "System", actorType: "system", timestamp: seedTimestamp(-1, "09:00:00"), detail: "Synthetic NSE notice captured.", previousValue: "", newValue: input.status, reason: "", evidenceId: `EVD-${input.id}`, workflowStatus: input.status }],
   ...input,
 });
@@ -94,34 +94,70 @@ const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-ind-bonus", reference: "CA-IN-BONUS-001", issuer: "Narmada Logistics Ltd", security: "ISIN INE0NAR01013 · NARMADA", eventType: "Bonus issue", processingType: "Mandatory", status: "Closed", amount: 5000, unit: "Shares", securityMaster: indianSecurity("INE0NAR01013", "NARMADA", "Narmada Logistics Ltd"), requiredTermKeys: ["bonusRatio", "paymentDate", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 10 }, notice: notice("narmada-bonus-notice.pdf", "Bonus issue 1:10.", ["One bonus share for every ten equity shares."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 10", 1, "1:10."), term("paymentDate", "Settlement date", shortDate(17), 1, "Settlement."), term("recordDate", "Record date", shortDate(10), 1, "Record date.")], positions: [position("POS-NAR", "Arka Small Cap Fund", "ARKA-SC-001", "INE0NAR01013", 50000, isoDate(10))] }),
   indianEvent({ id: "evt-ind-buyback", reference: "CA-IN-BUYBACK-001", issuer: "Meridian Infrastructure India Ltd", security: "ISIN INE0MER01014 · MII", eventType: "Tender offer", processingType: "Voluntary", status: "Awaiting approval", amount: 6800000, securityMaster: indianSecurity("INE0MER01014", "MII", "Meridian Infrastructure India Ltd"), requiredTermKeys: ["offerPrice", "maximumAcceptance", "marketDeadline"], calculationInputs: { offerPrice: 850, maximumPercentage: .2 }, notice: notice("meridian-buyback-notice.pdf", "Buyback at ₹850 with 20% acceptance.", ["Tender offer / buyback: ₹850 per share; 20% maximum acceptance."]), terms: [term("offerPrice", "Offer price", "₹850", 1, "₹850."), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "20%."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST deadline.")], positions: [position("POS-MER", "Arka Focused 25 Fund", "ARKA-F25-001", "INE0MER01014", 40000, isoDate(10))], options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20%.", result: "Cash proceeds.", default: false, fundingFormula: "Quantity × price" }, { id: "decline", label: "Do not tender", description: "Retain holding.", result: "No cash.", default: true, fundingFormula: "No funding" }] }),
   indianEvent({ id: "evt-ind-scheme", reference: "CA-IN-SCHEME-001", issuer: "Vindhya Mobility Ltd", security: "ISIN INE0VIN01015 · VINDHYA", eventType: "Merger / demerger", processingType: "Mandatory with options", status: "Election required", amount: 0, securityMaster: indianSecurity("INE0VIN01015", "VINDHYA", "Vindhya Mobility Ltd"), requiredTermKeys: ["cashRate", "shareExchangeRatio", "marketDeadline", "recordDate"], calculationInputs: { cashRate: 425, shareExchangeRatio: .333 }, notice: notice("vindhya-scheme-notice.pdf", "Scheme of arrangement.", ["₹425 cash and 0.333 successor shares."]), terms: [term("cashRate", "Cash consideration", "₹425", 1, "Cash."), term("shareExchangeRatio", "Share exchange ratio", "0.333", 1, "Shares."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST.")], positions: [position("POS-VIN", "Arka Infrastructure Fund", "ARKA-INF-001", "INE0VIN01015", 13005, isoDate(10))], options: [{ id: "default-consideration", label: "Accept default consideration", description: "Cash and shares.", result: "Cash plus shares.", default: true, fundingFormula: "No funding" }] }),
-  indianEvent({ id: "evt-ind-dividend-break", reference: "CA-IN-DIV-002", issuer: "Harit Utilities Ltd", security: "ISIN INE0HAR01016 · HARIT", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", amount: 1912500, securityMaster: indianSecurity("INE0HAR01016", "HARIT", "Harit Utilities Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("harit-dividend-notice.pdf", "Interim dividend ₹4.25.", ["₹4.25 dividend. TDS not applicable to Arka Mutual Fund under s.196."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "Rate."), term("recordDate", "Record date", shortDate(10), 1, "Record."), term("paymentDate", "Payment date", shortDate(17), 1, "Payment."), term("currency", "Payment currency", "INR", 1, "INR."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "s.196.")], positions: [position("POS-HAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0HAR01016", 450000, isoDate(10))], impacts: [{ id: "imp-har", fund: "Arka Large Cap Fund", account: "ARKA-LC-001", eligibleQuantity: 450000, positionDate: isoDate(10), securityId: "SEC-HARIT", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "450,000 × ₹4.25", expected: 1912500, expectedCash: 1912500, grossCash: 1912500, netCash: 1912500, withholdingAmount: 0, withholdingRate: 0, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "INR", unit: "INR", status: "Calculated", election: null, approval: "Not required" }], reconciliation: { expected: 1912500, actual: 1870000, difference: -42500, tolerance: .01, status: "Under-settled", classification: "Under-settled", note: "Custodian paid 4,40,000 shares against 4,50,000 entitled.", expectedCash: 1912500, expectedGrossCash: 1912500, expectedWithholdingAmount: 0, expectedNetCash: 1912500, actualCash: 1870000, expectedSecurityQuantity: 450000, actualSecurityQuantity: 440000, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(17), actualSettlementDate: isoDate(17), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: ["Verify entitled quantity of 4,50,000 shares.", "Confirm custodian paid on only 4,40,000 shares.", "Recover ₹42,500 for the 10,000-share shortfall."] } }),
+  indianEvent({ id: "evt-ind-dividend-break", reference: "CA-IN-DIV-002", issuer: "Harit Utilities Ltd", security: "ISIN INE0HAR01016 · HARIT", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", amount: 1912500, securityMaster: indianSecurity("INE0HAR01016", "HARIT", "Harit Utilities Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("harit-dividend-notice.pdf", "Interim dividend ₹4.25.", ["₹4.25 dividend. TDS not applicable to Arka Mutual Fund under s.196."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "Rate."), term("recordDate", "Record date", shortDate(10), 1, "Record."), term("paymentDate", "Payment date", shortDate(17), 1, "Payment."), term("currency", "Payment currency", "INR", 1, "INR."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "s.196.")], positions: [position("POS-HAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0HAR01016", 450000, isoDate(10))], reconciliation: { expected: 1912500, actual: 1870000, difference: -42500, tolerance: .01, status: "Under-settled", classification: "Under-settled", note: "Custodian paid 4,40,000 shares against 4,50,000 entitled.", expectedCash: 1912500, expectedGrossCash: 1912500, expectedWithholdingAmount: 0, expectedNetCash: 1912500, actualCash: 1870000, expectedSecurityQuantity: 450000, actualSecurityQuantity: 440000, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(17), actualSettlementDate: isoDate(17), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: ["Verify entitled quantity of 4,50,000 shares.", "Confirm custodian paid on only 4,40,000 shares.", "Recover ₹42,500 for the 10,000-share shortfall."] } }),
   indianEvent({ id: "evt-bharat-rights", reference: ARKA_EVENT.reference, issuer: ARKA_EVENT.issuer, security: `ISIN ${ARKA_EVENT.isin} · ${ARKA_EVENT.ticker}`, eventType: "Rights issue", processingType: "Voluntary", status: "Validated", amount: 0, securityMaster: indianSecurity(ARKA_EVENT.isin, ARKA_EVENT.ticker, ARKA_EVENT.issuer), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 85 }, notice: notice("bharat-rights-issue-notice.pdf", "Rights issue 1:5 at ₹85.", ["Bharat Renewables rights issue: 1 for 5 at ₹85."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5", 1, "Ratio."), term("subscriptionPrice", "Subscription price", "₹85", 1, "Price."), term("recordDate", "Record date", ARKA_EVENT.recordDate, 1, "Record."), term("marketDeadline", "Market deadline", ARKA_EVENT.marketDeadline, 1, "IST.")], positions: projectArkaBharatPositions(), options: [{ id: "exercise", label: "Exercise", description: "Subscribe.", result: "Funding required.", default: true, fundingFormula: "Rights × ₹85" }] }),
 ];
 
 function buildSchemeImpacts(event: EventData): EventData[] {
-  const positionByScheme = new Map<string, EventData>(
-    (event.positions ?? []).map((current: EventData): [string, EventData] => [String(current.fund), current]),
+  const positions = event.positions ?? [];
+  const arkaNames = new Set(ARKA_SCHEME_SEED.map((scheme) => scheme.schemeName));
+  const isArkaEvent = positions.some((position: EventData) => arkaNames.has(position.fund));
+  const schemes: EventData[] = isArkaEvent
+    ? ARKA_SCHEME_SEED
+    : positions.map((position: EventData) => ({
+        id: position.account,
+        schemeName: position.fund,
+        schemeCode: position.account,
+        aumPaise: null,
+        navPaise: null,
+      }));
+  const previousById = new Map<string, EventData>(
+    (event.schemeImpacts ?? []).map((impact: EventData): [string, EventData] => [String(impact.id), impact]),
   );
-  return ARKA_SCHEME_SEED.map((scheme) => {
-    const position = positionByScheme.get(scheme.schemeName);
-    const eligible = position?.eligibilityStatus !== "Excluded";
+  return schemes.map((scheme) => {
+    const position = positions.find((current: EventData) => (
+      isArkaEvent ? current.fund === scheme.schemeName : current.account === scheme.schemeCode
+    ));
+    const expectedIsin = event.securityMaster?.isin;
+    const recordDate = event.calculationInputs?.recordDate;
+    const accountClosed = /closed|inactive/i.test(position?.accountStatus ?? "") || /account closed|closed/i.test(position?.dataQualityWarning ?? "");
+    const eligible = Boolean(position)
+      && position.eligibilityStatus !== "Excluded"
+      && (!expectedIsin || position.isin === expectedIsin)
+      && (!recordDate || position.positionDate <= recordDate)
+      && !accountClosed;
     const quantity = eligible ? Number(position?.eligibleQuantity ?? position?.settledQuantity ?? 0) : 0;
     let cashAmount = 0;
     let direction = "Neutral";
     let quantityResult: number | null = null;
     let navImpactPaise: number | null = null;
+    let formula = "";
+    let grossCash = 0;
+    let withholdingAmount = 0;
+    let netCash = 0;
+    let securityMovement = "No movement";
 
     if (event.eventType === "Cash dividend") {
-      cashAmount = quantity * Number(event.calculationInputs?.rate ?? 0);
+      grossCash = quantity * Number(event.calculationInputs?.rate ?? 0);
+      const withholdingRate = Number(event.calculationInputs?.withholdingRate ?? 0);
+      withholdingAmount = grossCash * withholdingRate;
+      netCash = grossCash - withholdingAmount;
+      cashAmount = netCash;
       direction = cashAmount > 0 ? "Receivable" : "Neutral";
+      formula = `${quantity.toLocaleString("en-IN")} × ₹${Number(event.calculationInputs?.rate ?? 0).toFixed(2)}`;
+      securityMovement = "Cash receipt";
     } else if (event.eventType === "Stock split") {
       quantityResult = quantity * Number(event.calculationInputs?.splitFactor ?? 1);
+      formula = `${quantity.toLocaleString("en-IN")} × ${Number(event.calculationInputs?.splitFactor ?? 1)}`;
+      securityMovement = `${quantityResult.toLocaleString("en-IN")} shares after split`;
     } else if (event.eventType === "Bonus issue") {
       quantityResult = Math.floor(
         quantity
         * Number(event.calculationInputs?.ratioNumerator ?? 0)
         / Number(event.calculationInputs?.ratioDenominator ?? 1),
       );
+      formula = `floor(${quantity.toLocaleString("en-IN")} × ${Number(event.calculationInputs?.ratioNumerator ?? 0)} ÷ ${Number(event.calculationInputs?.ratioDenominator ?? 1)})`;
+      securityMovement = `${quantityResult.toLocaleString("en-IN")} bonus shares`;
     } else if (event.eventType === "Rights issue") {
       const rights = Math.floor(
         quantity
@@ -131,7 +167,9 @@ function buildSchemeImpacts(event: EventData): EventData[] {
       cashAmount = rights * Number(event.calculationInputs?.subscriptionPrice ?? 0);
       direction = cashAmount > 0 ? "Funding" : "Neutral";
       quantityResult = rights;
-      if (quantity > 0) {
+      formula = `${rights.toLocaleString("en-IN")} × ₹${Number(event.calculationInputs?.subscriptionPrice ?? 0).toFixed(2)}`;
+      securityMovement = `${rights.toLocaleString("en-IN")} subscription rights`;
+      if (quantity > 0 && scheme.aumPaise != null && scheme.navPaise != null) {
         const unitsOutstanding = Number(scheme.aumPaise) / Number(scheme.navPaise);
         navImpactPaise = Number(((quantity * (120 - 685 / 6)) / unitsOutstanding * 100).toFixed(2));
       }
@@ -140,23 +178,50 @@ function buildSchemeImpacts(event: EventData): EventData[] {
       cashAmount = accepted * Number(event.calculationInputs?.offerPrice ?? 0);
       direction = cashAmount > 0 ? "Receivable" : "Neutral";
       quantityResult = accepted;
+      formula = `${accepted.toLocaleString("en-IN")} × ₹${Number(event.calculationInputs?.offerPrice ?? 0).toFixed(2)}`;
+      securityMovement = `Tender up to ${accepted.toLocaleString("en-IN")} shares`;
     } else if (event.eventType === "Merger / demerger") {
       cashAmount = quantity * Number(event.calculationInputs?.cashRate ?? 0);
       direction = cashAmount > 0 ? "Receivable" : "Neutral";
       quantityResult = Math.floor(quantity * Number(event.calculationInputs?.shareExchangeRatio ?? 0));
+      formula = `${quantity.toLocaleString("en-IN")} × ₹${Number(event.calculationInputs?.cashRate ?? 0).toFixed(2)}`;
+      securityMovement = `${quantityResult.toLocaleString("en-IN")} successor shares`;
     }
 
     const affected = quantity > 0;
+    const id = `imp-${event.id}-${scheme.id}`;
+    const previous = previousById.get(id);
     return {
+      id,
       schemeId: scheme.id,
       schemeName: scheme.schemeName,
+      account: position?.account ?? scheme.schemeCode,
       affected,
       eligibleQuantity: quantity,
       direction,
+      cashDirection: direction === "Funding" ? "Payable" : direction,
       cashAmount: Number(cashAmount.toFixed(2)),
       quantityResult,
       navImpactPaise,
       navImpactTreatment: event.eventType === "Rights issue" ? "Dilution" : "Neutral",
+      formula,
+      expected: Number((cashAmount || quantityResult || 0).toFixed(2)),
+      expectedCash: Number(cashAmount.toFixed(2)),
+      grossCash: Number(grossCash.toFixed(2)),
+      withholdingRate: Number(event.calculationInputs?.withholdingRate ?? 0),
+      withholdingAmount: Number(withholdingAmount.toFixed(2)),
+      netCash: Number(netCash.toFixed(2)),
+      expectedSecurityQuantity: quantityResult ?? 0,
+      securityMovement,
+      positionDate: position?.positionDate ?? "",
+      securityId: position?.securityId ?? event.securityMaster?.securityId ?? "",
+      eligibilityStatus: position?.eligibilityStatus ?? "Not held",
+      dataQualityWarning: position?.dataQualityWarning ?? "",
+      status: previous?.status ?? "Computed on arrival",
+      election: previous?.election ?? null,
+      electionDecision: previous?.electionDecision ?? null,
+      approval: previous?.approval ?? (event.processingType === "Mandatory" ? "Not required" : "Pending"),
+      entitlement: quantityResult ?? quantity,
       flag: event.eventType === "Rights issue" && scheme.id === "arka-focused-25"
         ? "SEBI 10% headroom"
         : event.eventType === "Rights issue" && scheme.id === "arka-small-cap"
@@ -166,9 +231,16 @@ function buildSchemeImpacts(event: EventData): EventData[] {
   });
 }
 
-for (const event of preloadedEvents) {
+function refreshSchemeImpacts(event: EventData): void {
   event.schemeImpacts = buildSchemeImpacts(event);
-  event.affectedAccounts = event.schemeImpacts.filter((impact: EventData) => impact.affected).length;
+  const affected = event.schemeImpacts.filter((impact: EventData) => impact.affected);
+  event.affectedAccounts = affected.length;
+  event.amount = affected.reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0)
+    || affected.reduce((total: number, impact: EventData) => total + Number(impact.quantityResult ?? 0), 0);
+}
+
+for (const event of preloadedEvents) {
+  refreshSchemeImpacts(event);
 }
 
 /** Read-only deterministic fixture snapshot for coherence/control regression tests. */
@@ -399,7 +471,7 @@ function eventBase(input: Record<string, any>): EventData {
     users: demoUsers,
     validation: { missingTerms: [], isReady: false },
     calculation: {
-      calculationRunAt: input.calculationRunAt ?? seedTimestamp(seedTimeline.calculationRun, "06:30:00"),
+      calculationRunAt: input.calculationRunAt,
       rounding: "Round down fractional securities; round cash to 2 decimal places.",
       assumptions: "Eligibility uses settled position on or before the record date.",
       sourceRule: "CA-CONTROL-003",
@@ -448,7 +520,7 @@ const legacyPreloadedEvents: EventData[] = [
       position("POS-AUR-2", "Northbridge Balanced Fund", "CUST-9227", "GB00AUR00018", 150000, isoDate(seedTimeline.aurora.record)),
       position("POS-AUR-X", "Northbridge Income Fund", "CUST-8102", "GB00AUR00099", 25000, isoDate(seedTimeline.aurora.record), "Not matched", "Same issuer but different ISIN"),
     ],
-    impacts: [],
+    historicalRows: [],
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Expected net cash is pending withholding-rate validation.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.aurora.payment), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
@@ -486,7 +558,7 @@ const legacyPreloadedEvents: EventData[] = [
       position("POS-DGT-1", "Northbridge Growth Fund", "CUST-4410", "US24703D1072", 80000, isoDate(seedTimeline.delta.record)),
       position("POS-DGT-2", "Sovereign Select Mandate", "CUST-1138", "US24703D1072", 25000, isoDate(seedTimeline.delta.record)),
     ],
-    impacts: [
+    historicalRows: [
       { id: "imp-dgt-1", fund: "Northbridge Growth Fund", account: "CUST-4410", eligibleQuantity: 80000, positionDate: isoDate(seedTimeline.delta.record), securityId: "SEC-003", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "80,000 × 4", expected: 320000, expectedCash: 0, expectedSecurityQuantity: 320000, securityMovement: "240,000 additional shares", currency: "Shares", status: "Calculated", election: null, approval: "Not required" },
       { id: "imp-dgt-2", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 25000, positionDate: isoDate(seedTimeline.delta.record), securityId: "SEC-003", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "25,000 × 4", expected: 100000, expectedCash: 0, expectedSecurityQuantity: 100000, securityMovement: "75,000 additional shares", currency: "Shares", status: "Calculated", election: null, approval: "Not required" },
     ],
@@ -515,7 +587,7 @@ const legacyPreloadedEvents: EventData[] = [
     notice: notice("nimbus-bonus-issue.pdf", "One bonus share is issued for every ten ordinary shares held.", [`BONUS ISSUE\nNimbus Logistics SA\nMandatory bonus issue of one new ordinary share for every ten existing shares.\nRecord date: ${longDate(seedTimeline.nimbus.record)}.`, `Payment date: ${longDate(seedTimeline.nimbus.settlement)}. Fractions are paid in cash at the agent's determination.`]),
     terms: [term("bonusRatio", "Bonus ratio", "1 for 10", 1, "“One new ordinary share for every ten existing shares.”"), term("paymentDate", "Settlement date", shortDate(seedTimeline.nimbus.settlement), 2, `“Payment date: ${longDate(seedTimeline.nimbus.settlement)}.”`), term("recordDate", "Record date", shortDate(seedTimeline.nimbus.record), 1, `“Record date: ${longDate(seedTimeline.nimbus.record)}.”`, "Needs review")],
     positions: [position("POS-NMB-1", "European Opportunities Fund", "CUST-6632", "NL000NIMB001", 50000, isoDate(seedTimeline.nimbus.record))],
-    impacts: [{ id: "imp-nmb-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 50000, positionDate: isoDate(seedTimeline.nimbus.record), securityId: "SEC-004", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "floor(50,000 × 1 ÷ 10)", expected: 5000, expectedCash: 0, expectedSecurityQuantity: 5000, securityMovement: "5,000 bonus shares", currency: "Shares", status: "Reconciled", election: null, approval: "Not required" }],
+    historicalRows: [{ id: "imp-nmb-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 50000, positionDate: isoDate(seedTimeline.nimbus.record), securityId: "SEC-004", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "floor(50,000 × 1 ÷ 10)", expected: 5000, expectedCash: 0, expectedSecurityQuantity: 5000, securityMovement: "5,000 bonus shares", currency: "Shares", status: "Reconciled", election: null, approval: "Not required" }],
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory bonus issue processed without instruction.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 5000, actual: 5000, difference: 0, tolerance: 1, status: "Matched", classification: "Matched", note: "Custodian security movement matches expected entitlement.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 5000, actualSecurityQuantity: 5000, expectedCurrency: "Shares", actualCurrency: "Shares", expectedSettlementDate: isoDate(seedTimeline.nimbus.settlement), actualSettlementDate: isoDate(seedTimeline.nimbus.settlement), expectedAccount: "CUST-6632", actualAccount: "CUST-6632", investigationSteps: [] },
@@ -541,7 +613,7 @@ const legacyPreloadedEvents: EventData[] = [
     notice: notice("meridian-tender-offer.pdf", "The company offers to acquire up to twenty per cent of each eligible holding at AUD 8.50 per share.", ["OFF-MARKET TENDER OFFER\nMaximum acceptance: 20% of each eligible holding.\nOffer price: AUD 8.50 per share.", `Market deadline: ${longDate(seedTimeline.meridian.market)}, 19:00 AEST. Default option: do not tender.`]),
     terms: [term("offerPrice", "Offer price", "AUD 8.50", 1, "“Offer price: AUD 8.50 per share.”"), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "“Up to twenty per cent of each eligible holding.”"), term("marketDeadline", "Market deadline", `${shortDate(seedTimeline.meridian.market)} · 19:00 AEST`, 2, `“Market deadline: ${longDate(seedTimeline.meridian.market)}, 19:00 AEST.”`)],
     positions: [position("POS-MRL-1", "Sovereign Select Mandate", "CUST-1138", "AU0000MERID2", 40000, isoDate(seedTimeline.meridian.record))],
-    impacts: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: isoDate(seedTimeline.meridian.record), securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, cashDirection: "Receivable", expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-001", analyst: "Aisha Mehta", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
+    historicalRows: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: isoDate(seedTimeline.meridian.record), securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, cashDirection: "Receivable", expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-001", analyst: "Aisha Mehta", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
     options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20% of the eligible position.", result: "Expected cash proceeds at the offer price.", default: false, fundingFormula: "Quantity elected × offer price" }, { id: "decline", label: "Do not tender", description: "Retain the current holding.", result: "No cash proceeds.", default: true, fundingFormula: "No funding" }],
     instruction: { status: "DRAFT", destination: "Synthetic custodian gateway", reference: "DRAFT-MRL-0818", generatedAt: seedTimestamp(seedTimeline.meridian.audit, "06:40:00"), content: "DRAFT ONLY - awaiting reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 68000, actual: 0, difference: -68000, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Tender outcome pending.", expectedCash: 68000, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "AUD", actualCurrency: "AUD", expectedSettlementDate: isoDate(seedTimeline.meridian.settlement), actualSettlementDate: "", expectedAccount: "CUST-1138", actualAccount: "", investigationSteps: [] },
@@ -570,7 +642,7 @@ const legacyPreloadedEvents: EventData[] = [
       position("POS-VMH-1", "European Opportunities Fund", "CUST-6632", "FR001400VMH4", 13005, isoDate(seedTimeline.merger.record)),
       position("POS-VMH-X", "Closed Legacy Fund", "CUST-0000", "FR001400VMH4", 100, isoDate(seedTimeline.merger.record), "Excluded", "Account closed"),
     ],
-    impacts: [{ id: "imp-vmh-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 13005, positionDate: isoDate(seedTimeline.merger.record), securityId: "SEC-006", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "(13,005 × EUR 4.25) + floor(13,005 × 0.333) shares + cash in lieu", expected: 55271.25, expectedCash: 55271.25, cashDirection: "Receivable", expectedSecurityQuantity: 4330, securityMovement: "4,330 New Horizon shares; fraction paid in cash", currency: "EUR", status: "Calculated", election: null, approval: "Pending" }],
+    historicalRows: [{ id: "imp-vmh-1", fund: "European Opportunities Fund", account: "CUST-6632", eligibleQuantity: 13005, positionDate: isoDate(seedTimeline.merger.record), securityId: "SEC-006", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "(13,005 × EUR 4.25) + floor(13,005 × 0.333) shares + cash in lieu", expected: 55271.25, expectedCash: 55271.25, cashDirection: "Receivable", expectedSecurityQuantity: 4330, securityMovement: "4,330 New Horizon shares; fraction paid in cash", currency: "EUR", status: "Calculated", election: null, approval: "Pending" }],
     options: [{ id: "default-consideration", label: "Accept default consideration", description: "Receive the announced cash and share consideration.", result: "Cash plus shares; fractional share settled in cash.", default: true, fundingFormula: "No funding" }, { id: "cash-only", label: "Cash alternative", description: "Elect the optional all-cash consideration.", result: "Cash consideration subject to offer terms.", default: false, fundingFormula: "No funding" }],
     instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VMH-0820", generatedAt: seedTimestamp(seedTimeline.merger.audit, "07:00:00"), content: "DRAFT ONLY - election required before any simulated instruction.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 55271.25, actual: 0, difference: -55271.25, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement follows election deadline.", expectedCash: 55271.25, actualCash: 0, expectedSecurityQuantity: 4330, actualSecurityQuantity: 0, expectedCurrency: "EUR", actualCurrency: "EUR", expectedSettlementDate: isoDate(seedTimeline.merger.settlement), actualSettlementDate: "", expectedAccount: "CUST-6632", actualAccount: "", investigationSteps: [] },
@@ -596,7 +668,7 @@ const legacyPreloadedEvents: EventData[] = [
     notice: notice("harbor-dividend-notice.pdf", "A mandatory cash dividend is payable in GBP after withholding tax.", [`CASH DIVIDEND\nRate: GBP 0.425 per ordinary share.\nRecord date: ${longDate(seedTimeline.harbor.record)}.`, `Payment date: ${longDate(seedTimeline.harbor.settlement)}.\nCurrency: GBP.\nWithholding rate: 15% of gross dividend.`]),
     terms: [term("rate", "Cash rate", "GBP 0.4250", 1, "“Rate: GBP 0.425 per ordinary share.”"), term("recordDate", "Record date", shortDate(seedTimeline.harbor.record), 1, `“Record date: ${longDate(seedTimeline.harbor.record)}.”`), term("paymentDate", "Payment date", shortDate(seedTimeline.harbor.settlement), 2, `“Payment date: ${longDate(seedTimeline.harbor.settlement)}.”`), term("currency", "Payment currency", "GBP", 2, "“Currency: GBP.”"), term("withholding", "Withholding tax", "15%", 2, "“Withholding rate: 15% of gross dividend.”")],
     positions: [position("POS-HBR-1", "Northbridge Income Fund", "CUST-4081", "GB00HARB0007", 450000, isoDate(seedTimeline.harbor.record))],
-    impacts: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: isoDate(seedTimeline.harbor.record), securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "Gross GBP 191,250.00; withholding 15% = GBP 28,687.50; net GBP 162,562.50", expected: 162562.5, expectedCash: 162562.5, cashDirection: "Receivable", grossCash: 191250, withholdingRate: 0.15, withholdingAmount: 28687.5, netCash: 162562.5, expectedSecurityQuantity: 0, securityMovement: "Net cash receipt after withholding", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
+    historicalRows: [{ id: "imp-hbr-1", fund: "Northbridge Income Fund", account: "CUST-4081", eligibleQuantity: 450000, positionDate: isoDate(seedTimeline.harbor.record), securityId: "SEC-007", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "Gross GBP 191,250.00; withholding 15% = GBP 28,687.50; net GBP 162,562.50", expected: 162562.5, expectedCash: 162562.5, cashDirection: "Receivable", grossCash: 191250, withholdingRate: 0.15, withholdingAmount: 28687.5, netCash: 162562.5, expectedSecurityQuantity: 0, securityMovement: "Net cash receipt after withholding", currency: "GBP", status: "Break identified", election: null, approval: "Not required" }],
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory cash event. No instruction is submitted.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 162562.5, actual: 160562.5, difference: -2000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is GBP 2,000 below the expected net cash after 15% withholding.", expectedCash: 162562.5, expectedGrossCash: 191250, expectedWithholdingAmount: 28687.5, expectedNetCash: 162562.5, actualCash: 160562.5, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.harbor.settlement), actualSettlementDate: isoDate(seedTimeline.harbor.settlement), expectedAccount: "CUST-4081", actualAccount: "CUST-4081", investigationSteps: ["Verify the eligible quantity and record date.", "Confirm the GBP 0.425 gross dividend rate.", "Confirm the validated 15% withholding rate and GBP 28,687.50 tax amount.", "Compare the expected net GBP 162,562.50 with the custodian's GBP 160,562.50 payment.", "Contact the synthetic custodian about the remaining GBP 2,000 shortfall."] },
@@ -651,7 +723,7 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
       position("POS-VRN-X2", "Closed Strategy Fund", "CUST-0000", "FR001400VRN5", 10000, isoDate(seedTimeline.rights.latePosition), "Excluded", "Position date after record date; account closed"),
       position("POS-VRN-X3", "Sustainable Growth Fund", "CUST-7742", "FR001400VRN5", 0, isoDate(seedTimeline.rights.record), "Excluded", "Zero position"),
     ],
-    impacts: [],
+    historicalRows: [],
     options: [
       { id: "exercise", label: "Exercise rights", description: "Subscribe for new shares using all or part of the eligible entitlement.", result: "Cash funding is required.", default: false, fundingFormula: "Quantity elected × EUR 8.50" },
       { id: "sell", label: "Sell rights", description: "Submit the rights for sale; no subscription funding is required.", result: "Sale proceeds depend on market execution.", default: false, fundingFormula: "No funding" },
@@ -733,6 +805,7 @@ export function missingRequiredTerms(event: EventData): string[] {
 export function refreshValidation(event: EventData): void {
   const missingTerms = missingRequiredTerms(event);
   event.validation = { missingTerms, isReady: missingTerms.length === 0 };
+  refreshSchemeImpacts(event);
   Object.assign(event, deriveEventSignals(event));
 }
 
@@ -775,7 +848,7 @@ function eligiblePositions(event: EventData): any[] {
 
 export function calculateEventImpacts(event: EventData, actor: any): void {
   if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can run deterministic calculations.");
-  if (event.impacts?.some((impact: any) => impact.electionDecision)) throw new Error("Calculation cannot be re-run after elections are submitted. Return the event for analyst review first.");
+  if (event.schemeImpacts?.some((impact: any) => impact.electionDecision)) throw new Error("Calculation cannot be re-run after elections are submitted. Return the event for analyst review first.");
   if (["Approved", "Awaiting settlement", "Reconciled", "Break identified", "Closed"].includes(event.status)) throw new Error(`Calculation cannot be re-run while the event is ${event.status}.`);
   refreshValidation(event);
   if (!event.validation.isReady) throw new Error(`Calculation is blocked until these terms are validated: ${event.validation.missingTerms.join(", ")}.`);
@@ -799,7 +872,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
     return value;
   };
 
-  event.impacts = positions.map((item: any) => {
+  const calculatedSchemeImpacts = positions.map((item: any) => {
     const common = {
       id: `imp-${event.id}-${item.account}`,
       fund: item.fund,
@@ -879,12 +952,27 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
     throw new Error(`Calculation is not supported for event type "${event.eventType}". Supported event types: Cash dividend, Stock split, Stock dividend / bonus issue, Rights issue, Tender offer, Merger / acquisition.`);
   });
 
-  event.affectedAccounts = event.impacts.length;
-  event.amount = sumMoneyPaise(event.impacts, "expectedCash") || event.impacts.reduce((total: number, item: any) => total + Number(item.expectedSecurityQuantity ?? 0), 0);
+  event.schemeImpacts = buildSchemeImpacts(event).map((schemeImpact: EventData) => {
+    const calculated = calculatedSchemeImpacts.find((candidate: EventData) => candidate.account === schemeImpact.account);
+    if (!calculated) return schemeImpact;
+    return {
+      ...schemeImpact,
+      ...calculated,
+      id: schemeImpact.id,
+      schemeId: schemeImpact.schemeId,
+      schemeName: schemeImpact.schemeName,
+      affected: true,
+      direction: calculated.cashDirection === "Payable" ? "Funding" : calculated.expectedCash > 0 ? "Receivable" : "Neutral",
+      cashAmount: calculated.expectedCash ?? 0,
+      quantityResult: calculated.expectedSecurityQuantity ?? null,
+    };
+  });
+  event.affectedAccounts = event.schemeImpacts.filter((impact: EventData) => impact.affected).length;
+  event.amount = sumMoneyPaise(event.schemeImpacts, "expectedCash") || event.schemeImpacts.reduce((total: number, item: any) => total + Number(item.expectedSecurityQuantity ?? 0), 0);
   if (event.eventType === "Cash dividend") {
-    const expectedGrossCash = sumMoneyPaise(event.impacts, "grossCash");
-    const expectedWithholdingAmount = sumMoneyPaise(event.impacts, "withholdingAmount");
-    const expectedNetCash = sumMoneyPaise(event.impacts, "netCash");
+    const expectedGrossCash = sumMoneyPaise(event.schemeImpacts, "grossCash");
+    const expectedWithholdingAmount = sumMoneyPaise(event.schemeImpacts, "withholdingAmount");
+    const expectedNetCash = sumMoneyPaise(event.schemeImpacts, "netCash");
     Object.assign(event.reconciliation, {
       expected: expectedNetCash,
       expectedCash: expectedNetCash,
@@ -906,7 +994,7 @@ export function recordElection(event: EventData, body: any, actor: any): void {
   if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can prepare an election.");
   if (event.processingType === "Mandatory") throw new Error("Mandatory events do not have an election workflow.");
   if (!["Election required", "Awaiting approval"].includes(event.status)) throw new Error(`Election cannot be saved while the event is ${event.status}.`);
-  const impact = event.impacts?.find((candidate: any) => candidate.id === body.impactId);
+  const impact = event.schemeImpacts?.find((candidate: any) => candidate.id === body.impactId);
   const option = event.options?.find((candidate: any) => candidate.id === body.optionId);
   if (!impact || !option) throw new Error("Impact or election option is invalid.");
   const maximum = Number(impact.entitlement ?? impact.eligibleQuantity);
@@ -916,11 +1004,11 @@ export function recordElection(event: EventData, body: any, actor: any): void {
   impact.electionDecision = { optionId: option.id, optionLabel: option.label, quantityElected: body.quantityElected, requiredFunding: funding, analystId: actor.id, analyst: actor.name, comment: body.comment ?? "", status: "Submitted" };
   impact.status = "Election submitted";
   impact.approval = "Pending";
-  event.reconciliation.expectedCash = sumMoneyPaise(event.impacts.map((current: any) => ({ funding: current.electionDecision?.requiredFunding ?? 0 })), "funding");
+  event.reconciliation.expectedCash = sumMoneyPaise(event.schemeImpacts.map((current: any) => ({ funding: current.electionDecision?.requiredFunding ?? 0 })), "funding");
   event.reconciliation.expected = event.reconciliation.expectedCash;
-  event.reconciliation.expectedSecurityQuantity = event.impacts.reduce((total: number, current: any) => total + (current.election === "exercise" ? Number(current.electionDecision?.quantityElected ?? 0) : 0), 0);
+  event.reconciliation.expectedSecurityQuantity = event.schemeImpacts.reduce((total: number, current: any) => total + (current.election === "exercise" ? Number(current.electionDecision?.quantityElected ?? 0) : 0), 0);
   event.reconciliation.note = "Expected settlement is derived from the recorded election quantities and funding.";
-  event.status = event.impacts.every((candidate: any) => candidate.election) ? "Awaiting approval" : "Election required";
+  event.status = event.schemeImpacts.filter((candidate: any) => candidate.affected).every((candidate: any) => candidate.election) ? "Awaiting approval" : "Election required";
   event.settlementStage = event.status;
   for (const currentTask of event.tasks ?? []) if (currentTask.category === "Election") currentTask.status = "Resolved";
   appendAudit(event, "Election submitted", `${impact.account} selected ${option.label} for ${body.quantityElected.toLocaleString()} entitlement units.`, actor, { previousValue: "", newValue: option.label, reason: body.comment ?? "" });
@@ -932,10 +1020,10 @@ export function approveControlledEvent(event: EventData, approved: boolean, note
   if (approved) {
     const makerActions = new Set(["Election submitted", "Extracted term corrected", "Extracted term validated"]);
     const makerConflict = (event.audit ?? []).some((entry: any) => makerActions.has(entry.action) && entry.actorId === actor.id)
-      || event.impacts.some((impact: any) => impact.electionDecision?.analystId === actor.id);
+      || event.schemeImpacts.some((impact: any) => impact.electionDecision?.analystId === actor.id);
     if (makerConflict) throw new Error("Maker-checker control failed: the person who prepared an election cannot approve it.");
   }
-  event.impacts.forEach((impact: any) => {
+  event.schemeImpacts.forEach((impact: any) => {
     impact.approval = approved ? "Approved" : "Returned";
     if (impact.electionDecision) impact.electionDecision.status = approved ? "Approved" : "Returned";
   });
@@ -950,7 +1038,7 @@ export function simulateInstruction(event: EventData, status: string, actor: any
   const canIssue = event.status === "Approved";
   if (!canIssue) throw new Error(`Instruction is blocked while the event is ${event.status}. Approval and calculation controls must complete first.`);
   if (status !== "SIMULATED - NOT SENT") throw new Error("The POC only supports the explicit status SIMULATED - NOT SENT.");
-  const electionLines = event.impacts.map((impact: any) => `${impact.account}: ${impact.electionDecision?.optionLabel ?? "Mandatory processing"}; quantity ${impact.electionDecision?.quantityElected ?? impact.expectedSecurityQuantity ?? 0}`).join("\n");
+  const electionLines = event.schemeImpacts.filter((impact: any) => impact.affected).map((impact: any) => `${impact.account}: ${impact.electionDecision?.optionLabel ?? "Mandatory processing"}; quantity ${impact.electionDecision?.quantityElected ?? impact.expectedSecurityQuantity ?? 0}`).join("\n");
   event.instruction = {
     status,
     destination: "Synthetic custodian instruction gateway",
@@ -1115,7 +1203,7 @@ export async function createIntakeEvent(sampleId: string, fileName: string, sour
 }
 
 export function toSummary(event: EventData): EventData {
-  const { notice, terms, impacts, options, instruction, reconciliation, tasks, audit, positions, calculation, validation, ...summary } = event;
+  const { notice, terms, options, instruction, reconciliation, tasks, audit, positions, calculation, validation, ...summary } = event;
   return { ...summary, ...deriveEventSignals(event) };
 }
 

@@ -1,38 +1,45 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  getGetArkaDeskQueryKey,
-  useApproveArkaDesk,
-  useGetArkaDesk,
+  getGetEventQueryKey,
+  useApproveEvent,
+  useGetEvent,
   useGetSession,
-  useSaveArkaDeskDecisions,
-  useSubmitArkaDesk,
-  type ArkaSchemeImpact,
+  useSaveElection,
+  useUpdateEvent,
+  useUpdateInstruction,
+  useSaveReconciliation,
+  type EventDetail,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useParams } from "wouter";
 import {
   AlertTriangle,
   ArrowDownRight,
-  ArrowRight,
   Banknote,
   CalendarDays,
   Check,
   CheckCircle2,
   CircleDollarSign,
   FileCheck2,
+  FileText,
   Gauge,
   IndianRupee,
   Landmark,
-  LockKeyhole,
   Scale,
   ShieldCheck,
   WalletCards,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -50,22 +57,10 @@ function crore(value: number) {
   return `₹${decimal.format(value)} cr`;
 }
 
-function SectionHeading({
-  index,
-  eyebrow,
-  title,
-  description,
-}: {
-  index: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-}) {
+function SectionHeading({ index, eyebrow, title, description }: { index: string; eyebrow: string; title: string; description: string; }) {
   return (
     <div className="mb-4 flex items-start gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#dc6900] text-xs font-bold text-white">
-        {index}
-      </div>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#dc6900] text-xs font-bold text-white">{index}</div>
       <div>
         <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#dc6900]">{eyebrow}</div>
         <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-[#5b1235]">{title}</h2>
@@ -76,86 +71,61 @@ function SectionHeading({
 }
 
 export default function FundManagerDesk() {
+  const { eventId = "" } = useParams();
   const queryClient = useQueryClient();
-  const { data, isLoading, isError } = useGetArkaDesk();
+  const { toast } = useToast();
+  const { data: event, isLoading, isError } = useGetEvent(eventId);
   const { data: actor } = useGetSession();
-  const [draftRights, setDraftRights] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!data) return;
-    setDraftRights(Object.fromEntries(data.schemes.map((scheme) => [scheme.id, String(scheme.decisionRights)])));
-  }, [data]);
+  const [electionOptions, setElectionOptions] = useState<Record<string, string>>({});
+  const [electionQuantities, setElectionQuantities] = useState<Record<string, string>>({});
 
-  const saveDecisions = useSaveArkaDeskDecisions({
-    mutation: {
-      onSuccess: (next) => queryClient.setQueryData(getGetArkaDeskQueryKey(), next),
-    },
+  const saveElection = useSaveElection({
+    mutation: { onSuccess: () => { toast({ title: "Election submitted" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
   });
-  const submitDesk = useSubmitArkaDesk({
-    mutation: {
-      onSuccess: (next) => queryClient.setQueryData(getGetArkaDeskQueryKey(), next),
-    },
+  const updateEvent = useUpdateEvent({
+    mutation: { onSuccess: () => { toast({ title: "Term validated" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
   });
-  const approveDesk = useApproveArkaDesk({
-    mutation: {
-      onSuccess: (next) => queryClient.setQueryData(getGetArkaDeskQueryKey(), next),
-    },
+  const updateInstruction = useUpdateInstruction({
+    mutation: { onSuccess: () => { toast({ title: "Instruction simulated" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
+  });
+  const saveReconciliation = useSaveReconciliation({
+    mutation: { onSuccess: () => { toast({ title: "Settlement reconciled" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
+  });
+  const approveEvent = useApproveEvent({
+    mutation: { onSuccess: () => { toast({ title: "Checker approval recorded" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
   });
 
-  const liveSchemes = useMemo(() => {
-    if (!data) return [];
-    return data.schemes.map((scheme) => {
-      const draft = draftRights[scheme.id];
-      const parsed = draft === undefined || draft.trim() === "" ? Number.NaN : Number(draft);
-      const decisionRights = Number.isInteger(parsed) && parsed >= 0 ? parsed : scheme.decisionRights;
-      const capBlocked = scheme.maxRightsByCap != null && decisionRights > scheme.maxRightsByCap;
-      const cashBlocked = scheme.maxRightsByCash != null && decisionRights > scheme.maxRightsByCash;
-      const invalid = !Number.isInteger(parsed) || parsed < 0 || parsed > scheme.entitlementRights;
-      const blockers = [
-        invalid ? "Enter a whole number within the scheme entitlement." : null,
-        capBlocked ? `SEBI 10% limit allows ${integer.format(scheme.maxRightsByCap ?? 0)} rights.` : null,
-        cashBlocked ? `Cash budget supports ${integer.format(scheme.maxRightsByCash ?? 0)} rights.` : null,
-      ].filter((item): item is string => Boolean(item));
-      const exerciseCashCrore = decisionRights * data.event.subscriptionPrice / 10_000_000;
-      return {
-        ...scheme,
-        decisionRights,
-        exerciseCashCrore,
-        forfeitedRights: Math.max(0, scheme.entitlementRights - decisionRights),
-        navHitPercent: scheme.fullCashCrore === 0 ? 0 : scheme.navHitPercent * exerciseCashCrore / scheme.fullCashCrore,
-        navHitPaise: scheme.fullCashCrore === 0 ? 0 : scheme.navHitPaise * exerciseCashCrore / scheme.fullCashCrore,
-        blockers: scheme.eligibilityStatus === "Excluded" ? [] : blockers,
-      };
-    });
-  }, [data, draftRights]);
-
-  const liveTotals = useMemo(() => {
-    const eligible = liveSchemes.filter((scheme) => scheme.eligibilityStatus === "Eligible");
-    return {
-      decisionRights: eligible.reduce((sum, scheme) => sum + scheme.decisionRights, 0),
-      cashCrore: eligible.reduce((sum, scheme) => sum + scheme.exerciseCashCrore, 0),
-      forfeited: eligible.reduce((sum, scheme) => sum + Math.max(0, scheme.entitlementRights - scheme.decisionRights), 0),
-      blocked: eligible.filter((scheme) => scheme.blockers.length > 0),
-    };
-  }, [liveSchemes]);
+  const [termValues, setTermValues] = useState<Record<string, string>>({});
+  const [reconActual, setReconActual] = useState("");
 
   if (isLoading) {
-    return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading Arka scheme impacts...</div>;
+    return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading event...</div>;
   }
-  if (isError || !data) {
-    return <div className="flex flex-1 items-center justify-center text-sm text-destructive">The fund manager desk could not be loaded.</div>;
+  if (isError || !event) {
+    return <div className="flex flex-1 items-center justify-center text-sm text-destructive">The event could not be loaded.</div>;
   }
 
+  const data = event as EventDetail;
   const isFundManager = actor?.role === "Fund Manager";
-  const isCompliance = actor?.role === "Compliance";
-  const pendingCheck = data.submission?.status === "Pending Compliance Check";
+  const isAnalyst = actor?.role === "Operations Analyst";
+  const isReviewer = actor?.role === "Reviewer";
+  const isManager = actor?.role === "Operations Manager";
 
-  const persistDecision = (scheme: ArkaSchemeImpact, value?: number) => {
-    if (!isFundManager) return;
-    const next = value ?? Number(draftRights[scheme.id]);
-    if (!Number.isInteger(next) || next < 0 || next > scheme.entitlementRights) return;
-    setDraftRights((current) => ({ ...current, [scheme.id]: String(next) }));
-    saveDecisions.mutate({ data: { decisions: [{ schemeId: scheme.id, rights: next }] } });
+  const isMandatory = data.processingType === "Mandatory" || ["Cash dividend", "Stock split", "Bonus issue"].includes(data.eventType);
+  const affectedSchemes = (data.schemeImpacts ?? []).filter((impact) => impact.affected);
+
+  const constraints = affectedSchemes.filter(s => s.flag === "SEBI 10% headroom" || s.flag === "Cash short");
+
+  const saveAnElection = (impact: any) => {
+    const optionId = electionOptions[impact.id] ?? data.options.find(o => o.default)?.id;
+    const rawQty = electionQuantities[impact.id] ?? String(impact.quantityResult ?? impact.eligibleQuantity ?? 0);
+    const quantityElected = Number(rawQty);
+    if (!optionId || !Number.isFinite(quantityElected) || quantityElected < 0) {
+      toast({ title: "Invalid election", variant: "destructive" });
+      return;
+    }
+    saveElection.mutate({ eventId, data: { impactId: impact.id, optionId, quantityElected, comment: "Submitted from workspace." } });
   };
 
   return (
@@ -168,188 +138,206 @@ export default function FundManagerDesk() {
                 <Landmark className="h-3.5 w-3.5" />
                 Arka Mutual Fund
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[#5b1235] sm:text-3xl">Bharat Renewables rights decision</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                One controlled view for eligibility, scheme impact, funding and issuer-limit decisions.
+              <h1 className="text-2xl font-semibold tracking-tight text-[#5b1235] sm:text-3xl">{data.issuer} {data.eventType.toLowerCase()}</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5b1235] font-medium">
+                Status: {data.status} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Confirmed notice
-              </Badge>
-              <Badge variant="outline" className="border-[#e5a15f] bg-[#fff8ef] text-[#9d4d00]">India · INR only</Badge>
-              <Badge variant="outline">{data.event.reference}</Badge>
+              <Badge variant="outline" className="border-[#e5a15f] bg-[#fff8ef] text-[#9d4d00]">India · {data.currency} only</Badge>
+              <Badge variant="outline">{data.reference}</Badge>
             </div>
           </div>
         </header>
 
-        <div className="space-y-5">
+        <div className="space-y-8">
           <section>
-            <SectionHeading index="01" eyebrow="The book" title="Ten Arka schemes in scope" description="A single record-date view of the Indian mutual-fund book. Excluded schemes remain visible so the population can be reconciled." />
-            <Card className="rounded-md border-[#d8d1cb] shadow-none">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
-                      <TableHead className="w-[29%]">Scheme</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">AUM</TableHead>
-                      <TableHead className="text-right">NAV</TableHead>
-                      <TableHead className="text-right">BR holding</TableHead>
-                      <TableHead>Record-date status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.schemes.map((scheme) => (
-                      <TableRow key={scheme.id} className="text-xs">
-                        <TableCell>
-                          <div className="font-semibold text-[#5b1235]">{scheme.name}</div>
-                          <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">{scheme.schemeCode}</div>
-                        </TableCell>
-                        <TableCell>{scheme.category}</TableCell>
-                        <TableCell className="text-right font-mono">{crore(scheme.aumCrore)}</TableCell>
-                        <TableCell className="text-right font-mono">{rupees(scheme.navPaise / 100)}</TableCell>
-                        <TableCell className="text-right font-mono">{integer.format(scheme.holdingQuantity)}</TableCell>
-                        <TableCell>
-                          {scheme.eligibilityStatus === "Eligible"
-                            ? <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50">Eligible</Badge>
-                            : <div><Badge variant="secondary">Excluded</Badge><div className="mt-1 text-[10px] text-muted-foreground">{scheme.exclusionReason}</div></div>}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section>
-            <SectionHeading index="02" eyebrow="Confirmed event" title="Notice terms and calendar" description="Confirmed terms are paired with the security master so the ordinary-share ISIN and separate rights-entitlement ISIN cannot be confused." />
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-              <Card className="rounded-md border-[#d8d1cb] shadow-none">
+            <SectionHeading index="01" eyebrow="Confirmed event" title="What it is" description="Notice terms, calendar, and security details extracted from the source document." />
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+              <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <CardTitle className="text-base text-[#5b1235]">{data.event.issuer}</CardTitle>
-                      <CardDescription>{data.event.classification} · {data.event.exchange}</CardDescription>
+                      <CardTitle className="text-base text-[#5b1235]">{data.issuer}</CardTitle>
+                      <CardDescription>{data.eventType} · {data.securityMaster?.market ?? "Exchange"}</CardDescription>
                     </div>
-                    <Badge className="bg-[#dc6900] text-white hover:bg-[#dc6900]">{data.event.rightsRatio}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <Metric icon={IndianRupee} label="CMP" value={rupees(data.event.cmp)} />
-                    <Metric icon={CircleDollarSign} label="Subscription" value={rupees(data.event.subscriptionPrice)} />
-                    <Metric icon={ArrowDownRight} label="Discount" value={`${decimal.format((1 - data.event.subscriptionPrice / data.event.cmp) * 100)}%`} />
-                  </div>
-                  <Separator className="my-4" />
                   <div className="grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2">
-                    <Detail label="Ordinary ISIN" value={data.securityMaster.isin} mono />
-                    <Detail label="Rights entitlement ISIN" value={data.securityMaster.reIsin} mono />
-                    <Detail label="Ticker" value={data.securityMaster.ticker} />
-                    <Detail label="Security status" value={`${data.securityMaster.status} · ${data.securityMaster.market}`} />
-                    <Detail label="Source" value={data.event.source} />
-                    <Detail label="Currency" value={data.securityMaster.currency} />
+                    <Detail label="Ordinary ISIN" value={data.securityMaster?.isin ?? "N/A"} mono />
+                    <Detail label="Ticker" value={data.securityMaster?.ticker ?? "N/A"} />
+                    <Detail label="Currency" value={data.currency} />
+                    <Detail label="Amount" value={data.amount ? crore(data.amount / 10000000) : "N/A"} />
                   </div>
                 </CardContent>
               </Card>
-              <Card className="rounded-md border-[#d8d1cb] shadow-none">
+              <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base text-[#5b1235]"><CalendarDays className="h-4 w-4 text-[#dc6900]" /> Decision calendar</CardTitle>
-                  <CardDescription>Internal time remains ahead of the market deadline.</CardDescription>
+                  <CardTitle className="flex items-center gap-2 text-base text-[#5b1235]"><CalendarDays className="h-4 w-4 text-[#dc6900]" /> Calendar</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4 text-xs sm:grid-cols-3">
-                  <CalendarItem label="Notice received" value={data.calendar.receivedDate} />
-                  <CalendarItem label="Ex-rights date" value={data.calendar.exRightsDate} />
-                  <CalendarItem label="Record date" value={data.calendar.recordDate} />
-                  <CalendarItem label="Fund deadline" value={data.calendar.fundDeadline} emphasis />
-                  <CalendarItem label="Market deadline" value={data.calendar.marketDeadline} emphasis />
-                  <CalendarItem label="Settlement" value={data.calendar.settlementDate} />
+                  <CalendarItem label="Notice received" value={new Date(data.receivedAt).toLocaleDateString("en-GB")} />
+                  <CalendarItem label="Market deadline" value={data.marketDeadline ? new Date(data.marketDeadline).toLocaleDateString("en-GB") : "N/A"} emphasis />
+                  <CalendarItem label="Internal deadline" value={data.internalDeadline ? new Date(data.internalDeadline).toLocaleDateString("en-GB") : "N/A"} />
                 </CardContent>
               </Card>
             </div>
           </section>
 
           <section>
-            <SectionHeading index="03" eyebrow="Eligibility" title="Population funnel and exclusions" description="Each scheme passes three ordered tests: equity ISIN held, held on record date, then active folio." />
-            <Card className="rounded-md border-[#d8d1cb] shadow-none">
-              <CardContent className="p-5">
-                <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-                  <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] sm:items-center">
-                    <FunnelMetric label="Scheme universe" value={data.funnel.universe} tone="maroon" />
-                    <ArrowRight className="mx-auto hidden h-4 w-4 text-[#9b8f88] sm:block" />
-                    <FunnelMetric label="Holds equity ISIN" value={data.funnel.holdsEquityIsin} tone="green" />
-                    <ArrowRight className="mx-auto hidden h-4 w-4 text-[#9b8f88] sm:block" />
-                    <FunnelMetric label="Held on record date" value={data.funnel.heldOnRecordDate} tone="green" />
-                    <ArrowRight className="mx-auto hidden h-4 w-4 text-[#9b8f88] sm:block" />
-                    <FunnelMetric label="Folio active" value={data.funnel.folioActive} tone="green" />
-                  </div>
-                  <div className="border-t border-[#ded8d2] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Excluded from entitlement</div>
-                    <div className="mt-3 space-y-2">
-                      {data.funnel.exclusionReasons.map((item) => (
-                        <div key={item.scheme} className="flex gap-2 text-xs">
-                          <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#dc6900]" />
-                          <div><span className="font-semibold text-[#5b1235]">{item.scheme}</span><span className="text-muted-foreground"> · {item.reason}</span></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section>
-            <SectionHeading index="04" eyebrow="Scheme impact" title="Economics, NAV hit and issuer exposure" description="All monetary calculations use integer paise. The SEBI rule is named, configurable and solved against post-exercise issuer exposure." />
-            <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Metric icon={Scale} label="TERP" value={rupees(data.terms.terp, 4)} />
-              <Metric icon={Gauge} label="Right value" value={rupees(data.terms.rightValue, 4)} />
-              <Metric icon={ArrowDownRight} label="Dilution" value={rupees(data.terms.dilution, 4)} />
-              <Metric icon={WalletCards} label="Total rights" value={integer.format(data.terms.totalRights)} />
-              <Metric icon={Banknote} label="Full exercise cash" value={crore(data.terms.totalExerciseCashCrore)} />
-            </div>
-            <Card className="rounded-md border-[#d8d1cb] shadow-none">
-              <CardHeader className="border-b border-[#e1dbd5] bg-[#fffaf4] py-3">
-                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                  <div>
-                    <CardTitle className="text-sm text-[#5b1235]">{data.rule.name}</CardTitle>
-                    <CardDescription className="mt-1 text-xs">{data.rule.description}</CardDescription>
-                  </div>
-                  <Badge variant="outline" className="w-fit border-[#e5a15f] text-[#9d4d00]">{data.rule.limitPercent}% maximum</Badge>
-                </div>
-              </CardHeader>
+            <SectionHeading index="02" eyebrow="Scheme impact" title="What it touches" description="Affected schemes and expected financial impacts." />
+            <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
                       <TableHead>Scheme</TableHead>
-                      <TableHead className="text-right">Entitlement</TableHead>
-                      <TableHead className="text-right">Full cash</TableHead>
-                      <TableHead className="text-right">NAV hit</TableHead>
-                      <TableHead className="w-[30%]">Issuer exposure after decision</TableHead>
+                      <TableHead className="text-right">Eligible Quantity</TableHead>
+                      <TableHead className="text-right">Expected Cash</TableHead>
+                      <TableHead>Direction</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.schemes.map((scheme) => (
+                    {affectedSchemes.map((scheme) => (
                       <TableRow key={scheme.id} className="text-xs">
-                        <TableCell className="font-semibold text-[#5b1235]">{scheme.name}</TableCell>
-                        <TableCell className="text-right font-mono">{scheme.eligibilityStatus === "Eligible" ? integer.format(scheme.entitlementRights) : "N/A"}</TableCell>
-                        <TableCell className="text-right font-mono">{scheme.eligibilityStatus === "Eligible" ? crore(scheme.fullCashCrore) : "N/A"}</TableCell>
-                        <TableCell className="text-right">
-                          {scheme.eligibilityStatus === "Eligible" ? <><div className="font-mono">{decimal.format(scheme.navHitPaise)} paise / ₹100</div><div className="text-[10px] text-muted-foreground">{decimal.format(scheme.navHitPercent)}%</div></> : "N/A"}
-                        </TableCell>
-                        <TableCell>
-                          {scheme.eligibilityStatus === "Eligible" ? (
-                            <div>
-                              <div className="mb-1.5 flex justify-between text-[10px]">
-                                <span>{decimal.format(scheme.capUsagePercent)}%</span>
-                                <span className="text-muted-foreground">Limit 10.00%</span>
-                              </div>
-                              <Progress value={Math.min(100, scheme.capUsagePercent * 10)} className="h-1.5 bg-[#eadfd5] [&>div]:bg-[#dc6900]" />
-                            </div>
-                          ) : <span className="text-muted-foreground">Not applicable</span>}
-                        </TableCell>
+                        <TableCell className="font-semibold text-[#5b1235]">{scheme.schemeName}</TableCell>
+                        <TableCell className="text-right font-mono">{integer.format(scheme.eligibleQuantity)}</TableCell>
+                        <TableCell className="text-right font-mono">{scheme.cashAmount ? crore(scheme.cashAmount / 10000000) : "-"}</TableCell>
+                        <TableCell>{scheme.direction}</TableCell>
+                      </TableRow>
+                    ))}
+                    {affectedSchemes.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">No affected schemes.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </section>
+
+          {!isMandatory && (
+            <>
+              {data.options && data.options.length > 0 && (
+                <section>
+                  <SectionHeading index="03" eyebrow="Elections" title="Options" description="Available choices provided by the issuer." />
+                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                    <CardContent className="p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
+                            <TableHead>Label</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Funding Formula</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {data.options.map((opt) => (
+                            <TableRow key={opt.id} className="text-xs">
+                              <TableCell className="font-semibold text-[#5b1235]">{opt.label} {opt.default && <Badge variant="secondary" className="ml-2">Default</Badge>}</TableCell>
+                              <TableCell>{opt.description}</TableCell>
+                              <TableCell className="font-mono">{opt.fundingFormula || "-"}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </section>
+              )}
+
+              {constraints.length > 0 && (
+                <section>
+                  <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
+                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-[#fffaf4]">
+                    <CardContent className="p-4 space-y-2">
+                      {constraints.map(c => (
+                        <div key={c.id} className="flex items-center gap-2 text-xs text-destructive font-medium">
+                          <AlertTriangle className="h-4 w-4" /> {c.schemeName}: {c.flag}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </section>
+              )}
+
+              <section>
+                <SectionHeading index="05" eyebrow="Your decision" title="Decision" description="Set scheme elections and submit for checker approval." />
+                <div className="space-y-4">
+                  {affectedSchemes.map((impact: any) => (
+                    <Card key={impact.id} className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                      <CardContent className="grid gap-4 p-4 md:grid-cols-[1fr,1.5fr,auto] items-center">
+                        <div>
+                          <div className="font-semibold text-[#5b1235] text-sm">{impact.schemeName}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">Entitlement: {integer.format(impact.quantityResult ?? impact.eligibleQuantity)}</div>
+                          {impact.electionDecision && <Badge className="mt-2" variant="outline">{impact.electionDecision.optionLabel} · {impact.electionDecision.quantityElected} · {impact.approval}</Badge>}
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <Select disabled={Boolean(impact.electionDecision)} value={electionOptions[impact.id] ?? (data.options.find((o:any)=>o.default)?.id || "")} onValueChange={(val) => setElectionOptions(prev => ({...prev, [impact.id]: val}))}>
+                            <SelectTrigger className="w-[180px] text-xs"><SelectValue placeholder="Option" /></SelectTrigger>
+                            <SelectContent>
+                              {data.options.map((opt:any) => <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            className="w-[120px] text-xs"
+                            type="number"
+                            disabled={Boolean(impact.electionDecision)}
+                            value={electionQuantities[impact.id] ?? (impact.quantityResult ?? impact.eligibleQuantity)}
+                            onChange={(e) => setElectionQuantities(prev => ({...prev, [impact.id]: e.target.value}))}
+                          />
+                        </div>
+                        <div>
+                          {!impact.electionDecision && (
+                            <Button className="bg-[#dc6900] hover:bg-[#b85700]" onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
+                              Submit Election
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {data.status === "Awaiting approval" && (
+                    <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base text-[#5b1235]"><ShieldCheck className="h-4 w-4 text-[#dc6900]" /> Maker-checker control</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {isReviewer ? (
+                           <div className="flex gap-2">
+                             <Button onClick={() => approveEvent.mutate({ eventId, data: { approved: true, note: "Approved." }})} disabled={approveEvent.isPending}>Approve elections</Button>
+                             <Button variant="outline" onClick={() => approveEvent.mutate({ eventId, data: { approved: false, note: "Returned." }})} disabled={approveEvent.isPending}>Return</Button>
+                           </div>
+                        ) : (
+                           <p className="text-xs text-muted-foreground">Only a Reviewer can approve these elections.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+
+          <section>
+            <SectionHeading index={isMandatory ? "03" : "06"} eyebrow="Audit" title="History" description="Immutable ledger of workflow actions." />
+            <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
+                      <TableHead>Time</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(data.audit ?? []).map((entry: any) => (
+                      <TableRow key={entry.id} className="text-xs">
+                        <TableCell>{new Date(entry.timestamp).toLocaleString("en-GB")}</TableCell>
+                        <TableCell>{entry.actor}</TableCell>
+                        <TableCell>{entry.action}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -358,146 +346,51 @@ export default function FundManagerDesk() {
             </Card>
           </section>
 
-          <section>
-            <SectionHeading index="05" eyebrow="Your decision" title="Set scheme elections and submit for compliance" description="Every eligible scheme defaults to full exercise. The submit gate remains closed until issuer-limit and funding constraints are resolved." />
-            <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-              <Card className="rounded-md border-[#d8d1cb] shadow-none">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
-                        <TableHead>Scheme decision</TableHead>
-                        <TableHead className="text-right">Entitlement</TableHead>
-                        <TableHead className="w-[190px]">Rights to exercise</TableHead>
-                        <TableHead className="text-right">Exercise cash</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {liveSchemes.map((scheme) => (
-                        <TableRow key={scheme.id} className="align-top text-xs">
-                          <TableCell>
-                            <div className="font-semibold text-[#5b1235]">{scheme.name}</div>
-                            {scheme.forfeitedRights > 0 && <div className="mt-1 text-[10px] text-muted-foreground">{integer.format(Math.max(0, scheme.entitlementRights - scheme.decisionRights))} rights forfeited</div>}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">{scheme.eligibilityStatus === "Eligible" ? integer.format(scheme.entitlementRights) : "N/A"}</TableCell>
-                          <TableCell>
-                            {scheme.eligibilityStatus === "Eligible" ? (
-                              <div>
-                                <input
-                                  aria-label={`${scheme.name} rights to exercise`}
-                                  type="number"
-                                  min={0}
-                                  max={scheme.entitlementRights}
-                                  step={1}
-                                  value={draftRights[scheme.id] ?? scheme.decisionRights}
-                                  disabled={!isFundManager || scheme.decisionReadOnly || saveDecisions.isPending}
-                                  onChange={(event) => setDraftRights((current) => ({ ...current, [scheme.id]: event.target.value }))}
-                                  onBlur={() => persistDecision(scheme)}
-                                  className="w-full rounded border border-input bg-white px-2 py-1.5 font-mono text-xs outline-none focus:border-[#dc6900] focus:ring-1 focus:ring-[#dc6900] disabled:bg-muted"
-                                />
-                                {scheme.decisionReadOnlyReason && <div className="mt-1 text-[10px] text-muted-foreground">{scheme.decisionReadOnlyReason}</div>}
-                                {!scheme.decisionReadOnly && (scheme.maxRightsByCap !== null || scheme.maxRightsByCash !== null) && (
-                                  <button
-                                    type="button"
-                                    disabled={!isFundManager}
-                                    onClick={() => persistDecision(scheme, Math.min(scheme.entitlementRights, scheme.maxRightsByCap ?? Infinity, scheme.maxRightsByCash ?? Infinity))}
-                                    className="mt-1 text-[10px] font-semibold text-[#c55a00] hover:underline disabled:text-muted-foreground"
-                                  >
-                                    Use permitted maximum
-                                  </button>
-                                )}
-                              </div>
-                            ) : <span className="text-muted-foreground">No election</span>}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">{scheme.eligibilityStatus === "Eligible" ? crore(scheme.exerciseCashCrore) : "N/A"}</TableCell>
-                          <TableCell>
-                            {scheme.eligibilityStatus === "Excluded" ? (
-                              <Badge variant="secondary">Excluded</Badge>
-                            ) : scheme.blockers.length > 0 ? (
-                              <div className="max-w-xs space-y-1">
-                                <Badge variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" /> Blocked</Badge>
-                                {scheme.blockers.map((blocker) => <div key={blocker} className="text-[10px] leading-4 text-destructive">{blocker}</div>)}
-                              </div>
-                            ) : (
-                              <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50"><Check className="mr-1 h-3 w-3" /> Ready</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-4">
-                <Card className="rounded-md border-[#d8d1cb] shadow-none">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base text-[#5b1235]">Live election total</CardTitle>
-                    <CardDescription>Calculated from the current scheme rows.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-xs">
-                    <SummaryLine label="Rights to exercise" value={integer.format(liveTotals.decisionRights)} />
-                    <SummaryLine label="Funding required" value={crore(liveTotals.cashCrore)} strong />
-                    <SummaryLine label="Rights forfeited" value={integer.format(liveTotals.forfeited)} />
-                    <Separator />
-                    <SummaryLine label="Blocked schemes" value={String(liveTotals.blocked.length)} warning={liveTotals.blocked.length > 0} />
-                    {liveTotals.blocked.map((scheme) => (
-                      <div key={scheme.id} className="rounded border border-red-200 bg-red-50 px-2.5 py-2 text-[10px] leading-4 text-red-700">{scheme.name}</div>
+          {(isAnalyst || isReviewer || isManager) && (
+            <details className="mt-8 rounded-md border border-[#d8d1cb] bg-[#faf8f5]">
+              <summary className="cursor-pointer p-4 font-semibold text-[#5b1235] outline-none">Operations detail</summary>
+              <div className="p-4 pt-0 space-y-6">
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm text-[#5b1235]">Extracted Terms Validation</h3>
+                  <div className="grid gap-3">
+                    {data.terms?.map((term: any) => (
+                      <div key={term.key} className="flex items-center gap-4 text-xs bg-white p-3 border border-[#d8d1cb] rounded">
+                        <div className="w-[200px] font-medium">{term.label}</div>
+                        <Input className="w-[200px] h-8 text-xs" value={termValues[term.key] ?? term.value} onChange={e => setTermValues(prev => ({...prev, [term.key]: e.target.value}))} />
+                        <Badge variant="outline">{term.reviewStatus}</Badge>
+                        <Button size="sm" variant="outline" className="h-8 ml-auto" onClick={() => updateEvent.mutate({ eventId, data: { terms: [{ key: term.key, value: termValues[term.key] ?? term.value }] }})}>Validate</Button>
+                      </div>
                     ))}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                <Card className="rounded-md border-[#d8d1cb] shadow-none">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base text-[#5b1235]"><ShieldCheck className="h-4 w-4 text-[#dc6900]" /> Maker-checker control</CardTitle>
-                    <CardDescription>Fund Manager prepares. Compliance independently checks.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {data.submission ? (
-                      <div className="rounded border border-[#ded8d2] bg-[#faf8f5] p-3 text-xs">
-                        <div className="font-semibold text-[#5b1235]">{data.submission.status}</div>
-                        <div className="mt-1 text-muted-foreground">Prepared by {data.submission.submittedByName}</div>
-                        {data.submission.checkedByName && <div className="mt-1 text-muted-foreground">Checked by {data.submission.checkedByName}</div>}
-                      </div>
-                    ) : (
-                      <div className="rounded border border-[#ded8d2] bg-[#faf8f5] p-3 text-xs text-muted-foreground">No submission has been sent to Compliance.</div>
-                    )}
+                <Separator className="bg-[#d8d1cb]" />
 
-                    {isCompliance && pendingCheck ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" onClick={() => approveDesk.mutate({ data: { status: "Returned" } })} disabled={approveDesk.isPending}>Return</Button>
-                        <Button onClick={() => approveDesk.mutate({ data: { status: "Approved" } })} disabled={approveDesk.isPending}>Approve</Button>
-                      </div>
-                    ) : (
-                      <Button
-                        className="w-full bg-[#dc6900] hover:bg-[#b85700]"
-                        disabled={!isFundManager || liveTotals.blocked.length > 0 || submitDesk.isPending || saveDecisions.isPending}
-                        onClick={() => submitDesk.mutate()}
-                      >
-                        <FileCheck2 className="mr-2 h-4 w-4" />
-                        Submit to Compliance
-                      </Button>
-                    )}
-                    {!isFundManager && !isCompliance && <p className="text-[10px] leading-4 text-muted-foreground">Switch to the Fund Manager demo operator to prepare decisions.</p>}
-                    {isFundManager && liveTotals.blocked.length > 0 && <p className="text-[10px] leading-4 text-destructive">Submission disabled until all scheme constraints are resolved.</p>}
-                    {(saveDecisions.isError || submitDesk.isError || approveDesk.isError) && <p className="text-[10px] leading-4 text-destructive">The action was not accepted. Review the role and scheme constraints, then try again.</p>}
-                  </CardContent>
-                </Card>
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm text-[#5b1235]">Simulate Instruction</h3>
+                  <div className="text-xs text-muted-foreground mb-2">Simulate an outbound instruction message to the custodian.</div>
+                  <Button size="sm" onClick={() => updateInstruction.mutate({ eventId, data: { status: "SIMULATED - NOT SENT" }})} disabled={updateInstruction.isPending || data.status !== "Approved"}>
+                    Simulate Instruction
+                  </Button>
+                </div>
+
+                <Separator className="bg-[#d8d1cb]" />
+
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-sm text-[#5b1235]">Settlement Reconciliation</h3>
+                  <div className="flex items-center gap-4 text-xs">
+                    <Input className="w-[200px] h-8 text-xs" placeholder="Actual cash received" value={reconActual} onChange={e => setReconActual(e.target.value)} />
+                    <Button size="sm" onClick={() => saveReconciliation.mutate({ eventId, data: { actual: Number(reconActual), note: "Reconciled from workspace." }})} disabled={saveReconciliation.isPending || !["Awaiting settlement", "Break identified"].includes(data.status)}>
+                      Reconcile
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
+            </details>
+          )}
+
         </div>
       </div>
-    </div>
-  );
-}
-
-function Metric({ icon: Icon, label, value }: { icon: typeof Scale; label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-[#d8d1cb] bg-white p-3 shadow-none">
-      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"><Icon className="h-3.5 w-3.5 text-[#dc6900]" />{label}</div>
-      <div className="mt-2 font-mono text-sm font-semibold text-[#5b1235]">{value}</div>
     </div>
   );
 }
@@ -508,13 +401,4 @@ function Detail({ label, value, mono = false }: { label: string; value: string; 
 
 function CalendarItem({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
   return <div className={emphasis ? "rounded border border-[#edb57e] bg-[#fff8ef] p-2.5" : "p-2.5"}><div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div><div className={`mt-1 font-mono leading-5 ${emphasis ? "font-semibold text-[#9d4d00]" : "text-[#322823]"}`}>{value}</div></div>;
-}
-
-function FunnelMetric({ label, value, tone }: { label: string; value: number; tone: "maroon" | "green" | "orange" }) {
-  const styles = tone === "maroon" ? "border-[#c9aab8] bg-[#faf4f7] text-[#5b1235]" : tone === "green" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-orange-200 bg-orange-50 text-[#a34e00]";
-  return <div className={`rounded-md border p-4 text-center ${styles}`}><div className="font-mono text-2xl font-semibold">{value}</div><div className="mt-1 text-[10px] font-bold uppercase tracking-wider">{label}</div></div>;
-}
-
-function SummaryLine({ label, value, strong = false, warning = false }: { label: string; value: string; strong?: boolean; warning?: boolean }) {
-  return <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">{label}</span><span className={`font-mono ${strong ? "font-bold text-[#5b1235]" : ""} ${warning ? "font-bold text-destructive" : ""}`}>{value}</span></div>;
 }

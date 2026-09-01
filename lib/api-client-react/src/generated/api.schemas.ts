@@ -248,12 +248,16 @@ export const DashboardSchemeImpactDirection = {
   Neutral: 'Neutral',
 } as const;
 
+export type DashboardSchemeImpactElectionDecision = { [key: string]: unknown } | null;
+
 export interface DashboardSchemeImpact {
+  id: string;
   schemeId: string;
   schemeName: string;
   affected: boolean;
   eligibleQuantity: number;
   direction: DashboardSchemeImpactDirection;
+  cashDirection?: string;
   cashAmount: number;
   /** @nullable */
   quantityResult: number | null;
@@ -262,6 +266,26 @@ export interface DashboardSchemeImpact {
   navImpactTreatment: string;
   /** @nullable */
   flag: string | null;
+  account?: string;
+  formula?: string;
+  expected?: number;
+  expectedCash?: number;
+  grossCash?: number;
+  withholdingRate?: number;
+  withholdingAmount?: number;
+  netCash?: number;
+  expectedSecurityQuantity?: number;
+  securityMovement?: string;
+  positionDate?: string;
+  securityId?: string;
+  eligibilityStatus?: string;
+  dataQualityWarning?: string;
+  status?: string;
+  /** @nullable */
+  election?: string | null;
+  approval?: string;
+  entitlement?: number;
+  electionDecision?: DashboardSchemeImpactElectionDecision;
 }
 
 export type EventSummarySource = typeof EventSummarySource[keyof typeof EventSummarySource];
@@ -365,47 +389,6 @@ export interface Position {
   dataQualityWarning?: string;
 }
 
-export type ImpactCashDirection = typeof ImpactCashDirection[keyof typeof ImpactCashDirection];
-
-
-export const ImpactCashDirection = {
-  Receivable: 'Receivable',
-  Payable: 'Payable',
-} as const;
-
-export type ImpactElectionDecision = { [key: string]: unknown };
-
-export interface Impact {
-  id: string;
-  fund: string;
-  account: string;
-  eligibleQuantity: number;
-  formula: string;
-  expected: number;
-  cashDirection?: ImpactCashDirection;
-  currency: string;
-  status: string;
-  /** @nullable */
-  election?: string | null;
-  approval?: string;
-  expectedCash?: number;
-  grossCash?: number;
-  withholdingRate?: number;
-  withholdingAmount?: number;
-  netCash?: number;
-  cashCurrency?: string;
-  expectedSecurityQuantity?: number;
-  expectedShares?: number;
-  shareLabel?: string;
-  entitlement?: number;
-  securityMovement?: string;
-  positionDate?: string;
-  securityId?: string;
-  eligibilityStatus?: string;
-  dataQualityWarning?: string;
-  electionDecision?: ImpactElectionDecision;
-}
-
 export interface Option {
   id: string;
   label: string;
@@ -493,7 +476,6 @@ export type EventDetail = EventSummary & {
   notice: Notice;
   terms: Term[];
   positions: Position[];
-  impacts: Impact[];
   options: Option[];
   instruction: Instruction;
   reconciliation: Reconciliation;

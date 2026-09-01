@@ -5,3 +5,4 @@
 - [OpenAPI format compatibility](orval-auth-format-compatibility.md) — Avoid auth email/URI formats when this Orval/Zod generator emits unsupported runtime helpers.
 - [Server-side PDF intake](server-pdf-intake.md) — Use system PDF utilities for intake extraction; parser imports can crash the Replit Node runtime.
 - [Dividend withholding scope](dividend-withholding-scope.md) — Model withholding as a validated event-level rate; reconcile settlement against net cash.
+- [Single scheme impact model](single-scheme-impact-model.md) — Derive scheme impacts on event arrival and reuse them across decisions and operations.

@@ -6,4 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ImpactElectionDecision = { [key: string]: unknown };
+export type DashboardSchemeImpactElectionDecision = { [key: string]: unknown } | null;

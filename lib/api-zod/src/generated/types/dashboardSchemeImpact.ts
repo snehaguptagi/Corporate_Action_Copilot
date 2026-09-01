@@ -6,13 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DashboardSchemeImpactDirection } from './dashboardSchemeImpactDirection';
+import type { DashboardSchemeImpactElectionDecision } from './dashboardSchemeImpactElectionDecision';
 
 export interface DashboardSchemeImpact {
+  id: string;
   schemeId: string;
   schemeName: string;
   affected: boolean;
   eligibleQuantity: number;
   direction: DashboardSchemeImpactDirection;
+  cashDirection?: string;
   cashAmount: number;
   /** @nullable */
   quantityResult: number | null;
@@ -21,4 +24,24 @@ export interface DashboardSchemeImpact {
   navImpactTreatment: string;
   /** @nullable */
   flag: string | null;
+  account?: string;
+  formula?: string;
+  expected?: number;
+  expectedCash?: number;
+  grossCash?: number;
+  withholdingRate?: number;
+  withholdingAmount?: number;
+  netCash?: number;
+  expectedSecurityQuantity?: number;
+  securityMovement?: string;
+  positionDate?: string;
+  securityId?: string;
+  eligibilityStatus?: string;
+  dataQualityWarning?: string;
+  status?: string;
+  /** @nullable */
+  election?: string | null;
+  approval?: string;
+  entitlement?: number;
+  electionDecision?: DashboardSchemeImpactElectionDecision;
 }

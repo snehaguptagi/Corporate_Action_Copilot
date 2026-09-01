@@ -34,7 +34,7 @@ function rightsEvent() {
     ],
     securityMaster: { isin: "FR001400VRN5" },
     options: [{ id: "exercise", label: "Exercise rights" }, { id: "lapse", label: "Allow rights to lapse" }],
-    impacts: [],
+    schemeImpacts: [],
     tasks: [],
     audit: [],
     calculation: { rounding: "Round down", assumptions: "Test" },
@@ -69,7 +69,7 @@ function dividendEvent() {
     positions: [
       { id: "p-dividend", fund: "Income Fund", account: "CUST-4081", isin: "FR001400VRN5", securityId: "SEC-TEST", eligibleQuantity: 450000, positionDate: "2026-08-24", eligibilityStatus: "Eligible", dataQualityWarning: "" },
     ],
-    impacts: [],
+    schemeImpacts: [],
     tasks: [],
     audit: [],
     validation: { missingTerms: ["withholding"], isReady: false },
@@ -89,10 +89,10 @@ test("cash dividend blocks calculation until withholding is corrected and valida
   applyTermUpdates(event, [{ key: "withholding", value: "15%", reason: "Validated against market tax guidance" }], analyst, "");
   calculateEventImpacts(event, analyst);
   assert.equal(event.calculationInputs.withholdingRate, 0.15);
-  assert.equal(event.impacts[0].grossCash, 191250);
-  assert.equal(event.impacts[0].withholdingAmount, 28687.5);
-  assert.equal(event.impacts[0].netCash, 162562.5);
-  assert.equal(event.impacts[0].expectedCash, 162562.5);
+  assert.equal(event.schemeImpacts[0].grossCash, 191250);
+  assert.equal(event.schemeImpacts[0].withholdingAmount, 28687.5);
+  assert.equal(event.schemeImpacts[0].netCash, 162562.5);
+  assert.equal(event.schemeImpacts[0].expectedCash, 162562.5);
   assert.equal(event.cashDirection, "Receivable");
   assert.equal(event.reconciliation.expectedGrossCash, 191250);
   assert.equal(event.reconciliation.expectedWithholdingAmount, 28687.5);
@@ -122,9 +122,10 @@ test("cash reconciliation compares actual settlement with expected net cash", ()
 test("rights calculation uses eligible positions and rounds deterministic entitlements", () => {
   const event = rightsEvent();
   calculateEventImpacts(event, analyst);
-  assert.equal(event.impacts.length, 1);
-  assert.equal(event.impacts[0].expectedSecurityQuantity, 20000);
-  assert.equal(event.impacts[0].expectedCash, 170000);
+  const affected = event.schemeImpacts.filter((impact: EventData) => impact.affected);
+  assert.equal(affected.length, 1);
+  assert.equal(affected[0].expectedSecurityQuantity, 20000);
+  assert.equal(affected[0].expectedCash, 170000);
   assert.equal(event.cashDirection, "Payable");
   assert.equal(event.status, "Election required");
 });
@@ -139,8 +140,10 @@ test("invalid analyst corrections cannot validate stale calculation inputs", () 
 test("election prevents quantity above entitlement and requires an independent reviewer", () => {
   const event = rightsEvent();
   calculateEventImpacts(event, analyst);
-  assert.throws(() => recordElection(event, { impactId: event.impacts[0].id, optionId: "exercise", quantityElected: 20001, comment: "" }, analyst), /between 0 and 20,000/);
-  recordElection(event, { impactId: event.impacts[0].id, optionId: "exercise", quantityElected: 20000, comment: "Exercise all" }, analyst);
+  const affectedImpact = event.schemeImpacts.find((impact: EventData) => impact.affected);
+  assert.ok(affectedImpact);
+  assert.throws(() => recordElection(event, { impactId: affectedImpact.id, optionId: "exercise", quantityElected: 20001, comment: "" }, analyst), /between 0 and 20,000/);
+  recordElection(event, { impactId: affectedImpact.id, optionId: "exercise", quantityElected: 20000, comment: "Exercise all" }, analyst);
   assert.equal(event.status, "Awaiting approval");
   assert.equal(event.reconciliation.expectedCash, 170000);
   assert.equal(event.reconciliation.expectedSecurityQuantity, 20000);

@@ -59,7 +59,7 @@ function rightsFixture(): EventData {
     securityMaster: { securityId: "SEC-TEST", isin: "FR001400TEST", ticker: "TRS", securityName: "Test Rights Security", currency: "EUR", market: "France", status: "Active" },
     requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate"],
     calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 8.5, currency: "EUR", recordDate: "2026-08-24" },
-    impacts: [],
+    schemeImpacts: [],
     options: [
       { id: "exercise", label: "Exercise rights", description: "Subscribe for new shares.", result: "Funding is required.", default: false },
       { id: "lapse", label: "Allow rights to lapse", description: "Take no action.", result: "Rights expire.", default: true },
@@ -137,7 +137,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       method: "POST",
       body: JSON.stringify({}),
     });
-    assert.equal(unauthenticated.status, 401);
+    assert.equal(unauthenticated.status, 403);
 
     const calculated = await request(`/events/${eventId}/calculate`, {
       method: "POST",
@@ -146,7 +146,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     assert.equal(calculated.status, 200, JSON.stringify(calculated.body));
     assert.equal(calculated.body.cashDirection, "Payable");
     assert.deepEqual(
-      calculated.body.impacts.map((impact: EventData) => ({
+      calculated.body.schemeImpacts.map((impact: EventData) => ({
         account: impact.account,
         expectedCash: impact.expectedCash,
         cashDirection: impact.cashDirection,
@@ -157,7 +157,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
         { account: "TEST-002", expectedCash: 85_000, cashDirection: "Payable", expectedSecurityQuantity: 10_000 },
       ],
     );
-    const impact = calculated.body.impacts[0];
+    const impact = calculated.body.schemeImpacts[0];
 
     const election = await request(`/events/${eventId}/election`, {
       method: "POST",
@@ -174,7 +174,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     const secondElection = await request(`/events/${eventId}/election`, {
       method: "POST",
       body: JSON.stringify({
-        impactId: calculated.body.impacts[1].id,
+        impactId: calculated.body.schemeImpacts[1].id,
         optionId: "exercise",
         quantityElected: 10_000,
         comment: "Exercise full entitlement.",

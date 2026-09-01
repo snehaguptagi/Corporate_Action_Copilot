@@ -8,7 +8,6 @@
 import type { AuditEntry } from './auditEntry';
 import type { Calculation } from './calculation';
 import type { EventSummary } from './eventSummary';
-import type { Impact } from './impact';
 import type { Instruction } from './instruction';
 import type { Notice } from './notice';
 import type { Option } from './option';
@@ -23,7 +22,6 @@ export type EventDetail = EventSummary & {
   notice: Notice;
   terms: Term[];
   positions: Position[];
-  impacts: Impact[];
   options: Option[];
   instruction: Instruction;
   reconciliation: Reconciliation;

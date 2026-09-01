@@ -283,7 +283,7 @@ router.post("/events/:eventId/approval", async (req, res): Promise<void> => {
     if (
       body.approved &&
       (!event.terms.every((term: any) => term.reviewStatus === "Validated") ||
-        !event.impacts.every(
+        !event.schemeImpacts.filter((impact: any) => impact.affected).every(
           (impact: any) => event.options.length === 0 || impact.election,
         ))
     ) {
@@ -311,7 +311,7 @@ router.post("/events/:eventId/instruction", async (req, res): Promise<void> => {
   try {
     if (
       !body.status.toLowerCase().includes("rejected") &&
-      !event.impacts.every(
+      !event.schemeImpacts.filter((impact: any) => impact.affected).every(
         (impact: any) =>
           event.options.length === 0 ||
           impact.approval === "Approved",

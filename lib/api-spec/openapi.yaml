@@ -931,8 +931,9 @@ components:
           enum: [Approved, Returned]
     DashboardSchemeImpact:
       type: object
-      required: [schemeId, schemeName, affected, eligibleQuantity, direction, cashAmount, quantityResult, navImpactPaise, navImpactTreatment, flag]
+      required: [id, schemeId, schemeName, affected, eligibleQuantity, direction, cashAmount, quantityResult, navImpactPaise, navImpactTreatment, flag]
       properties:
+        id: { type: string }
         schemeId: { type: string }
         schemeName: { type: string }
         affected: { type: boolean }
@@ -940,11 +941,35 @@ components:
         direction:
           type: string
           enum: [Receivable, Funding, Neutral]
+        cashDirection: { type: string }
         cashAmount: { type: number }
         quantityResult: { type: ["number", "null"] }
         navImpactPaise: { type: ["number", "null"] }
         navImpactTreatment: { type: string }
         flag: { type: ["string", "null"] }
+        account: { type: string }
+        formula: { type: string }
+        expected: { type: number }
+        expectedCash: { type: number }
+        grossCash: { type: number }
+        withholdingRate: { type: number }
+        withholdingAmount: { type: number }
+        netCash: { type: number }
+        expectedSecurityQuantity: { type: number }
+        securityMovement: { type: string }
+        positionDate: { type: string }
+        securityId: { type: string }
+        eligibilityStatus: { type: string }
+        dataQualityWarning: { type: string }
+        status: { type: string }
+        election: { type: ["string", "null"] }
+        approval: { type: string }
+        entitlement: { type: number }
+        electionDecision:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: "null"
     EventSummary:
       type: object
       required: [id, reference, issuer, security, eventType, processingType, status, marketDeadline, internalDeadline, affectedAccounts, amount, currency, receivedAt, source, schemeImpacts, materialityPaise, cashImpactAmount, attention]
@@ -984,7 +1009,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/EventSummary"
         - type: object
-          required: [notice, terms, positions, impacts, options, instruction, reconciliation, tasks, audit, validation, calculation]
+          required: [notice, terms, positions, options, instruction, reconciliation, tasks, audit, validation, calculation]
           properties:
             notice:
               $ref: "#/components/schemas/Notice"
@@ -996,10 +1021,6 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Position"
-            impacts:
-              type: array
-              items:
-                $ref: "#/components/schemas/Impact"
             options:
               type: array
               items:
@@ -1110,39 +1131,6 @@ components:
         aliases:
           type: array
           items: { type: string }
-    Impact:
-      type: object
-      required: [id, fund, account, eligibleQuantity, formula, expected, currency, status]
-      properties:
-        id: { type: string }
-        fund: { type: string }
-        account: { type: string }
-        eligibleQuantity: { type: number }
-        formula: { type: string }
-        expected: { type: number }
-        cashDirection: { type: string, enum: [Receivable, Payable] }
-        currency: { type: string }
-        status: { type: string }
-        election: { type: ["string", "null"] }
-        approval: { type: string }
-        expectedCash: { type: number }
-        grossCash: { type: number }
-        withholdingRate: { type: number }
-        withholdingAmount: { type: number }
-        netCash: { type: number }
-        cashCurrency: { type: string }
-        expectedSecurityQuantity: { type: number }
-        expectedShares: { type: number }
-        shareLabel: { type: string }
-        entitlement: { type: number }
-        securityMovement: { type: string }
-        positionDate: { type: string }
-        securityId: { type: string }
-        eligibilityStatus: { type: string }
-        dataQualityWarning: { type: string }
-        electionDecision:
-          type: object
-          additionalProperties: true
     Option:
       type: object
       required: [id, label, description, result, default]

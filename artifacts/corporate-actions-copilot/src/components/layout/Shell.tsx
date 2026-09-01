@@ -39,7 +39,6 @@ export function Shell({ children }: { children: ReactNode }) {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/events", label: "Corporate actions", icon: FileText },
     { href: "/intake", label: "Add a notice", icon: Upload },
-    { href: "/desk", label: "Fund Manager Desk", icon: Landmark },
     { href: "/tasks", label: "Approvals", icon: CheckSquare },
     { href: "/audit", label: "Audit Trail", icon: History },
   ]

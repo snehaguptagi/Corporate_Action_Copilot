@@ -271,16 +271,18 @@ export default function FundManagerDesk() {
           </section>
 
           <section>
-            <SectionHeading index="03" eyebrow="Eligibility" title="Population funnel and exclusions" description="The funnel starts with every Arka scheme, identifies record-date eligibility, and preserves the reason for each exclusion." />
+            <SectionHeading index="03" eyebrow="Eligibility" title="Population funnel and exclusions" description="Each scheme passes three ordered tests: equity ISIN held, held on record date, then active folio." />
             <Card className="rounded-md border-[#d8d1cb] shadow-none">
               <CardContent className="p-5">
                 <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-                  <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+                  <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] sm:items-center">
                     <FunnelMetric label="Scheme universe" value={data.funnel.universe} tone="maroon" />
                     <ArrowRight className="mx-auto hidden h-4 w-4 text-[#9b8f88] sm:block" />
-                    <FunnelMetric label="Eligible" value={data.funnel.eligible} tone="green" />
+                    <FunnelMetric label="Holds equity ISIN" value={data.funnel.holdsEquityIsin} tone="green" />
                     <ArrowRight className="mx-auto hidden h-4 w-4 text-[#9b8f88] sm:block" />
-                    <FunnelMetric label="Blocked decisions" value={liveTotals.blocked.length} tone="orange" />
+                    <FunnelMetric label="Held on record date" value={data.funnel.heldOnRecordDate} tone="green" />
+                    <ArrowRight className="mx-auto hidden h-4 w-4 text-[#9b8f88] sm:block" />
+                    <FunnelMetric label="Folio active" value={data.funnel.folioActive} tone="green" />
                   </div>
                   <div className="border-t border-[#ded8d2] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Excluded from entitlement</div>
@@ -389,12 +391,13 @@ export default function FundManagerDesk() {
                                   max={scheme.entitlementRights}
                                   step={1}
                                   value={draftRights[scheme.id] ?? scheme.decisionRights}
-                                  disabled={!isFundManager || saveDecisions.isPending}
+                                  disabled={!isFundManager || scheme.decisionReadOnly || saveDecisions.isPending}
                                   onChange={(event) => setDraftRights((current) => ({ ...current, [scheme.id]: event.target.value }))}
                                   onBlur={() => persistDecision(scheme)}
                                   className="w-full rounded border border-input bg-white px-2 py-1.5 font-mono text-xs outline-none focus:border-[#dc6900] focus:ring-1 focus:ring-[#dc6900] disabled:bg-muted"
                                 />
-                                {(scheme.maxRightsByCap !== null || scheme.maxRightsByCash !== null) && (
+                                {scheme.decisionReadOnlyReason && <div className="mt-1 text-[10px] text-muted-foreground">{scheme.decisionReadOnlyReason}</div>}
+                                {!scheme.decisionReadOnly && (scheme.maxRightsByCap !== null || scheme.maxRightsByCash !== null) && (
                                   <button
                                     type="button"
                                     disabled={!isFundManager}

@@ -36,12 +36,12 @@ type IntakeDraft = {
 
 const pdfPathFor = (fileName: string) => `${import.meta.env.BASE_URL}demo-notices/${fileName}`;
 const samples = [
-  { id: "cash-dividend", type: "Cash dividend", name: "aurora-cash-dividend.pdf", pdfPath: pdfPathFor("cash-dividend-notice.pdf"), summary: "GBP 0.425 per share" },
-  { id: "rights-issue", type: "Rights issue", name: "rights-issue-notice.pdf", pdfPath: pdfPathFor("rights-issue-notice.pdf"), summary: "1 new share for 5 rights" },
-  { id: "stock-split", type: "Stock split", name: "delta-stock-split.pdf", pdfPath: pdfPathFor("delta-stock-split.pdf"), summary: "4-for-1 split" },
-  { id: "bonus-issue", type: "Bonus issue", name: "nimbus-bonus-issue.pdf", pdfPath: pdfPathFor("nimbus-bonus-issue.pdf"), summary: "1 bonus share for 10 shares" },
-  { id: "tender-offer", type: "Tender offer", name: "meridian-tender-offer.pdf", pdfPath: pdfPathFor("meridian-tender-offer.pdf"), summary: "USD cash tender" },
-  { id: "merger", type: "Merger", name: "verdant-merger-election.pdf", pdfPath: pdfPathFor("verdant-merger-election.pdf"), summary: "Cash and share election" },
+  { id: "cash-dividend", type: "Cash dividend", name: "cash-dividend-notice.pdf", pdfPath: pdfPathFor("cash-dividend-notice.pdf"), summary: "Aarav · ₹4.25 per equity share" },
+  { id: "rights-issue", type: "Rights issue", name: "rights-issue-notice.pdf", pdfPath: pdfPathFor("rights-issue-notice.pdf"), summary: "Bharat · 1 right for 5 shares at ₹85" },
+  { id: "stock-split", type: "Stock split", name: "delta-stock-split.pdf", pdfPath: pdfPathFor("delta-stock-split.pdf"), summary: "Deccan · 1:5 split" },
+  { id: "bonus-issue", type: "Bonus issue", name: "nimbus-bonus-issue.pdf", pdfPath: pdfPathFor("nimbus-bonus-issue.pdf"), summary: "Narmada · 1 bonus share for 10 shares" },
+  { id: "tender-offer", type: "Tender offer / buyback", name: "meridian-tender-offer.pdf", pdfPath: pdfPathFor("meridian-tender-offer.pdf"), summary: "Meridian India · ₹850 buyback" },
+  { id: "merger", type: "Merger / demerger", name: "verdant-merger-election.pdf", pdfPath: pdfPathFor("verdant-merger-election.pdf"), summary: "Vindhya · INR cash and share arrangement" },
 ];
 
 const sourceOptions: Array<{ id: SourceType; label: string; helper: string; icon: typeof FileText }> = [

@@ -220,6 +220,9 @@ export const GetArkaDeskResponse = zod.object({
 }),
   "funnel": zod.object({
   "universe": zod.number(),
+  "holdsEquityIsin": zod.number(),
+  "heldOnRecordDate": zod.number(),
+  "folioActive": zod.number(),
   "eligible": zod.number(),
   "excluded": zod.number(),
   "blocked": zod.number(),
@@ -251,7 +254,9 @@ export const GetArkaDeskResponse = zod.object({
   "eligibilityStatus": zod.string(),
   "exclusionReason": zod.string().nullish(),
   "blockers": zod.array(zod.string()),
-  "decisionState": zod.string()
+  "decisionState": zod.string(),
+  "decisionReadOnly": zod.boolean().optional(),
+  "decisionReadOnlyReason": zod.string().nullish()
 })),
   "totals": zod.object({
   "totalEntitlementRights": zod.number(),
@@ -340,6 +345,9 @@ export const SaveArkaDeskDecisionsResponse = zod.object({
 }),
   "funnel": zod.object({
   "universe": zod.number(),
+  "holdsEquityIsin": zod.number(),
+  "heldOnRecordDate": zod.number(),
+  "folioActive": zod.number(),
   "eligible": zod.number(),
   "excluded": zod.number(),
   "blocked": zod.number(),
@@ -371,7 +379,9 @@ export const SaveArkaDeskDecisionsResponse = zod.object({
   "eligibilityStatus": zod.string(),
   "exclusionReason": zod.string().nullish(),
   "blockers": zod.array(zod.string()),
-  "decisionState": zod.string()
+  "decisionState": zod.string(),
+  "decisionReadOnly": zod.boolean().optional(),
+  "decisionReadOnlyReason": zod.string().nullish()
 })),
   "totals": zod.object({
   "totalEntitlementRights": zod.number(),
@@ -453,6 +463,9 @@ export const SubmitArkaDeskResponse = zod.object({
 }),
   "funnel": zod.object({
   "universe": zod.number(),
+  "holdsEquityIsin": zod.number(),
+  "heldOnRecordDate": zod.number(),
+  "folioActive": zod.number(),
   "eligible": zod.number(),
   "excluded": zod.number(),
   "blocked": zod.number(),
@@ -484,7 +497,9 @@ export const SubmitArkaDeskResponse = zod.object({
   "eligibilityStatus": zod.string(),
   "exclusionReason": zod.string().nullish(),
   "blockers": zod.array(zod.string()),
-  "decisionState": zod.string()
+  "decisionState": zod.string(),
+  "decisionReadOnly": zod.boolean().optional(),
+  "decisionReadOnlyReason": zod.string().nullish()
 })),
   "totals": zod.object({
   "totalEntitlementRights": zod.number(),
@@ -570,6 +585,9 @@ export const ApproveArkaDeskResponse = zod.object({
 }),
   "funnel": zod.object({
   "universe": zod.number(),
+  "holdsEquityIsin": zod.number(),
+  "heldOnRecordDate": zod.number(),
+  "folioActive": zod.number(),
   "eligible": zod.number(),
   "excluded": zod.number(),
   "blocked": zod.number(),
@@ -601,7 +619,9 @@ export const ApproveArkaDeskResponse = zod.object({
   "eligibilityStatus": zod.string(),
   "exclusionReason": zod.string().nullish(),
   "blockers": zod.array(zod.string()),
-  "decisionState": zod.string()
+  "decisionState": zod.string(),
+  "decisionReadOnly": zod.boolean().optional(),
+  "decisionReadOnlyReason": zod.string().nullish()
 })),
   "totals": zod.object({
   "totalEntitlementRights": zod.number(),

@@ -6,6 +6,7 @@ import {
   db,
 } from "@workspace/db";
 import { divideBigIntFloor } from "./calculations";
+import { SEED_DATE_ANCHOR } from "./seed-clock";
 
 const CURRENT_PRICE_PAISE = 12_000n;
 const SUBSCRIPTION_PRICE_PAISE = 8_500n;
@@ -15,18 +16,34 @@ const CAP_PERCENT = 10n;
 const CAP_BASE = 100n;
 const TERP_NUMERATOR = CURRENT_PRICE_PAISE * RIGHTS_DENOMINATOR + SUBSCRIPTION_PRICE_PAISE * RIGHTS_NUMERATOR;
 const TERP_DENOMINATOR = RIGHTS_DENOMINATOR + RIGHTS_NUMERATOR;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const dateAtOffset = (offset: number) => new Date(Date.UTC(
+  SEED_DATE_ANCHOR.getUTCFullYear(),
+  SEED_DATE_ANCHOR.getUTCMonth(),
+  SEED_DATE_ANCHOR.getUTCDate() + offset,
+));
+const displayDate = (date: Date) => new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit", month: "short", year: "numeric", timeZone: "UTC",
+}).format(date);
+const localIsoDate = (date: Date) => `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+const previousTradingDay = (date: Date) => {
+  const prior = new Date(date.getTime() - DAY_MS);
+  while ([0, 6].includes(prior.getUTCDay())) prior.setUTCDate(prior.getUTCDate() - 1);
+  return prior;
+};
+const arkaRecordDate = dateAtOffset(10);
 
 export const ARKA_SCHEME_SEED = [
-  { id: "arka-focused-25", schemeCode: "ARKA-F25", schemeName: "Arka Focused 25", category: "Focused", aumPaise: 793_520_406_334n, navPaise: 184_25, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 6_000_000n },
-  { id: "arka-equity-savings", schemeCode: "ARKA-ES", schemeName: "Arka Equity Savings", category: "Equity Savings", aumPaise: 2_450_000_000_000n, navPaise: 126_80, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 900_000n },
-  { id: "arka-small-cap", schemeCode: "ARKA-SC", schemeName: "Arka Small Cap", category: "Small Cap", aumPaise: 3_250_000_000_000n, navPaise: 214_60, cashBudgetPaise: 1_799_994_000n, eligibilityStatus: "Eligible", quantity: 1_200_000n },
-  { id: "arka-flexi-cap", schemeCode: "ARKA-FC", schemeName: "Arka Flexi Cap", category: "Flexi Cap", aumPaise: 5_500_000_000_000n, navPaise: 168_35, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 1_300_000n },
-  { id: "arka-large-mid", schemeCode: "ARKA-LM", schemeName: "Arka Large & Mid Cap", category: "Large & Mid Cap", aumPaise: 2_800_000_000_000n, navPaise: 142_15, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 900_000n },
-  { id: "arka-balanced-advantage", schemeCode: "ARKA-BA", schemeName: "Arka Balanced Advantage", category: "Balanced Advantage", aumPaise: 3_900_000_000_000n, navPaise: 118_90, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 1_000_000n },
-  { id: "arka-value-discovery", schemeCode: "ARKA-VD", schemeName: "Arka Value Discovery", category: "Value", aumPaise: 2_100_000_000_000n, navPaise: 156_20, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 600_000n },
-  { id: "arka-elss-tax-saver", schemeCode: "ARKA-ELSS", schemeName: "Arka ELSS Tax Saver", category: "ELSS", aumPaise: 1_500_000_000_000n, navPaise: 132_40, cashBudgetPaise: null, eligibilityStatus: "Eligible", quantity: 1_300_000n },
-  { id: "arka-midcap-opportunities", schemeCode: "ARKA-MO", schemeName: "Arka Midcap Opportunities", category: "Mid Cap", aumPaise: 2_600_000_000_000n, navPaise: 198_10, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "No position on the record date", quantity: 0n },
-  { id: "arka-arbitrage", schemeCode: "ARKA-ARB", schemeName: "Arka Arbitrage", category: "Arbitrage", aumPaise: 1_100_000_000_000n, navPaise: 104_75, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Security is outside the scheme mandate", quantity: 0n },
+  { id: "arka-large-cap", schemeCode: "ARKA-LC", schemeName: "Arka Large Cap Fund", category: "Large cap", aumPaise: 8_400_000_000_000n, navPaise: 7_250, cashBudgetPaise: 210_000_000_000n, eligibilityStatus: "Eligible", quantity: 1_200_000n },
+  { id: "arka-flexi-cap", schemeCode: "ARKA-FC", schemeName: "Arka Flexi Cap Fund", category: "Flexi cap", aumPaise: 5_200_000_000_000n, navPaise: 5_680, cashBudgetPaise: 130_000_000_000n, eligibilityStatus: "Eligible", quantity: 800_000n },
+  { id: "arka-small-cap", schemeCode: "ARKA-SC", schemeName: "Arka Small Cap Fund", category: "Small cap", aumPaise: 2_100_000_000_000n, navPaise: 9_430, cashBudgetPaise: 1_800_000_000n, eligibilityStatus: "Eligible", quantity: 1_500_000n },
+  { id: "arka-focused-25", schemeCode: "ARKA-F25", schemeName: "Arka Focused 25 Fund", category: "Focused", aumPaise: 1_150_000_000_000n, navPaise: 4_820, cashBudgetPaise: 40_000_000_000n, eligibilityStatus: "Eligible", quantity: 9_000_000n },
+  { id: "arka-infrastructure", schemeCode: "ARKA-INF", schemeName: "Arka Infrastructure Fund", category: "Sectoral", aumPaise: 640_000_000_000n, navPaise: 3_890, cashBudgetPaise: 22_000_000_000n, eligibilityStatus: "Eligible", quantity: 500_002n },
+  { id: "arka-nifty-50", schemeCode: "ARKA-N50", schemeName: "Arka Nifty 50 Index Fund", category: "Index", aumPaise: 3_300_000_000_000n, navPaise: 2_140, cashBudgetPaise: 18_000_000_000n, eligibilityStatus: "Eligible", quantity: 200_000n },
+  { id: "arka-value", schemeCode: "ARKA-VALUE", schemeName: "Arka Value Fund", category: "Value", aumPaise: 1_480_000_000_000n, navPaise: 6_120, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed record-date test: sold 6,00,000 equity shares before ex-date", quantity: 600_000n },
+  { id: "arka-elss-tax-saver", schemeCode: "ARKA-ELSS", schemeName: "Arka ELSS Tax Saver", category: "ELSS", aumPaise: 2_650_000_000_000n, navPaise: 8_840, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed equity-ISIN test: holds issuer NCD only", quantity: 0n },
+  { id: "arka-mid-cap", schemeCode: "ARKA-MC", schemeName: "Arka Mid Cap Fund", category: "Mid cap", aumPaise: 4_100_000_000_000n, navPaise: 6_710, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed equity-ISIN test: no Bharat Renewables equity holding", quantity: 0n },
+  { id: "arka-banking-financial", schemeCode: "ARKA-BF", schemeName: "Arka Banking & Financial", category: "Sectoral", aumPaise: 1_900_000_000_000n, navPaise: 4_470, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed folio-active test: folio inactive", quantity: 1n },
 ] as const;
 
 export const ARKA_EVENT = {
@@ -43,19 +60,38 @@ export const ARKA_EVENT = {
   subscriptionPricePaise: SUBSCRIPTION_PRICE_PAISE,
   ratioNumerator: RIGHTS_NUMERATOR,
   ratioDenominator: RIGHTS_DENOMINATOR,
-  receivedDate: "01 Sep 2026",
-  recordDate: "04 Sep 2026",
-  exRightsDate: "03 Sep 2026",
-  fundDeadline: "07 Sep 2026 · 17:00 IST",
-  marketDeadline: "08 Sep 2026 · 15:30 IST",
-  settlementDate: "15 Sep 2026",
+  receivedDate: displayDate(dateAtOffset(12)),
+  recordDate: displayDate(arkaRecordDate),
+  recordDateIso: localIsoDate(arkaRecordDate),
+  exRightsDate: displayDate(previousTradingDay(arkaRecordDate)),
+  fundDeadline: `${displayDate(dateAtOffset(14))} · 15:00 IST`,
+  marketDeadline: `${displayDate(dateAtOffset(15))} · 15:30 IST`,
+  settlementDate: displayDate(dateAtOffset(22)),
 } as const;
+
+/** Shared deterministic holding projection used by the Bharat workbench case. */
+export function projectArkaBharatPositions() {
+  return ARKA_SCHEME_SEED.map((scheme) => ({
+    id: `POS-BHARAT-${scheme.id}`,
+    fund: scheme.schemeName,
+    account: `ARKA-${scheme.schemeCode}-001`,
+    isin: ARKA_EVENT.isin,
+    securityId: ARKA_EVENT.securityId,
+    settledQuantity: Number(scheme.quantity),
+    unsettledQuantity: 0,
+    eligibleQuantity: Number(scheme.quantity),
+    positionDate: ARKA_EVENT.recordDateIso,
+    eligibilityStatus: scheme.eligibilityStatus === "Eligible" ? "Eligible" : "Excluded",
+    dataQualityWarning: "exclusionReason" in scheme ? scheme.exclusionReason : "",
+  }));
+}
 
 const paiseToRupees = (value: bigint): number => Number(value) / 100;
 const fractionToRupees = (numerator: bigint, denominator: bigint, decimals = 4): number =>
   Number((Number(numerator) / Number(denominator) / 100).toFixed(decimals));
 const percentOf = (numerator: bigint, denominator: bigint): number =>
   Number((Number(numerator) * 100 / Number(denominator)).toFixed(2));
+const paiseToCrore = (value: bigint): number => Number(value) / 1_000_000_000;
 
 export function calculateArkaRightsTerms() {
   return {
@@ -105,9 +141,7 @@ function decisionForScheme(
 }
 
 export async function ensureArkaDeskSeedData(): Promise<void> {
-  const existing = await db.select({ id: arkaMutualFundSchemesTable.id }).from(arkaMutualFundSchemesTable);
-  if (existing.length === 0) {
-    for (const scheme of ARKA_SCHEME_SEED) {
+  for (const scheme of ARKA_SCHEME_SEED) {
       await db.insert(arkaMutualFundSchemesTable).values({
         id: scheme.id,
         schemeCode: scheme.schemeCode,
@@ -119,15 +153,29 @@ export async function ensureArkaDeskSeedData(): Promise<void> {
         eligibilityStatus: scheme.eligibilityStatus,
         exclusionReason: "exclusionReason" in scheme ? scheme.exclusionReason : null,
         decisionRights: null,
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({
+        target: arkaMutualFundSchemesTable.id,
+        set: {
+          schemeCode: scheme.schemeCode,
+          schemeName: scheme.schemeName,
+          category: scheme.category,
+          aumPaise: scheme.aumPaise,
+          navPaise: scheme.navPaise,
+          cashBudgetPaise: scheme.cashBudgetPaise,
+          eligibilityStatus: scheme.eligibilityStatus,
+          exclusionReason: "exclusionReason" in scheme ? scheme.exclusionReason : null,
+        },
+      });
       await db.insert(arkaSchemeHoldingsTable).values({
         id: `${scheme.id}-holding`,
         schemeId: scheme.id,
         folio: `ARKA-${scheme.schemeCode}-001`,
         quantity: scheme.quantity,
-        asOfDate: ARKA_EVENT.recordDate,
-      }).onConflictDoNothing();
-    }
+        asOfDate: ARKA_EVENT.recordDateIso,
+      }).onConflictDoUpdate({
+        target: arkaSchemeHoldingsTable.id,
+        set: { folio: `ARKA-${scheme.schemeCode}-001`, quantity: scheme.quantity, asOfDate: ARKA_EVENT.recordDateIso },
+      });
   }
 }
 
@@ -156,6 +204,11 @@ export async function getArkaDesk() {
       const portfolioLimitPaise = scheme.aumPaise / 10n;
       const postExerciseIssuerValuePaise = (quantity + decisionRights) * TERP_NUMERATOR / TERP_DENOMINATOR;
       const capUsage = percentOf(postExerciseIssuerValuePaise, scheme.aumPaise + exerciseCashPaise);
+      const unitsOutstanding = divideBigIntFloor(scheme.aumPaise, BigInt(scheme.navPaise));
+      const dilutionNumerator = CURRENT_PRICE_PAISE * TERP_DENOMINATOR - TERP_NUMERATOR;
+      const navHitPaise = unitsOutstanding === 0n
+        ? 0
+        : Number(divideBigIntFloor(quantity * dilutionNumerator, TERP_DENOMINATOR * unitsOutstanding));
       const blockers = [
         maxByCap !== null && decisionRights > maxByCap ? `SEBI 10% single-issuer limit: maximum ${maxByCap.toLocaleString("en-IN")} rights` : null,
         maxByBudget !== null && decisionRights > maxByBudget ? `Available cash budget supports ${maxByBudget.toLocaleString("en-IN")} rights` : null,
@@ -172,16 +225,16 @@ export async function getArkaDesk() {
         schemeCode: scheme.schemeCode,
         name: scheme.schemeName,
         category: scheme.category,
-        aumCrore: Number((Number(scheme.aumPaise) / 100 / 10_000_000).toFixed(2)),
+        aumCrore: paiseToCrore(scheme.aumPaise),
         navPaise: scheme.navPaise,
         holdingQuantity: Number(quantity),
         entitlementRights: Number(entitlement),
         decisionRights: Number(decisionRights),
-        fullCashCrore: Number((Number(fullCashPaise) / 100 / 10_000_000).toFixed(4)),
+        fullCashCrore: paiseToCrore(fullCashPaise),
         exerciseCashPaise: Number(exerciseCashPaise),
-        exerciseCashCrore: Number((Number(exerciseCashPaise) / 100 / 10_000_000).toFixed(4)),
-        navHitPaise: Number((Number(exerciseCashPaise) * 100 / Number(scheme.aumPaise)).toFixed(2)),
-        navHitPercent: percentOf(exerciseCashPaise, scheme.aumPaise),
+        exerciseCashCrore: paiseToCrore(exerciseCashPaise),
+        navHitPaise,
+        navHitPercent: Number((navHitPaise * 100 / scheme.navPaise).toFixed(4)),
         capUsagePercent: capUsage,
         sebiLimitPercent: 10,
         maxRightsByCap: maxByCap === null ? null : Number(maxByCap),
@@ -191,6 +244,8 @@ export async function getArkaDesk() {
         exclusionReason: scheme.exclusionReason,
         blockers,
         decisionState: decisionRights === 0n && scheme.eligibilityStatus === "Eligible" ? "Allow rights to lapse" : "Exercise",
+        decisionReadOnly: scheme.id === "arka-nifty-50",
+        decisionReadOnlyReason: scheme.id === "arka-nifty-50" ? "Index scheme follows the index provider's treatment." : null,
         _sort: Number(portfolioLimitPaise),
       };
     });
@@ -243,7 +298,7 @@ export async function getArkaDesk() {
       ratio: "1:5",
       subscriptionPrice: paiseToRupees(SUBSCRIPTION_PRICE_PAISE),
       totalRights: totalEntitlement,
-      totalExerciseCashCrore: Number((totalEntitlement * Number(SUBSCRIPTION_PRICE_PAISE) / 100 / 10_000_000).toFixed(4)),
+      totalExerciseCashCrore: paiseToCrore(BigInt(totalEntitlement) * SUBSCRIPTION_PRICE_PAISE),
     },
     rule: {
       id: "sebi-single-issuer-10",
@@ -254,6 +309,9 @@ export async function getArkaDesk() {
     },
     funnel: {
       universe: schemeRows.length,
+      holdsEquityIsin: 8,
+      heldOnRecordDate: 7,
+      folioActive: 6,
       eligible: eligible.length,
       excluded: schemeRows.length - eligible.length,
       blocked: blockedSchemes.length,
@@ -263,7 +321,7 @@ export async function getArkaDesk() {
     totals: {
       totalEntitlementRights: totalEntitlement,
       totalDecisionRights,
-      totalExerciseCashCrore: Number((totalExerciseCashPaise / 100 / 10_000_000).toFixed(4)),
+      totalExerciseCashCrore: paiseToCrore(BigInt(totalExerciseCashPaise)),
       blockedSchemes: blockedSchemes.map((scheme) => scheme.name),
       forfeitedRights: totalEntitlement - totalDecisionRights,
       canSubmit: blockedSchemes.length === 0,

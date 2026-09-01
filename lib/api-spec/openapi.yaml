@@ -842,9 +842,12 @@ components:
         method: { type: string }
     ArkaEligibilityFunnel:
       type: object
-      required: [universe, eligible, excluded, blocked, exclusionReasons]
+      required: [universe, holdsEquityIsin, heldOnRecordDate, folioActive, eligible, excluded, blocked, exclusionReasons]
       properties:
         universe: { type: number }
+        holdsEquityIsin: { type: number }
+        heldOnRecordDate: { type: number }
+        folioActive: { type: number }
         eligible: { type: number }
         excluded: { type: number }
         blocked: { type: number }
@@ -885,6 +888,8 @@ components:
           type: array
           items: { type: string }
         decisionState: { type: string }
+        decisionReadOnly: { type: boolean }
+        decisionReadOnlyReason: { type: ["string", "null"] }
     ArkaDecisionTotals:
       type: object
       required: [totalEntitlementRights, totalDecisionRights, totalExerciseCashCrore, blockedSchemes, forfeitedRights, canSubmit]

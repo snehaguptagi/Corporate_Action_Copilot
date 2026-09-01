@@ -47,19 +47,19 @@ const maxSourceCharacters = 40_000;
 const execFileAsync = promisify(execFile);
 
 const sampleTexts: Record<string, string> = {
-  "cash-dividend": "Notice Reference: CA-2026-0814-AX\nIssuer: Aurora Global plc\nEvent: Mandatory cash dividend\nISIN: GB00AUR00018\nRecord date: 25 August 2026\nGross rate: GBP 0.425 per ordinary share.\nPayment date: 18 September 2026.",
-  "rights-issue": "Notice Reference: CA-2026-0821-VR\nIssuer: Verdant Renewables SA\nEvent: Rights issue\nISIN: FR001400VRN5\nRecord date: 24 August 2026\nRights ratio: 1 for 5.\nSubscription price: EUR 8.50.\nInstructions must be received by 29 August 2026 at 10:00 CEST.\nDefault option: Lapse.",
-  "stock-split": "Issuer: Delta Systems Inc\nEvent: Mandatory stock split\nISIN: US247362AB19\nRecord date: 26 August 2026\nSplit ratio: 4 for 1.\nFractional entitlements are rounded down.",
-  "bonus-issue": "Issuer: Nimbus Holdings plc\nEvent: Mandatory bonus issue\nISIN: GB00NIM00012\nRecord date: 25 August 2026\nBonus ratio: 1 for 10 eligible shares.",
-  "tender-offer": "Issuer: Meridian Global Ltd\nEvent: Voluntary tender offer\nISIN: KYG596691041\nOffer price: USD 14.20 per share.\nMaximum acceptance: 35%.\nMarket deadline: 31 August 2026.",
-  merger: "Issuer: Verdant Renewables SA\nEvent: Voluntary merger election\nISIN: FR001400VRN5\nShare exchange ratio: 0.75.\nCash consideration: EUR 3.20.\nMarket deadline: 30 August 2026.",
+  "cash-dividend": "Notice Reference: CA-IN-DIV-001\nIssuer: Aarav Industries Ltd\nEvent: Mandatory cash dividend\nISIN: INE0AAR01011\nRecord date: 15 September 2026\nGross rate: INR 4.25 per equity share.\nPayment date: 30 September 2026.",
+  "rights-issue": "Notice Reference: CA-IN-2026-0901-BR\nIssuer: Bharat Renewables Ltd\nEvent: Rights issue\nISIN: INE0BRR01019\nRecord date: 15 September 2026\nRights ratio: 1 for 5.\nSubscription price: INR 85.00.\nInstructions must be received by 20 September 2026 at 15:30 IST.\nDefault option: Lapse.",
+  "stock-split": "Issuer: Deccan Grid Ltd\nEvent: Mandatory stock split\nISIN: INE0DEC01012\nRecord date: 15 September 2026\nSplit ratio: 5 for 1.",
+  "bonus-issue": "Issuer: Narmada Logistics Ltd\nEvent: Mandatory bonus issue\nISIN: INE0NAR01013\nRecord date: 15 September 2026\nBonus ratio: 1 for 10 eligible shares.",
+  "tender-offer": "Issuer: Meridian Infrastructure India Ltd\nEvent: Voluntary tender offer / buyback\nISIN: INE0MER01014\nOffer price: INR 850 per share.\nMaximum acceptance: 20%.\nMarket deadline: 20 September 2026 at 15:30 IST.",
+  merger: "Issuer: Vindhya Mobility Ltd\nEvent: Scheme of arrangement merger / demerger\nISIN: INE0VIN01015\nShare exchange ratio: 0.333.\nCash consideration: INR 425.\nMarket deadline: 20 September 2026 at 15:30 IST.",
 };
 
 function limitedText(value?: string): string {
   return (value ?? "").trim().slice(0, maxSourceCharacters);
 }
 
-const canonicalEventTypes = ["Cash dividend", "Stock split", "Stock dividend / bonus issue", "Rights issue", "Tender offer", "Merger / acquisition"] as const;
+const canonicalEventTypes = ["Cash dividend", "Stock split", "Bonus issue", "Rights issue", "Tender offer", "Merger / demerger"] as const;
 
 export function normalizeEventType(raw: string): string | null {
   const value = raw.trim().toLowerCase();
@@ -69,10 +69,10 @@ export function normalizeEventType(raw: string): string | null {
   const matches = new Set<string>();
   if (/\brights\b/.test(value)) matches.add("Rights issue");
   if (/\btender\b|\bbuy-?backs?\b|\brepurchases?\b/.test(value)) matches.add("Tender offer");
-  if (/\bmergers?\b|\bacquisitions?\b|\btakeovers?\b/.test(value)) matches.add("Merger / acquisition");
+  if (/\bmergers?\b|\bdemergers?\b|\bacquisitions?\b|\btakeovers?\b|\bscheme of arrangement\b/.test(value)) matches.add("Merger / demerger");
   if (/\bsplits?\b/.test(value)) matches.add("Stock split");
   const stockDividendIndicator = /\bbonus\b|\bscrip\b|\bstock dividends?\b|\bshare dividends?\b/.test(value);
-  if (stockDividendIndicator) matches.add("Stock dividend / bonus issue");
+  if (stockDividendIndicator) matches.add("Bonus issue");
   if (/\bdividends?\b|\bcash distributions?\b/.test(value) && (!stockDividendIndicator || /\bcash\b/.test(value))) matches.add("Cash dividend");
   return matches.size === 1 ? [...matches][0] : null;
 }

@@ -142,6 +142,9 @@ export type ArkaEligibilityFunnelExclusionReasonsItem = {
 
 export interface ArkaEligibilityFunnel {
   universe: number;
+  holdsEquityIsin: number;
+  heldOnRecordDate: number;
+  folioActive: number;
   eligible: number;
   excluded: number;
   blocked: number;
@@ -175,6 +178,9 @@ export interface ArkaSchemeImpact {
   exclusionReason?: string | null;
   blockers: string[];
   decisionState: string;
+  decisionReadOnly?: boolean;
+  /** @nullable */
+  decisionReadOnlyReason?: string | null;
 }
 
 export interface ArkaDecisionTotals {

@@ -24,18 +24,18 @@ import { Link } from "wouter";
 
 const workflowStages = [
   { label: "Notice intake", statuses: ["Received"], color: "bg-slate-400" },
-  { label: "Term review", statuses: ["Under review"], color: "bg-amber-500" },
+  { label: "Term review", statuses: ["Under review", "Validated"], color: "bg-amber-500" },
   { label: "Election", statuses: ["Election required"], color: "bg-violet-500" },
-  { label: "Checker approval", statuses: ["Awaiting approval"], color: "bg-blue-500" },
-  { label: "Settlement", statuses: ["Awaiting settlement"], color: "bg-cyan-500" },
+  { label: "Checker approval", statuses: ["Awaiting approval", "Approved"], color: "bg-blue-500" },
+  { label: "Settlement", statuses: ["Awaiting settlement", "Break identified"], color: "bg-cyan-500" },
   { label: "Reconciled", statuses: ["Closed", "Reconciled"], color: "bg-emerald-500" },
 ];
 
 const attentionOrder: Record<string, number> = {
   "Break identified": 0,
-  "Under review": 1,
+  "Under review": 1, Validated: 1,
   "Election required": 2,
-  "Awaiting approval": 3,
+  "Awaiting approval": 3, Approved: 3,
   "Awaiting settlement": 4,
   Received: 5,
   Closed: 6,
@@ -226,7 +226,7 @@ export default function Dashboard() {
             <div>
               <p className="text-sm font-semibold text-amber-950">Demo dataset: synthetic operational cases</p>
               <p className="mt-0.5 text-xs leading-5 text-amber-900/75">
-                Six cases are seeded to show the full journey from notice intake to settlement. Amounts remain in their native currency or shares.
+                {eventList.length} synthetic Indian cases show the full journey from notice intake to settlement. Amounts are INR or explicit security quantities.
               </p>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function Dashboard() {
                 <FileText className="h-4 w-4 text-slate-400" />
               </div>
               <div className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{eventList.length}</div>
-              <p className="mt-1 text-xs text-slate-500">{stageCount} of 6 lifecycle stages currently represented</p>
+              <p className="mt-1 text-xs text-slate-500">{stageCount} of {workflowStages.length} lifecycle stages currently represented</p>
             </CardContent>
           </Card>
           <Card className="border-amber-200">
@@ -330,7 +330,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="border-b border-slate-100 bg-white">
               <CardTitle className="text-base text-slate-900">Demo coverage</CardTitle>
-              <CardDescription className="mt-1">Where the six seeded cases sit in the workflow.</CardDescription>
+              <CardDescription className="mt-1">Where the seeded cases sit in the workflow.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 p-5">
               {workflowStages.map((stage) => {

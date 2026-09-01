@@ -1,7 +1,0 @@
-security_id,isin,ticker,security_name,issuer,currency,market,status
-SEC-001,FR001400VRN5,VRN,Verdant Renewables Ordinary Shares,Verdant Renewables SA,EUR,France,Active
-SEC-002,GB00AUR00018,AUR,Aurora Global plc,Aurora Global plc,GBP,United Kingdom,Active
-SEC-003,US24703D1072,DGT,Delta Grid Technologies,Delta Grid Technologies,USD,United States,Active
-SEC-004,NL000NIMB001,NMB,Nimbus Logistics SA,Nimbus Logistics SA,EUR,Netherlands,Active
-SEC-005,AU0000MERID2,MRL,Meridian Infrastructure Ltd,Meridian Infrastructure Ltd,AUD,Australia,Active
-SEC-006,FR001400VMH4,VMH,Verdant Mobility Holdings,Verdant Mobility Holdings,EUR,France,Active

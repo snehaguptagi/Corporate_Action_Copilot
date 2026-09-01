@@ -52,8 +52,6 @@ const money = (amount: number, currency: string) => currency === "Shares"
   : new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
 const cashDirectionLabel = (direction?: string) => direction === "Payable" ? "Funding required" : direction === "Receivable" ? "Entitlement" : "";
 
-const demoPdfPath = `${import.meta.env.BASE_URL}demo-notices/rights-issue-notice.pdf`;
-
 const VIEWS = [
   { id: "tasks", label: "Tasks & Controls", icon: ListChecks },
   { id: "audit", label: "Audit Trail", icon: Activity }
@@ -209,7 +207,7 @@ export default function EventWorkbench() {
   const renderStageContent = () => {
     switch (currentStageId) {
       case "notice": {
-        const sourcePreview = data.notice.previewUrl || (data.isHero ? demoPdfPath : "");
+          const sourcePreview = data.notice.previewUrl || "";
         return (
           <div className="space-y-4">
             <Card className="border-primary/20 bg-white">
@@ -533,12 +531,13 @@ export default function EventWorkbench() {
             <div className={`grid gap-4 ${isCashDividend ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
               {isCashDividend && <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected gross cash</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedGrossCash ?? 0, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>}
               {isCashDividend && <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected withholding</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedWithholdingAmount ?? 0, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>}
-              <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>{isCashDividend ? "Expected net cash" : "Expected cash"}</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.expectedCash ?? data.reconciliation.expected, data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>
+              <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>{isCashDividend ? "Expected net cash" : "Expected cash"}</CardDescription><CardTitle className="text-lg">{money(isCashDividend ? (data.reconciliation.expectedNetCash ?? data.reconciliation.expectedCash ?? data.reconciliation.expected) : (data.reconciliation.expectedCash ?? data.reconciliation.expected), data.reconciliation.expectedCurrency ?? data.currency)}</CardTitle></CardHeader></Card>
               <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Expected securities</CardDescription><CardTitle className="text-lg">{Number(data.reconciliation.expectedSecurityQuantity ?? 0).toLocaleString()}</CardTitle></CardHeader></Card>
               <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Actual cash</CardDescription><CardTitle className="text-lg">{money(data.reconciliation.actualCash ?? data.reconciliation.actual, data.reconciliation.actualCurrency ?? data.currency)}</CardTitle></CardHeader></Card>
               <Card className={data.reconciliation.classification === "Matched" ? "bg-white" : "border-rose-300 bg-rose-50/40"}>
                 <CardHeader className="pb-2"><CardDescription>Classification</CardDescription><CardTitle className="text-lg text-slate-800">{data.reconciliation.classification}</CardTitle></CardHeader>
               </Card>
+              <Card className="bg-white"><CardHeader className="pb-2"><CardDescription>Difference / tolerance</CardDescription><CardTitle className="text-lg">{data.reconciliation.difference} / {data.reconciliation.tolerance}</CardTitle></CardHeader></Card>
             </div>
             <Card className="bg-white">
               <CardHeader>

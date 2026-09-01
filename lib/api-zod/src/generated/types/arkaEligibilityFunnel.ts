@@ -9,6 +9,9 @@ import type { ArkaEligibilityFunnelExclusionReasonsItem } from './arkaEligibilit
 
 export interface ArkaEligibilityFunnel {
   universe: number;
+  holdsEquityIsin: number;
+  heldOnRecordDate: number;
+  folioActive: number;
   eligible: number;
   excluded: number;
   blocked: number;

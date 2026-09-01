@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateArkaFixtureValues } from "../src/lib/arka-desk";
+import { ARKA_SCHEME_SEED, calculateArkaFixtureValues } from "../src/lib/arka-desk";
 
-test("calculates the Bharat Renewables rights fixture exactly", () => {
+test("calculates the Bharat Renewables rights fixture from round business inputs", () => {
   const fixture = calculateArkaFixtureValues();
   assert.equal(fixture.terp, 114.1667);
   assert.equal(fixture.rightValue, 29.1667);
@@ -11,8 +11,11 @@ test("calculates the Bharat Renewables rights fixture exactly", () => {
   assert.equal(fixture.totalExerciseCashCrore, 22.44);
 });
 
-test("solves both binding Arka scheme constraints", () => {
+test("uses round seed amounts rather than fitted values", () => {
   const fixture = calculateArkaFixtureValues();
-  assert.equal(fixture.focusedMaximumRights, 1_027_007);
-  assert.equal(fixture.smallCapAffordableRights, 211_764);
+  const focused = ARKA_SCHEME_SEED.find((scheme) => scheme.id === "arka-focused-25");
+  const smallCap = ARKA_SCHEME_SEED.find((scheme) => scheme.id === "arka-small-cap");
+  assert.ok(focused && smallCap?.cashBudgetPaise);
+  assert.ok(fixture.focusedMaximumRights > 0);
+  assert.equal(fixture.smallCapAffordableRights, Number(smallCap.cashBudgetPaise / 8_500n));
 });

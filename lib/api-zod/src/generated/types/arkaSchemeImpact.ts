@@ -33,4 +33,7 @@ export interface ArkaSchemeImpact {
   exclusionReason?: string | null;
   blockers: string[];
   decisionState: string;
+  decisionReadOnly?: boolean;
+  /** @nullable */
+  decisionReadOnlyReason?: string | null;
 }

@@ -7,6 +7,21 @@
  */
 
 export * from './approvalInput';
+export * from './arkaDecisionTotals';
+export * from './arkaDesk';
+export * from './arkaDeskApprovalInput';
+export * from './arkaDeskApprovalInputStatus';
+export * from './arkaDeskCalendar';
+export * from './arkaDeskDecisionInput';
+export * from './arkaDeskDecisionInputDecisionsItem';
+export * from './arkaDeskEvent';
+export * from './arkaEligibilityFunnel';
+export * from './arkaEligibilityFunnelExclusionReasonsItem';
+export * from './arkaLimitRule';
+export * from './arkaRightsTerms';
+export * from './arkaSchemeImpact';
+export * from './arkaSecurityMaster';
+export * from './arkaSubmission';
 export * from './auditEntry';
 export * from './authorizationSessionHeaderParameter';
 export * from './authUser';

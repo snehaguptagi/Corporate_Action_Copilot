@@ -33,3 +33,8 @@ externalPort = 8081
 [[ports]]
 localPort = 25700
 externalPort = 80
+
+[userenv]
+
+[userenv.development]
+CORPORATE_ACTIONS_POC = "true"

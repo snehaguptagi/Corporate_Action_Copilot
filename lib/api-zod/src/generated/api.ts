@@ -162,6 +162,469 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * @summary Get the Arka Mutual Fund Bharat Renewables decision desk
+ */
+export const GetArkaDeskResponse = zod.object({
+  "event": zod.object({
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "securityId": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "subscriptionPrice": zod.number(),
+  "rightsRatio": zod.string(),
+  "status": zod.string(),
+  "classification": zod.string(),
+  "source": zod.string()
+}),
+  "calendar": zod.object({
+  "receivedDate": zod.string(),
+  "recordDate": zod.string(),
+  "exRightsDate": zod.string(),
+  "fundDeadline": zod.string(),
+  "marketDeadline": zod.string(),
+  "settlementDate": zod.string()
+}),
+  "securityMaster": zod.object({
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "status": zod.string(),
+  "market": zod.string()
+}),
+  "terms": zod.object({
+  "terp": zod.number(),
+  "rightValue": zod.number(),
+  "dilution": zod.number(),
+  "ratio": zod.string(),
+  "subscriptionPrice": zod.number(),
+  "totalRights": zod.number(),
+  "totalExerciseCashCrore": zod.number()
+}),
+  "rule": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "limitPercent": zod.number(),
+  "method": zod.string()
+}),
+  "funnel": zod.object({
+  "universe": zod.number(),
+  "eligible": zod.number(),
+  "excluded": zod.number(),
+  "blocked": zod.number(),
+  "exclusionReasons": zod.array(zod.object({
+  "scheme": zod.string(),
+  "reason": zod.string()
+}))
+}),
+  "schemes": zod.array(zod.object({
+  "id": zod.string(),
+  "schemeCode": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "aumCrore": zod.number(),
+  "navPaise": zod.number(),
+  "holdingQuantity": zod.number(),
+  "entitlementRights": zod.number(),
+  "decisionRights": zod.number(),
+  "fullCashCrore": zod.number(),
+  "exerciseCashPaise": zod.number(),
+  "exerciseCashCrore": zod.number(),
+  "navHitPaise": zod.number(),
+  "navHitPercent": zod.number(),
+  "capUsagePercent": zod.number(),
+  "sebiLimitPercent": zod.number(),
+  "maxRightsByCap": zod.number().nullish(),
+  "maxRightsByCash": zod.number().nullish(),
+  "forfeitedRights": zod.number(),
+  "eligibilityStatus": zod.string(),
+  "exclusionReason": zod.string().nullish(),
+  "blockers": zod.array(zod.string()),
+  "decisionState": zod.string()
+})),
+  "totals": zod.object({
+  "totalEntitlementRights": zod.number(),
+  "totalDecisionRights": zod.number(),
+  "totalExerciseCashCrore": zod.number(),
+  "blockedSchemes": zod.array(zod.string()),
+  "forfeitedRights": zod.number(),
+  "canSubmit": zod.boolean()
+}),
+  "submission": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "submittedById": zod.string(),
+  "submittedByName": zod.string(),
+  "submittedAt": zod.string(),
+  "checkedById": zod.string().nullable(),
+  "checkedByName": zod.string().nullable(),
+  "checkedAt": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Save fund manager rights issue decisions
+ */
+export const SaveArkaDeskDecisionsBody = zod.object({
+  "decisions": zod.array(zod.object({
+  "schemeId": zod.string(),
+  "rights": zod.number()
+}))
+})
+
+export const SaveArkaDeskDecisionsResponse = zod.object({
+  "event": zod.object({
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "securityId": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "subscriptionPrice": zod.number(),
+  "rightsRatio": zod.string(),
+  "status": zod.string(),
+  "classification": zod.string(),
+  "source": zod.string()
+}),
+  "calendar": zod.object({
+  "receivedDate": zod.string(),
+  "recordDate": zod.string(),
+  "exRightsDate": zod.string(),
+  "fundDeadline": zod.string(),
+  "marketDeadline": zod.string(),
+  "settlementDate": zod.string()
+}),
+  "securityMaster": zod.object({
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "status": zod.string(),
+  "market": zod.string()
+}),
+  "terms": zod.object({
+  "terp": zod.number(),
+  "rightValue": zod.number(),
+  "dilution": zod.number(),
+  "ratio": zod.string(),
+  "subscriptionPrice": zod.number(),
+  "totalRights": zod.number(),
+  "totalExerciseCashCrore": zod.number()
+}),
+  "rule": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "limitPercent": zod.number(),
+  "method": zod.string()
+}),
+  "funnel": zod.object({
+  "universe": zod.number(),
+  "eligible": zod.number(),
+  "excluded": zod.number(),
+  "blocked": zod.number(),
+  "exclusionReasons": zod.array(zod.object({
+  "scheme": zod.string(),
+  "reason": zod.string()
+}))
+}),
+  "schemes": zod.array(zod.object({
+  "id": zod.string(),
+  "schemeCode": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "aumCrore": zod.number(),
+  "navPaise": zod.number(),
+  "holdingQuantity": zod.number(),
+  "entitlementRights": zod.number(),
+  "decisionRights": zod.number(),
+  "fullCashCrore": zod.number(),
+  "exerciseCashPaise": zod.number(),
+  "exerciseCashCrore": zod.number(),
+  "navHitPaise": zod.number(),
+  "navHitPercent": zod.number(),
+  "capUsagePercent": zod.number(),
+  "sebiLimitPercent": zod.number(),
+  "maxRightsByCap": zod.number().nullish(),
+  "maxRightsByCash": zod.number().nullish(),
+  "forfeitedRights": zod.number(),
+  "eligibilityStatus": zod.string(),
+  "exclusionReason": zod.string().nullish(),
+  "blockers": zod.array(zod.string()),
+  "decisionState": zod.string()
+})),
+  "totals": zod.object({
+  "totalEntitlementRights": zod.number(),
+  "totalDecisionRights": zod.number(),
+  "totalExerciseCashCrore": zod.number(),
+  "blockedSchemes": zod.array(zod.string()),
+  "forfeitedRights": zod.number(),
+  "canSubmit": zod.boolean()
+}),
+  "submission": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "submittedById": zod.string(),
+  "submittedByName": zod.string(),
+  "submittedAt": zod.string(),
+  "checkedById": zod.string().nullable(),
+  "checkedByName": zod.string().nullable(),
+  "checkedAt": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Submit resolved Arka decisions for compliance checking
+ */
+export const SubmitArkaDeskResponse = zod.object({
+  "event": zod.object({
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "securityId": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "subscriptionPrice": zod.number(),
+  "rightsRatio": zod.string(),
+  "status": zod.string(),
+  "classification": zod.string(),
+  "source": zod.string()
+}),
+  "calendar": zod.object({
+  "receivedDate": zod.string(),
+  "recordDate": zod.string(),
+  "exRightsDate": zod.string(),
+  "fundDeadline": zod.string(),
+  "marketDeadline": zod.string(),
+  "settlementDate": zod.string()
+}),
+  "securityMaster": zod.object({
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "status": zod.string(),
+  "market": zod.string()
+}),
+  "terms": zod.object({
+  "terp": zod.number(),
+  "rightValue": zod.number(),
+  "dilution": zod.number(),
+  "ratio": zod.string(),
+  "subscriptionPrice": zod.number(),
+  "totalRights": zod.number(),
+  "totalExerciseCashCrore": zod.number()
+}),
+  "rule": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "limitPercent": zod.number(),
+  "method": zod.string()
+}),
+  "funnel": zod.object({
+  "universe": zod.number(),
+  "eligible": zod.number(),
+  "excluded": zod.number(),
+  "blocked": zod.number(),
+  "exclusionReasons": zod.array(zod.object({
+  "scheme": zod.string(),
+  "reason": zod.string()
+}))
+}),
+  "schemes": zod.array(zod.object({
+  "id": zod.string(),
+  "schemeCode": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "aumCrore": zod.number(),
+  "navPaise": zod.number(),
+  "holdingQuantity": zod.number(),
+  "entitlementRights": zod.number(),
+  "decisionRights": zod.number(),
+  "fullCashCrore": zod.number(),
+  "exerciseCashPaise": zod.number(),
+  "exerciseCashCrore": zod.number(),
+  "navHitPaise": zod.number(),
+  "navHitPercent": zod.number(),
+  "capUsagePercent": zod.number(),
+  "sebiLimitPercent": zod.number(),
+  "maxRightsByCap": zod.number().nullish(),
+  "maxRightsByCash": zod.number().nullish(),
+  "forfeitedRights": zod.number(),
+  "eligibilityStatus": zod.string(),
+  "exclusionReason": zod.string().nullish(),
+  "blockers": zod.array(zod.string()),
+  "decisionState": zod.string()
+})),
+  "totals": zod.object({
+  "totalEntitlementRights": zod.number(),
+  "totalDecisionRights": zod.number(),
+  "totalExerciseCashCrore": zod.number(),
+  "blockedSchemes": zod.array(zod.string()),
+  "forfeitedRights": zod.number(),
+  "canSubmit": zod.boolean()
+}),
+  "submission": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "submittedById": zod.string(),
+  "submittedByName": zod.string(),
+  "submittedAt": zod.string(),
+  "checkedById": zod.string().nullable(),
+  "checkedByName": zod.string().nullable(),
+  "checkedAt": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Approve or return an Arka decision submission
+ */
+export const ApproveArkaDeskBody = zod.object({
+  "status": zod.enum(['Approved', 'Returned'])
+})
+
+export const ApproveArkaDeskResponse = zod.object({
+  "event": zod.object({
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "securityId": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "subscriptionPrice": zod.number(),
+  "rightsRatio": zod.string(),
+  "status": zod.string(),
+  "classification": zod.string(),
+  "source": zod.string()
+}),
+  "calendar": zod.object({
+  "receivedDate": zod.string(),
+  "recordDate": zod.string(),
+  "exRightsDate": zod.string(),
+  "fundDeadline": zod.string(),
+  "marketDeadline": zod.string(),
+  "settlementDate": zod.string()
+}),
+  "securityMaster": zod.object({
+  "issuer": zod.string(),
+  "securityName": zod.string(),
+  "ticker": zod.string(),
+  "isin": zod.string(),
+  "reIsin": zod.string(),
+  "exchange": zod.string(),
+  "currency": zod.string(),
+  "cmp": zod.number(),
+  "status": zod.string(),
+  "market": zod.string()
+}),
+  "terms": zod.object({
+  "terp": zod.number(),
+  "rightValue": zod.number(),
+  "dilution": zod.number(),
+  "ratio": zod.string(),
+  "subscriptionPrice": zod.number(),
+  "totalRights": zod.number(),
+  "totalExerciseCashCrore": zod.number()
+}),
+  "rule": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "limitPercent": zod.number(),
+  "method": zod.string()
+}),
+  "funnel": zod.object({
+  "universe": zod.number(),
+  "eligible": zod.number(),
+  "excluded": zod.number(),
+  "blocked": zod.number(),
+  "exclusionReasons": zod.array(zod.object({
+  "scheme": zod.string(),
+  "reason": zod.string()
+}))
+}),
+  "schemes": zod.array(zod.object({
+  "id": zod.string(),
+  "schemeCode": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "aumCrore": zod.number(),
+  "navPaise": zod.number(),
+  "holdingQuantity": zod.number(),
+  "entitlementRights": zod.number(),
+  "decisionRights": zod.number(),
+  "fullCashCrore": zod.number(),
+  "exerciseCashPaise": zod.number(),
+  "exerciseCashCrore": zod.number(),
+  "navHitPaise": zod.number(),
+  "navHitPercent": zod.number(),
+  "capUsagePercent": zod.number(),
+  "sebiLimitPercent": zod.number(),
+  "maxRightsByCap": zod.number().nullish(),
+  "maxRightsByCash": zod.number().nullish(),
+  "forfeitedRights": zod.number(),
+  "eligibilityStatus": zod.string(),
+  "exclusionReason": zod.string().nullish(),
+  "blockers": zod.array(zod.string()),
+  "decisionState": zod.string()
+})),
+  "totals": zod.object({
+  "totalEntitlementRights": zod.number(),
+  "totalDecisionRights": zod.number(),
+  "totalExerciseCashCrore": zod.number(),
+  "blockedSchemes": zod.array(zod.string()),
+  "forfeitedRights": zod.number(),
+  "canSubmit": zod.boolean()
+}),
+  "submission": zod.union([zod.object({
+  "id": zod.string(),
+  "status": zod.string(),
+  "submittedById": zod.string(),
+  "submittedByName": zod.string(),
+  "submittedAt": zod.string(),
+  "checkedById": zod.string().nullable(),
+  "checkedByName": zod.string().nullable(),
+  "checkedAt": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
  * @summary List corporate action events
  */
 export const ListEventsQueryParams = zod.object({

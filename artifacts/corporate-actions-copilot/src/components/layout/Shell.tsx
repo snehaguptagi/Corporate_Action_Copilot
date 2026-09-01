@@ -1,6 +1,6 @@
 import { ReactNode } from "react"
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload, LogIn, LogOut } from "lucide-react"
+import { LayoutDashboard, FileText, CheckSquare, History, ShieldAlert, Upload, LogIn, LogOut, Landmark } from "lucide-react"
 import { useAuth } from "@workspace/replit-auth-web"
 import {
   getGetSessionQueryKey,
@@ -39,6 +39,7 @@ export function Shell({ children }: { children: ReactNode }) {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/events", label: "Event Inbox", icon: FileText },
     { href: "/intake", label: "Notice Intake", icon: Upload },
+    { href: "/desk", label: "Fund Manager Desk", icon: Landmark },
     { href: "/tasks", label: "Tasks & Risk", icon: CheckSquare },
     { href: "/audit", label: "Audit Trail", icon: History },
   ]

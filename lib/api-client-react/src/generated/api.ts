@@ -21,6 +21,9 @@ import type {
 
 import type {
   ApprovalInput,
+  ArkaDesk,
+  ArkaDeskApprovalInput,
+  ArkaDeskDecisionInput,
   AuditEntry,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
@@ -853,6 +856,296 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
 
 
 
+
+export const getGetArkaDeskUrl = () => {
+
+
+
+
+  return `/api/desk`
+}
+
+/**
+ * @summary Get the Arka Mutual Fund Bharat Renewables decision desk
+ */
+export const getArkaDesk = async ( options?: Parameters<typeof customFetch>[1]): Promise<ArkaDesk> => {
+
+  return customFetch<ArkaDesk>(getGetArkaDeskUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArkaDeskQueryKey = () => {
+    return [
+    `/api/desk`
+    ] as const;
+    }
+
+
+export const getGetArkaDeskQueryOptions = <TData = Awaited<ReturnType<typeof getArkaDesk>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArkaDesk>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArkaDeskQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArkaDesk>>> = ({ signal }) => getArkaDesk({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArkaDesk>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArkaDeskQueryResult = NonNullable<Awaited<ReturnType<typeof getArkaDesk>>>
+export type GetArkaDeskQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the Arka Mutual Fund Bharat Renewables decision desk
+ */
+
+export function useGetArkaDesk<TData = Awaited<ReturnType<typeof getArkaDesk>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArkaDesk>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArkaDeskQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveArkaDeskDecisionsUrl = () => {
+
+
+
+
+  return `/api/desk/decisions`
+}
+
+/**
+ * @summary Save fund manager rights issue decisions
+ */
+export const saveArkaDeskDecisions = async (arkaDeskDecisionInput: ArkaDeskDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<ArkaDesk> => {
+
+  return customFetch<ArkaDesk>(getSaveArkaDeskDecisionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(arkaDeskDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getSaveArkaDeskDecisionsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveArkaDeskDecisions>>, TError,{data: BodyType<ArkaDeskDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveArkaDeskDecisions>>, TError,{data: BodyType<ArkaDeskDecisionInput>}, TContext> => {
+
+const mutationKey = ['saveArkaDeskDecisions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveArkaDeskDecisions>>, {data: BodyType<ArkaDeskDecisionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveArkaDeskDecisions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveArkaDeskDecisionsMutationResult = NonNullable<Awaited<ReturnType<typeof saveArkaDeskDecisions>>>
+    export type SaveArkaDeskDecisionsMutationBody = BodyType<ArkaDeskDecisionInput>
+    export type SaveArkaDeskDecisionsMutationError = ErrorType<void>
+
+    /**
+ * @summary Save fund manager rights issue decisions
+ */
+export const useSaveArkaDeskDecisions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveArkaDeskDecisions>>, TError,{data: BodyType<ArkaDeskDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveArkaDeskDecisions>>,
+        TError,
+        {data: BodyType<ArkaDeskDecisionInput>},
+        TContext
+      > => {
+      return useMutation(getSaveArkaDeskDecisionsMutationOptions(options));
+    }
+
+export const getSubmitArkaDeskUrl = () => {
+
+
+
+
+  return `/api/desk/submit`
+}
+
+/**
+ * @summary Submit resolved Arka decisions for compliance checking
+ */
+export const submitArkaDesk = async ( options?: Parameters<typeof customFetch>[1]): Promise<ArkaDesk> => {
+
+  return customFetch<ArkaDesk>(getSubmitArkaDeskUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSubmitArkaDeskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitArkaDesk>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitArkaDesk>>, TError,void, TContext> => {
+
+const mutationKey = ['submitArkaDesk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitArkaDesk>>, void> = () => {
+
+
+          return  submitArkaDesk(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitArkaDeskMutationResult = NonNullable<Awaited<ReturnType<typeof submitArkaDesk>>>
+
+    export type SubmitArkaDeskMutationError = ErrorType<void>
+
+    /**
+ * @summary Submit resolved Arka decisions for compliance checking
+ */
+export const useSubmitArkaDesk = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitArkaDesk>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitArkaDesk>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSubmitArkaDeskMutationOptions(options));
+    }
+
+export const getApproveArkaDeskUrl = () => {
+
+
+
+
+  return `/api/desk/approval`
+}
+
+/**
+ * @summary Approve or return an Arka decision submission
+ */
+export const approveArkaDesk = async (arkaDeskApprovalInput: ArkaDeskApprovalInput, options?: Parameters<typeof customFetch>[1]): Promise<ArkaDesk> => {
+
+  return customFetch<ArkaDesk>(getApproveArkaDeskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(arkaDeskApprovalInput)
+  }
+);}
+
+
+
+
+
+export const getApproveArkaDeskMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveArkaDesk>>, TError,{data: BodyType<ArkaDeskApprovalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveArkaDesk>>, TError,{data: BodyType<ArkaDeskApprovalInput>}, TContext> => {
+
+const mutationKey = ['approveArkaDesk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveArkaDesk>>, {data: BodyType<ArkaDeskApprovalInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  approveArkaDesk(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveArkaDeskMutationResult = NonNullable<Awaited<ReturnType<typeof approveArkaDesk>>>
+    export type ApproveArkaDeskMutationBody = BodyType<ArkaDeskApprovalInput>
+    export type ApproveArkaDeskMutationError = ErrorType<void>
+
+    /**
+ * @summary Approve or return an Arka decision submission
+ */
+export const useApproveArkaDesk = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveArkaDesk>>, TError,{data: BodyType<ArkaDeskApprovalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveArkaDesk>>,
+        TError,
+        {data: BodyType<ArkaDeskApprovalInput>},
+        TContext
+      > => {
+      return useMutation(getApproveArkaDeskMutationOptions(options));
+    }
 
 export const getListEventsUrl = (params?: ListEventsParams,) => {
   const normalizedParams = new URLSearchParams();

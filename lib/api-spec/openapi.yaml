@@ -195,6 +195,82 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+  /desk:
+    get:
+      operationId: getArkaDesk
+      tags: [arka-desk]
+      summary: Get the Arka Mutual Fund Bharat Renewables decision desk
+      security:
+        - CorporateActionSession: []
+      responses:
+        "200":
+          description: Arka rights issue decision desk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArkaDesk"
+  /desk/decisions:
+    post:
+      operationId: saveArkaDeskDecisions
+      tags: [arka-desk]
+      summary: Save fund manager rights issue decisions
+      security:
+        - CorporateActionSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArkaDeskDecisionInput"
+      responses:
+        "200":
+          description: Updated Arka decision desk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArkaDesk"
+        "400":
+          description: Invalid decision
+        "403":
+          description: Fund Manager role required
+  /desk/submit:
+    post:
+      operationId: submitArkaDesk
+      tags: [arka-desk]
+      summary: Submit resolved Arka decisions for compliance checking
+      security:
+        - CorporateActionSession: []
+      responses:
+        "200":
+          description: Submitted Arka decision desk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArkaDesk"
+        "409":
+          description: Submission is blocked
+  /desk/approval:
+    post:
+      operationId: approveArkaDesk
+      tags: [arka-desk]
+      summary: Approve or return an Arka decision submission
+      security:
+        - CorporateActionSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArkaDeskApprovalInput"
+      responses:
+        "200":
+          description: Checked Arka decision desk
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArkaDesk"
+        "409":
+          description: Maker-checker validation failed
   /events:
     get:
       operationId: listEvents
@@ -675,6 +751,183 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuditEntry"
+    ArkaDesk:
+      type: object
+      required: [event, calendar, securityMaster, terms, rule, funnel, schemes, totals, submission]
+      properties:
+        event:
+          $ref: "#/components/schemas/ArkaDeskEvent"
+        calendar:
+          $ref: "#/components/schemas/ArkaDeskCalendar"
+        securityMaster:
+          $ref: "#/components/schemas/ArkaSecurityMaster"
+        terms:
+          $ref: "#/components/schemas/ArkaRightsTerms"
+        rule:
+          $ref: "#/components/schemas/ArkaLimitRule"
+        funnel:
+          $ref: "#/components/schemas/ArkaEligibilityFunnel"
+        schemes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArkaSchemeImpact"
+        totals:
+          $ref: "#/components/schemas/ArkaDecisionTotals"
+        submission:
+          oneOf:
+            - $ref: "#/components/schemas/ArkaSubmission"
+            - type: "null"
+    ArkaDeskEvent:
+      type: object
+      required: [reference, issuer, securityName, ticker, isin, reIsin, securityId, exchange, currency, cmp, subscriptionPrice, rightsRatio, status, classification, source]
+      properties:
+        reference: { type: string }
+        issuer: { type: string }
+        securityName: { type: string }
+        ticker: { type: string }
+        isin: { type: string }
+        reIsin: { type: string }
+        securityId: { type: string }
+        exchange: { type: string }
+        currency: { type: string }
+        cmp: { type: number }
+        subscriptionPrice: { type: number }
+        rightsRatio: { type: string }
+        status: { type: string }
+        classification: { type: string }
+        source: { type: string }
+    ArkaDeskCalendar:
+      type: object
+      required: [receivedDate, recordDate, exRightsDate, fundDeadline, marketDeadline, settlementDate]
+      properties:
+        receivedDate: { type: string }
+        recordDate: { type: string }
+        exRightsDate: { type: string }
+        fundDeadline: { type: string }
+        marketDeadline: { type: string }
+        settlementDate: { type: string }
+    ArkaSecurityMaster:
+      type: object
+      required: [issuer, securityName, ticker, isin, reIsin, exchange, currency, cmp, status, market]
+      properties:
+        issuer: { type: string }
+        securityName: { type: string }
+        ticker: { type: string }
+        isin: { type: string }
+        reIsin: { type: string }
+        exchange: { type: string }
+        currency: { type: string }
+        cmp: { type: number }
+        status: { type: string }
+        market: { type: string }
+    ArkaRightsTerms:
+      type: object
+      required: [terp, rightValue, dilution, ratio, subscriptionPrice, totalRights, totalExerciseCashCrore]
+      properties:
+        terp: { type: number }
+        rightValue: { type: number }
+        dilution: { type: number }
+        ratio: { type: string }
+        subscriptionPrice: { type: number }
+        totalRights: { type: number }
+        totalExerciseCashCrore: { type: number }
+    ArkaLimitRule:
+      type: object
+      required: [id, name, description, limitPercent, method]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        limitPercent: { type: number }
+        method: { type: string }
+    ArkaEligibilityFunnel:
+      type: object
+      required: [universe, eligible, excluded, blocked, exclusionReasons]
+      properties:
+        universe: { type: number }
+        eligible: { type: number }
+        excluded: { type: number }
+        blocked: { type: number }
+        exclusionReasons:
+          type: array
+          items:
+            type: object
+            required: [scheme, reason]
+            properties:
+              scheme: { type: string }
+              reason: { type: string }
+    ArkaSchemeImpact:
+      type: object
+      required: [id, schemeCode, name, category, aumCrore, navPaise, holdingQuantity, entitlementRights, decisionRights, fullCashCrore, exerciseCashPaise, exerciseCashCrore, navHitPaise, navHitPercent, capUsagePercent, sebiLimitPercent, forfeitedRights, eligibilityStatus, blockers, decisionState]
+      properties:
+        id: { type: string }
+        schemeCode: { type: string }
+        name: { type: string }
+        category: { type: string }
+        aumCrore: { type: number }
+        navPaise: { type: number }
+        holdingQuantity: { type: number }
+        entitlementRights: { type: number }
+        decisionRights: { type: number }
+        fullCashCrore: { type: number }
+        exerciseCashPaise: { type: number }
+        exerciseCashCrore: { type: number }
+        navHitPaise: { type: number }
+        navHitPercent: { type: number }
+        capUsagePercent: { type: number }
+        sebiLimitPercent: { type: number }
+        maxRightsByCap: { type: ["number", "null"] }
+        maxRightsByCash: { type: ["number", "null"] }
+        forfeitedRights: { type: number }
+        eligibilityStatus: { type: string }
+        exclusionReason: { type: ["string", "null"] }
+        blockers:
+          type: array
+          items: { type: string }
+        decisionState: { type: string }
+    ArkaDecisionTotals:
+      type: object
+      required: [totalEntitlementRights, totalDecisionRights, totalExerciseCashCrore, blockedSchemes, forfeitedRights, canSubmit]
+      properties:
+        totalEntitlementRights: { type: number }
+        totalDecisionRights: { type: number }
+        totalExerciseCashCrore: { type: number }
+        blockedSchemes:
+          type: array
+          items: { type: string }
+        forfeitedRights: { type: number }
+        canSubmit: { type: boolean }
+    ArkaSubmission:
+      type: object
+      required: [id, status, submittedById, submittedByName, submittedAt, checkedById, checkedByName, checkedAt]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        submittedById: { type: string }
+        submittedByName: { type: string }
+        submittedAt: { type: string }
+        checkedById: { type: ["string", "null"] }
+        checkedByName: { type: ["string", "null"] }
+        checkedAt: { type: ["string", "null"] }
+    ArkaDeskDecisionInput:
+      type: object
+      required: [decisions]
+      properties:
+        decisions:
+          type: array
+          items:
+            type: object
+            required: [schemeId, rights]
+            properties:
+              schemeId: { type: string }
+              rights: { type: number }
+    ArkaDeskApprovalInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [Approved, Returned]
     EventSummary:
       type: object
       required: [id, reference, issuer, security, eventType, processingType, status, risk, marketDeadline, internalDeadline, affectedAccounts, amount, currency]

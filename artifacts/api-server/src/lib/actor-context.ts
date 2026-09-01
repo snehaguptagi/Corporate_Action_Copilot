@@ -5,11 +5,11 @@ import { demoUsers } from "./corporate-actions-v2";
 export type OperationalActor = {
   id: string;
   name: string;
-  role: "Operations Analyst" | "Reviewer" | "Operations Manager";
+  role: "Operations Analyst" | "Reviewer" | "Operations Manager" | "Fund Manager" | "Compliance";
 };
 
 export const actorCookieName = "corporate_actions_actor";
-const operationalRoles = ["Operations Analyst", "Reviewer", "Operations Manager"] as const;
+const operationalRoles = ["Operations Analyst", "Reviewer", "Operations Manager", "Fund Manager", "Compliance"] as const;
 const roleDirectoryEnvironmentKey = "CORPORATE_ACTIONS_ROLE_DIRECTORY";
 type RoleDirectoryEntry = {
   id?: string;

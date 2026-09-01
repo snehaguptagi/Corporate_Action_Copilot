@@ -77,6 +77,162 @@ export interface Dashboard {
   recentActivity: AuditEntry[];
 }
 
+export interface ArkaDeskEvent {
+  reference: string;
+  issuer: string;
+  securityName: string;
+  ticker: string;
+  isin: string;
+  reIsin: string;
+  securityId: string;
+  exchange: string;
+  currency: string;
+  cmp: number;
+  subscriptionPrice: number;
+  rightsRatio: string;
+  status: string;
+  classification: string;
+  source: string;
+}
+
+export interface ArkaDeskCalendar {
+  receivedDate: string;
+  recordDate: string;
+  exRightsDate: string;
+  fundDeadline: string;
+  marketDeadline: string;
+  settlementDate: string;
+}
+
+export interface ArkaSecurityMaster {
+  issuer: string;
+  securityName: string;
+  ticker: string;
+  isin: string;
+  reIsin: string;
+  exchange: string;
+  currency: string;
+  cmp: number;
+  status: string;
+  market: string;
+}
+
+export interface ArkaRightsTerms {
+  terp: number;
+  rightValue: number;
+  dilution: number;
+  ratio: string;
+  subscriptionPrice: number;
+  totalRights: number;
+  totalExerciseCashCrore: number;
+}
+
+export interface ArkaLimitRule {
+  id: string;
+  name: string;
+  description: string;
+  limitPercent: number;
+  method: string;
+}
+
+export type ArkaEligibilityFunnelExclusionReasonsItem = {
+  scheme: string;
+  reason: string;
+};
+
+export interface ArkaEligibilityFunnel {
+  universe: number;
+  eligible: number;
+  excluded: number;
+  blocked: number;
+  exclusionReasons: ArkaEligibilityFunnelExclusionReasonsItem[];
+}
+
+export interface ArkaSchemeImpact {
+  id: string;
+  schemeCode: string;
+  name: string;
+  category: string;
+  aumCrore: number;
+  navPaise: number;
+  holdingQuantity: number;
+  entitlementRights: number;
+  decisionRights: number;
+  fullCashCrore: number;
+  exerciseCashPaise: number;
+  exerciseCashCrore: number;
+  navHitPaise: number;
+  navHitPercent: number;
+  capUsagePercent: number;
+  sebiLimitPercent: number;
+  /** @nullable */
+  maxRightsByCap?: number | null;
+  /** @nullable */
+  maxRightsByCash?: number | null;
+  forfeitedRights: number;
+  eligibilityStatus: string;
+  /** @nullable */
+  exclusionReason?: string | null;
+  blockers: string[];
+  decisionState: string;
+}
+
+export interface ArkaDecisionTotals {
+  totalEntitlementRights: number;
+  totalDecisionRights: number;
+  totalExerciseCashCrore: number;
+  blockedSchemes: string[];
+  forfeitedRights: number;
+  canSubmit: boolean;
+}
+
+export interface ArkaSubmission {
+  id: string;
+  status: string;
+  submittedById: string;
+  submittedByName: string;
+  submittedAt: string;
+  /** @nullable */
+  checkedById: string | null;
+  /** @nullable */
+  checkedByName: string | null;
+  /** @nullable */
+  checkedAt: string | null;
+}
+
+export interface ArkaDesk {
+  event: ArkaDeskEvent;
+  calendar: ArkaDeskCalendar;
+  securityMaster: ArkaSecurityMaster;
+  terms: ArkaRightsTerms;
+  rule: ArkaLimitRule;
+  funnel: ArkaEligibilityFunnel;
+  schemes: ArkaSchemeImpact[];
+  totals: ArkaDecisionTotals;
+  submission: ArkaSubmission | null;
+}
+
+export type ArkaDeskDecisionInputDecisionsItem = {
+  schemeId: string;
+  rights: number;
+};
+
+export interface ArkaDeskDecisionInput {
+  decisions: ArkaDeskDecisionInputDecisionsItem[];
+}
+
+export type ArkaDeskApprovalInputStatus = typeof ArkaDeskApprovalInputStatus[keyof typeof ArkaDeskApprovalInputStatus];
+
+
+export const ArkaDeskApprovalInputStatus = {
+  Approved: 'Approved',
+  Returned: 'Returned',
+} as const;
+
+export interface ArkaDeskApprovalInput {
+  status: ArkaDeskApprovalInputStatus;
+}
+
 export type EventSummaryCashDirection = typeof EventSummaryCashDirection[keyof typeof EventSummaryCashDirection];
 
 

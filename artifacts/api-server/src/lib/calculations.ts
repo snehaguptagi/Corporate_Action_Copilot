@@ -14,6 +14,18 @@ export type DividendWithholdingCalculation = {
   netCash: number;
 };
 
+export function divideBigIntFloor(numerator: bigint, denominator: bigint): bigint {
+  if (denominator <= 0n) throw new RangeError("denominator must be greater than zero");
+  if (numerator < 0n) throw new RangeError("numerator must be non-negative");
+  return numerator / denominator;
+}
+
+export function divideBigIntRounded(numerator: bigint, denominator: bigint): bigint {
+  if (denominator <= 0n) throw new RangeError("denominator must be greater than zero");
+  if (numerator < 0n) throw new RangeError("numerator must be non-negative");
+  return (numerator + denominator / 2n) / denominator;
+}
+
 const assertFiniteNonNegative = (value: number, name: string): void => {
   if (!Number.isFinite(value) || value < 0) {
     throw new RangeError(`${name} must be a finite, non-negative number`);

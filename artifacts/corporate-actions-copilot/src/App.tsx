@@ -18,6 +18,7 @@ import EventWorkbench from '@/pages/EventWorkbench';
 import TasksList from '@/pages/TasksList';
 import AuditLog from '@/pages/AuditLog';
 import NoticeIntake from '@/pages/NoticeIntake';
+import FundManagerDesk from '@/pages/FundManagerDesk';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/events" component={EventsList} />
           <Route path="/intake" component={NoticeIntake} />
+          <Route path="/desk" component={FundManagerDesk} />
           <Route path="/events/:eventId" component={EventWorkbench} />
           <Route path="/tasks" component={TasksList} />
           <Route path="/audit" component={AuditLog} />

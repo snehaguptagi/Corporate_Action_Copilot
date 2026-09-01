@@ -54,6 +54,8 @@ export const demoUsers = [
   { id: "USR-001", name: "Aisha Mehta", role: "Operations Analyst", desk: "London Operations" },
   { id: "USR-002", name: "Daniel Reed", role: "Reviewer", desk: "London Operations" },
   { id: "USR-003", name: "Maya Shah", role: "Operations Manager", desk: "Global Oversight" },
+  { id: "USR-004", name: "Rohan Iyer", role: "Fund Manager", desk: "Arka Mutual Fund" },
+  { id: "USR-005", name: "Nisha Kapoor", role: "Compliance", desk: "Arka Mutual Fund" },
 ];
 
 const now = () => new Date().toISOString();
@@ -460,7 +462,7 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
 export type WorkflowActor = {
   id: string;
   name: string;
-  role: "Operations Analyst" | "Reviewer" | "Operations Manager";
+  role: "Operations Analyst" | "Reviewer" | "Operations Manager" | "Fund Manager" | "Compliance";
 };
 
 export function appendAudit(event: EventData, action: string, detail: string, actor: WorkflowActor | string = "System", extras: Record<string, string> = {}): void {

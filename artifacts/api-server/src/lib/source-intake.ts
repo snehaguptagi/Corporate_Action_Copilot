@@ -365,7 +365,6 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
     processingType: voluntary ? "Voluntary" : "Mandatory",
     status: "Validated",
     settlementStage: "Validated",
-    risk: "High",
     marketDeadline: values.marketDeadline || "Confirm market deadline",
     internalDeadline: values.marketDeadline || "Confirm internal deadline",
     affectedAccounts: 0,

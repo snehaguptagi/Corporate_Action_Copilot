@@ -13,7 +13,7 @@ import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = sharedSeedDateAnchor;
-export const SEED_VERSION = "fund-manager-dashboard-v9";
+export const SEED_VERSION = "computed-attention-v10";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -89,13 +89,13 @@ const indianEvent = (input: EventData): EventData => eventBase({
 });
 
 const preloadedEvents: EventData[] = [
-  indianEvent({ id: "evt-ind-dividend-review", reference: "CA-IN-DIV-001", issuer: "Aarav Industries Ltd", security: "ISIN INE0AAR01011 · AARAV", eventType: "Cash dividend", processingType: "Mandatory", status: "Under review", risk: "High", amount: 0, securityMaster: indianSecurity("INE0AAR01011", "AARAV", "Aarav Industries Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], notice: notice("aarav-dividend-notice.pdf", "Interim dividend of ₹4.25.", ["NSE CORPORATE ACTION: Interim dividend ₹4.25 per equity share."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "₹4.25 per equity share."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("paymentDate", "Payment date", shortDate(22), 1, "Payment date."), term("currency", "Payment currency", "INR", 1, "Indian rupees."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "Section 196 treatment.", "Needs review")], positions: [position("POS-AAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0AAR01011", 450000, isoDate(10))] }),
-  indianEvent({ id: "evt-ind-split", reference: "CA-IN-SPLIT-001", issuer: "Deccan Grid Ltd", security: "ISIN INE0DEC01012 · DGL", eventType: "Stock split", processingType: "Mandatory", status: "Awaiting settlement", risk: "Low", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0DEC01012", "DGL", "Deccan Grid Ltd"), requiredTermKeys: ["splitRatio", "effectiveDate", "recordDate"], calculationInputs: { splitFactor: 5 }, notice: notice("deccan-split-notice.pdf", "Stock split 1:5.", ["Face value ₹10 split into five ₹2 shares."]), terms: [term("splitRatio", "Split ratio", "5 for 1", 1, "1:5 split."), term("effectiveDate", "Effective date", shortDate(15), 1, "Effective date."), term("recordDate", "Record date", shortDate(10), 1, "Record date.")], positions: [position("POS-DEC", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0DEC01012", 80000, isoDate(10))] }),
-  indianEvent({ id: "evt-ind-bonus", reference: "CA-IN-BONUS-001", issuer: "Narmada Logistics Ltd", security: "ISIN INE0NAR01013 · NARMADA", eventType: "Bonus issue", processingType: "Mandatory", status: "Closed", risk: "Low", amount: 5000, unit: "Shares", securityMaster: indianSecurity("INE0NAR01013", "NARMADA", "Narmada Logistics Ltd"), requiredTermKeys: ["bonusRatio", "paymentDate", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 10 }, notice: notice("narmada-bonus-notice.pdf", "Bonus issue 1:10.", ["One bonus share for every ten equity shares."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 10", 1, "1:10."), term("paymentDate", "Settlement date", shortDate(17), 1, "Settlement."), term("recordDate", "Record date", shortDate(10), 1, "Record date.")], positions: [position("POS-NAR", "Arka Small Cap Fund", "ARKA-SC-001", "INE0NAR01013", 50000, isoDate(10))] }),
-  indianEvent({ id: "evt-ind-buyback", reference: "CA-IN-BUYBACK-001", issuer: "Meridian Infrastructure India Ltd", security: "ISIN INE0MER01014 · MII", eventType: "Tender offer", processingType: "Voluntary", status: "Awaiting approval", risk: "Medium", amount: 6800000, securityMaster: indianSecurity("INE0MER01014", "MII", "Meridian Infrastructure India Ltd"), requiredTermKeys: ["offerPrice", "maximumAcceptance", "marketDeadline"], calculationInputs: { offerPrice: 850, maximumPercentage: .2 }, notice: notice("meridian-buyback-notice.pdf", "Buyback at ₹850 with 20% acceptance.", ["Tender offer / buyback: ₹850 per share; 20% maximum acceptance."]), terms: [term("offerPrice", "Offer price", "₹850", 1, "₹850."), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "20%."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST deadline.")], positions: [position("POS-MER", "Arka Focused 25 Fund", "ARKA-F25-001", "INE0MER01014", 40000, isoDate(10))], options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20%.", result: "Cash proceeds.", default: false, fundingFormula: "Quantity × price" }, { id: "decline", label: "Do not tender", description: "Retain holding.", result: "No cash.", default: true, fundingFormula: "No funding" }] }),
-  indianEvent({ id: "evt-ind-scheme", reference: "CA-IN-SCHEME-001", issuer: "Vindhya Mobility Ltd", security: "ISIN INE0VIN01015 · VINDHYA", eventType: "Merger / demerger", processingType: "Mandatory with options", status: "Election required", risk: "High", amount: 0, securityMaster: indianSecurity("INE0VIN01015", "VINDHYA", "Vindhya Mobility Ltd"), requiredTermKeys: ["cashRate", "shareExchangeRatio", "marketDeadline", "recordDate"], calculationInputs: { cashRate: 425, shareExchangeRatio: .333 }, notice: notice("vindhya-scheme-notice.pdf", "Scheme of arrangement.", ["₹425 cash and 0.333 successor shares."]), terms: [term("cashRate", "Cash consideration", "₹425", 1, "Cash."), term("shareExchangeRatio", "Share exchange ratio", "0.333", 1, "Shares."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST.")], positions: [position("POS-VIN", "Arka Infrastructure Fund", "ARKA-INF-001", "INE0VIN01015", 13005, isoDate(10))], options: [{ id: "default-consideration", label: "Accept default consideration", description: "Cash and shares.", result: "Cash plus shares.", default: true, fundingFormula: "No funding" }] }),
-  indianEvent({ id: "evt-ind-dividend-break", reference: "CA-IN-DIV-002", issuer: "Harit Utilities Ltd", security: "ISIN INE0HAR01016 · HARIT", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", risk: "High", amount: 1912500, securityMaster: indianSecurity("INE0HAR01016", "HARIT", "Harit Utilities Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("harit-dividend-notice.pdf", "Interim dividend ₹4.25.", ["₹4.25 dividend. TDS not applicable to Arka Mutual Fund under s.196."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "Rate."), term("recordDate", "Record date", shortDate(10), 1, "Record."), term("paymentDate", "Payment date", shortDate(17), 1, "Payment."), term("currency", "Payment currency", "INR", 1, "INR."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "s.196.")], positions: [position("POS-HAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0HAR01016", 450000, isoDate(10))], impacts: [{ id: "imp-har", fund: "Arka Large Cap Fund", account: "ARKA-LC-001", eligibleQuantity: 450000, positionDate: isoDate(10), securityId: "SEC-HARIT", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "450,000 × ₹4.25", expected: 1912500, expectedCash: 1912500, grossCash: 1912500, netCash: 1912500, withholdingAmount: 0, withholdingRate: 0, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "INR", unit: "INR", status: "Calculated", election: null, approval: "Not required" }], reconciliation: { expected: 1912500, actual: 1870000, difference: -42500, tolerance: .01, status: "Under-settled", classification: "Under-settled", note: "Custodian paid 4,40,000 shares against 4,50,000 entitled.", expectedCash: 1912500, expectedGrossCash: 1912500, expectedWithholdingAmount: 0, expectedNetCash: 1912500, actualCash: 1870000, expectedSecurityQuantity: 450000, actualSecurityQuantity: 440000, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(17), actualSettlementDate: isoDate(17), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: ["Verify entitled quantity of 4,50,000 shares.", "Confirm custodian paid on only 4,40,000 shares.", "Recover ₹42,500 for the 10,000-share shortfall."] } }),
-  indianEvent({ id: "evt-bharat-rights", reference: ARKA_EVENT.reference, issuer: ARKA_EVENT.issuer, security: `ISIN ${ARKA_EVENT.isin} · ${ARKA_EVENT.ticker}`, eventType: "Rights issue", processingType: "Voluntary", status: "Validated", risk: "High", amount: 0, securityMaster: indianSecurity(ARKA_EVENT.isin, ARKA_EVENT.ticker, ARKA_EVENT.issuer), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 85 }, notice: notice("bharat-rights-issue-notice.pdf", "Rights issue 1:5 at ₹85.", ["Bharat Renewables rights issue: 1 for 5 at ₹85."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5", 1, "Ratio."), term("subscriptionPrice", "Subscription price", "₹85", 1, "Price."), term("recordDate", "Record date", ARKA_EVENT.recordDate, 1, "Record."), term("marketDeadline", "Market deadline", ARKA_EVENT.marketDeadline, 1, "IST.")], positions: projectArkaBharatPositions(), options: [{ id: "exercise", label: "Exercise", description: "Subscribe.", result: "Funding required.", default: true, fundingFormula: "Rights × ₹85" }] }),
+  indianEvent({ id: "evt-ind-dividend-review", reference: "CA-IN-DIV-001", issuer: "Aarav Industries Ltd", security: "ISIN INE0AAR01011 · AARAV", eventType: "Cash dividend", processingType: "Mandatory", status: "Under review", amount: 0, securityMaster: indianSecurity("INE0AAR01011", "AARAV", "Aarav Industries Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("aarav-dividend-notice.pdf", "Interim dividend of ₹4.25.", ["NSE CORPORATE ACTION: Interim dividend ₹4.25 per equity share."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "₹4.25 per equity share."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("paymentDate", "Payment date", shortDate(22), 1, "Payment date."), term("currency", "Payment currency", "INR", 1, "Indian rupees."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "Section 196 treatment.", "Needs review")], positions: [position("POS-AAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0AAR01011", 450000, isoDate(10))] }),
+  indianEvent({ id: "evt-ind-split", reference: "CA-IN-SPLIT-001", issuer: "Deccan Grid Ltd", security: "ISIN INE0DEC01012 · DGL", eventType: "Stock split", processingType: "Mandatory", status: "Awaiting settlement", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0DEC01012", "DGL", "Deccan Grid Ltd"), requiredTermKeys: ["splitRatio", "effectiveDate", "recordDate"], calculationInputs: { splitFactor: 5 }, notice: notice("deccan-split-notice.pdf", "Stock split 1:5.", ["Face value ₹10 split into five ₹2 shares."]), terms: [term("splitRatio", "Split ratio", "5 for 1", 1, "1:5 split."), term("effectiveDate", "Effective date", shortDate(15), 1, "Effective date."), term("recordDate", "Record date", shortDate(10), 1, "Record date.")], positions: [position("POS-DEC", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0DEC01012", 80000, isoDate(10))] }),
+  indianEvent({ id: "evt-ind-bonus", reference: "CA-IN-BONUS-001", issuer: "Narmada Logistics Ltd", security: "ISIN INE0NAR01013 · NARMADA", eventType: "Bonus issue", processingType: "Mandatory", status: "Closed", amount: 5000, unit: "Shares", securityMaster: indianSecurity("INE0NAR01013", "NARMADA", "Narmada Logistics Ltd"), requiredTermKeys: ["bonusRatio", "paymentDate", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 10 }, notice: notice("narmada-bonus-notice.pdf", "Bonus issue 1:10.", ["One bonus share for every ten equity shares."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 10", 1, "1:10."), term("paymentDate", "Settlement date", shortDate(17), 1, "Settlement."), term("recordDate", "Record date", shortDate(10), 1, "Record date.")], positions: [position("POS-NAR", "Arka Small Cap Fund", "ARKA-SC-001", "INE0NAR01013", 50000, isoDate(10))] }),
+  indianEvent({ id: "evt-ind-buyback", reference: "CA-IN-BUYBACK-001", issuer: "Meridian Infrastructure India Ltd", security: "ISIN INE0MER01014 · MII", eventType: "Tender offer", processingType: "Voluntary", status: "Awaiting approval", amount: 6800000, securityMaster: indianSecurity("INE0MER01014", "MII", "Meridian Infrastructure India Ltd"), requiredTermKeys: ["offerPrice", "maximumAcceptance", "marketDeadline"], calculationInputs: { offerPrice: 850, maximumPercentage: .2 }, notice: notice("meridian-buyback-notice.pdf", "Buyback at ₹850 with 20% acceptance.", ["Tender offer / buyback: ₹850 per share; 20% maximum acceptance."]), terms: [term("offerPrice", "Offer price", "₹850", 1, "₹850."), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "20%."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST deadline.")], positions: [position("POS-MER", "Arka Focused 25 Fund", "ARKA-F25-001", "INE0MER01014", 40000, isoDate(10))], options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20%.", result: "Cash proceeds.", default: false, fundingFormula: "Quantity × price" }, { id: "decline", label: "Do not tender", description: "Retain holding.", result: "No cash.", default: true, fundingFormula: "No funding" }] }),
+  indianEvent({ id: "evt-ind-scheme", reference: "CA-IN-SCHEME-001", issuer: "Vindhya Mobility Ltd", security: "ISIN INE0VIN01015 · VINDHYA", eventType: "Merger / demerger", processingType: "Mandatory with options", status: "Election required", amount: 0, securityMaster: indianSecurity("INE0VIN01015", "VINDHYA", "Vindhya Mobility Ltd"), requiredTermKeys: ["cashRate", "shareExchangeRatio", "marketDeadline", "recordDate"], calculationInputs: { cashRate: 425, shareExchangeRatio: .333 }, notice: notice("vindhya-scheme-notice.pdf", "Scheme of arrangement.", ["₹425 cash and 0.333 successor shares."]), terms: [term("cashRate", "Cash consideration", "₹425", 1, "Cash."), term("shareExchangeRatio", "Share exchange ratio", "0.333", 1, "Shares."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST.")], positions: [position("POS-VIN", "Arka Infrastructure Fund", "ARKA-INF-001", "INE0VIN01015", 13005, isoDate(10))], options: [{ id: "default-consideration", label: "Accept default consideration", description: "Cash and shares.", result: "Cash plus shares.", default: true, fundingFormula: "No funding" }] }),
+  indianEvent({ id: "evt-ind-dividend-break", reference: "CA-IN-DIV-002", issuer: "Harit Utilities Ltd", security: "ISIN INE0HAR01016 · HARIT", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", amount: 1912500, securityMaster: indianSecurity("INE0HAR01016", "HARIT", "Harit Utilities Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("harit-dividend-notice.pdf", "Interim dividend ₹4.25.", ["₹4.25 dividend. TDS not applicable to Arka Mutual Fund under s.196."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "Rate."), term("recordDate", "Record date", shortDate(10), 1, "Record."), term("paymentDate", "Payment date", shortDate(17), 1, "Payment."), term("currency", "Payment currency", "INR", 1, "INR."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "s.196.")], positions: [position("POS-HAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0HAR01016", 450000, isoDate(10))], impacts: [{ id: "imp-har", fund: "Arka Large Cap Fund", account: "ARKA-LC-001", eligibleQuantity: 450000, positionDate: isoDate(10), securityId: "SEC-HARIT", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "450,000 × ₹4.25", expected: 1912500, expectedCash: 1912500, grossCash: 1912500, netCash: 1912500, withholdingAmount: 0, withholdingRate: 0, expectedSecurityQuantity: 0, securityMovement: "Cash receipt", currency: "INR", unit: "INR", status: "Calculated", election: null, approval: "Not required" }], reconciliation: { expected: 1912500, actual: 1870000, difference: -42500, tolerance: .01, status: "Under-settled", classification: "Under-settled", note: "Custodian paid 4,40,000 shares against 4,50,000 entitled.", expectedCash: 1912500, expectedGrossCash: 1912500, expectedWithholdingAmount: 0, expectedNetCash: 1912500, actualCash: 1870000, expectedSecurityQuantity: 450000, actualSecurityQuantity: 440000, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(17), actualSettlementDate: isoDate(17), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: ["Verify entitled quantity of 4,50,000 shares.", "Confirm custodian paid on only 4,40,000 shares.", "Recover ₹42,500 for the 10,000-share shortfall."] } }),
+  indianEvent({ id: "evt-bharat-rights", reference: ARKA_EVENT.reference, issuer: ARKA_EVENT.issuer, security: `ISIN ${ARKA_EVENT.isin} · ${ARKA_EVENT.ticker}`, eventType: "Rights issue", processingType: "Voluntary", status: "Validated", amount: 0, securityMaster: indianSecurity(ARKA_EVENT.isin, ARKA_EVENT.ticker, ARKA_EVENT.issuer), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 85 }, notice: notice("bharat-rights-issue-notice.pdf", "Rights issue 1:5 at ₹85.", ["Bharat Renewables rights issue: 1 for 5 at ₹85."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5", 1, "Ratio."), term("subscriptionPrice", "Subscription price", "₹85", 1, "Price."), term("recordDate", "Record date", ARKA_EVENT.recordDate, 1, "Record."), term("marketDeadline", "Market deadline", ARKA_EVENT.marketDeadline, 1, "IST.")], positions: projectArkaBharatPositions(), options: [{ id: "exercise", label: "Exercise", description: "Subscribe.", result: "Funding required.", default: true, fundingFormula: "Rights × ₹85" }] }),
 ];
 
 function buildSchemeImpacts(event: EventData): EventData[] {
@@ -160,7 +160,7 @@ function buildSchemeImpacts(event: EventData): EventData[] {
       flag: event.eventType === "Rights issue" && scheme.id === "arka-focused-25"
         ? "SEBI 10% headroom"
         : event.eventType === "Rights issue" && scheme.id === "arka-small-cap"
-          ? "Cash budget"
+          ? "Cash short"
           : null,
     };
   });
@@ -193,6 +193,66 @@ export function countArrivalsOnDate(events: EventData[], date: Date): number {
         day: "2-digit",
       }).format(received) === dateKey;
   }).length;
+}
+
+function operationalDeadline(value: string): number {
+  const match = value.match(/(\d{1,2})\s+([A-Z][a-z]{2})\s+(\d{4})/);
+  if (!match) return Number.POSITIVE_INFINITY;
+  const month = SHORT_MONTHS.indexOf(match[2]);
+  return month < 0 ? Number.POSITIVE_INFINITY : Date.UTC(Number(match[3]), month, Number(match[1]));
+}
+
+export function deriveEventSignals(event: EventData, asOf: Date = SEED_DATE_ANCHOR): {
+  materialityPaise: number | null;
+  cashImpactAmount: number | null;
+  attention: string | null;
+} {
+  const navImpacts = (event.schemeImpacts ?? [])
+    .filter((impact: EventData) => impact.affected && typeof impact.navImpactPaise === "number")
+    .map((impact: EventData) => Number(impact.navImpactPaise));
+  const materialityPaise = navImpacts.length > 0 ? Math.max(...navImpacts) : null;
+  const cashTotal = (event.schemeImpacts ?? [])
+    .filter((impact: EventData) => impact.affected)
+    .reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0);
+  const cashImpactAmount = materialityPaise === null && cashTotal > 0
+    ? Number(cashTotal.toFixed(2))
+    : null;
+
+  let attention: string | null = null;
+  if (event.status === "Election required") {
+    const deadline = operationalDeadline(event.internalDeadline ?? "");
+    const asOfDate = Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate());
+    const days = Number.isFinite(deadline) ? Math.max(0, Math.ceil((deadline - asOfDate) / DAY_MS)) : null;
+    attention = days === null ? "Decision due" : `Decision due in ${days} day${days === 1 ? "" : "s"}`;
+  } else if ((event.schemeImpacts ?? []).some((impact: EventData) => impact.flag === "SEBI 10% headroom")) {
+    attention = "SEBI 10% headroom";
+  } else if ((event.schemeImpacts ?? []).some((impact: EventData) => impact.flag === "Cash short")) {
+    attention = "Cash short";
+  } else if (
+    event.status === "Break identified"
+    || (event.reconciliation?.classification
+      && !["Matched", "Not due"].includes(event.reconciliation.classification))
+  ) {
+    attention = "Settlement break";
+  }
+
+  return { materialityPaise, cashImpactAmount, attention };
+}
+
+export function sortCorporateActionEvents(events: EventData[], asOf: Date = SEED_DATE_ANCHOR): EventData[] {
+  const group = (event: EventData) => {
+    if (event.status === "Election required") return 0;
+    if (deriveEventSignals(event, asOf).attention) return 1;
+    return 2;
+  };
+  return [...events].sort((left, right) => {
+    const groupDifference = group(left) - group(right);
+    if (groupDifference !== 0) return groupDifference;
+    if (group(left) === 0) return operationalDeadline(left.internalDeadline ?? "") - operationalDeadline(right.internalDeadline ?? "");
+    const leftMateriality = deriveEventSignals(left, asOf).materialityPaise ?? 0;
+    const rightMateriality = deriveEventSignals(right, asOf).materialityPaise ?? 0;
+    return rightMateriality - leftMateriality;
+  });
 }
 
 function now() { return new Date().toISOString(); }
@@ -360,7 +420,6 @@ const legacyPreloadedEvents: EventData[] = [
     eventType: "Cash dividend",
     processingType: "Mandatory",
     status: "Under review",
-    risk: "High",
     marketDeadline: `${shortDate(seedTimeline.aurora.market)} · 16:00 BST`,
     internalDeadline: `${shortDate(seedTimeline.aurora.internal)} · 16:00 BST`,
     affectedAccounts: 2,
@@ -409,7 +468,6 @@ const legacyPreloadedEvents: EventData[] = [
     eventType: "Stock split",
     processingType: "Mandatory",
     status: "Awaiting settlement",
-    risk: "Low",
     marketDeadline: `${shortDate(seedTimeline.delta.market)} · EOD`,
     internalDeadline: `${shortDate(seedTimeline.delta.internal)} · 15:00 ET`,
     affectedAccounts: 2,
@@ -446,7 +504,6 @@ const legacyPreloadedEvents: EventData[] = [
     eventType: "Stock dividend / bonus issue",
     processingType: "Mandatory",
     status: "Closed",
-    risk: "Low",
     marketDeadline: `${shortDate(seedTimeline.nimbus.market)} · EOD CET`,
     internalDeadline: `${shortDate(seedTimeline.nimbus.internal)} · EOD CET`,
     affectedAccounts: 1,
@@ -473,7 +530,6 @@ const legacyPreloadedEvents: EventData[] = [
     eventType: "Tender offer",
     processingType: "Voluntary",
     status: "Awaiting approval",
-    risk: "Medium",
     marketDeadline: `${shortDate(seedTimeline.meridian.market)} · 19:00 AEST`,
     internalDeadline: `${shortDate(seedTimeline.meridian.internal)} · 19:00 AEST`,
     affectedAccounts: 1,
@@ -500,7 +556,6 @@ const legacyPreloadedEvents: EventData[] = [
     eventType: "Merger / acquisition",
     processingType: "Mandatory with options",
     status: "Election required",
-    risk: "High",
     marketDeadline: `${shortDate(seedTimeline.merger.market)} · 10:00 CEST`,
     internalDeadline: `${shortDate(seedTimeline.merger.internal)} · 10:00 CEST`,
     affectedAccounts: 1,
@@ -530,7 +585,6 @@ const legacyPreloadedEvents: EventData[] = [
     eventType: "Cash dividend",
     processingType: "Mandatory",
     status: "Break identified",
-    risk: "High",
     marketDeadline: `${shortDate(seedTimeline.harbor.market)} · EOD BST`,
     internalDeadline: `${shortDate(seedTimeline.harbor.internal)} · EOD BST`,
     affectedAccounts: 1,
@@ -562,7 +616,6 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
     eventType: "Rights issue",
     processingType: "Voluntary",
     status: "Received",
-    risk: "High",
     marketDeadline: `${shortDate(seedTimeline.rights.market)} · 10:00 CEST`,
     internalDeadline: `${shortDate(seedTimeline.rights.internal)} · 10:00 CEST`,
     affectedAccounts: 0,
@@ -680,6 +733,7 @@ export function missingRequiredTerms(event: EventData): string[] {
 export function refreshValidation(event: EventData): void {
   const missingTerms = missingRequiredTerms(event);
   event.validation = { missingTerms, isReady: missingTerms.length === 0 };
+  Object.assign(event, deriveEventSignals(event));
 }
 
 export function applyTermUpdates(event: EventData, updates: any[], actor: any, reason: string): void {
@@ -1062,7 +1116,7 @@ export async function createIntakeEvent(sampleId: string, fileName: string, sour
 
 export function toSummary(event: EventData): EventData {
   const { notice, terms, impacts, options, instruction, reconciliation, tasks, audit, positions, calculation, validation, ...summary } = event;
-  return summary;
+  return { ...summary, ...deriveEventSignals(event) };
 }
 
 export function buildDashboard(events: EventData[]): EventData {

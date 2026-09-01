@@ -1,5 +1,5 @@
 import { useGetArkaDesk, useListEvents, type EventSummary } from "@workspace/api-client-react";
-import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, FileInput, Landmark } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, FileInput } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -74,21 +74,7 @@ function actionName(eventType: string) {
 }
 
 function needsDecision(event: EventSummary) {
-  return ["Under review", "Election required", "Validated", "Received"].includes(event.status)
-    && event.processingType !== "Mandatory";
-}
-
-function actionPriority(event: EventSummary) {
-  if (needsDecision(event)) return 0;
-  if (event.status === "Under review") return 1;
-  if (event.status === "Awaiting approval") return 2;
-  if (event.status === "Break identified") return 3;
-  if (["Closed", "Reconciled"].includes(event.status)) return 6;
-  return 5;
-}
-
-function materiality(event: EventSummary) {
-  return event.schemeImpacts.reduce((total, impact) => total + impact.cashAmount, 0);
+  return event.status === "Election required";
 }
 
 function impactCopy(event: EventSummary) {
@@ -105,12 +91,7 @@ function impactCopy(event: EventSummary) {
 }
 
 function navImpactCopy(event: EventSummary) {
-  const impacts = event.schemeImpacts
-    .map((impact) => impact.navImpactPaise)
-    .filter((value): value is number => value !== null && value > 0);
-  if (impacts.length > 0) return `${Math.max(...impacts).toFixed(2)} paise`;
-  if (event.schemeImpacts.some((impact) => impact.affected)) return "Neutral";
-  return "";
+  return event.materialityPaise === null ? "" : `${event.materialityPaise.toFixed(2)} paise`;
 }
 
 function needsFromYou(event: EventSummary) {
@@ -175,18 +156,14 @@ export default function Dashboard() {
   const impactedSchemeIds = new Set(
     eventList.flatMap((event) => event.schemeImpacts.filter((impact) => impact.affected).map((impact) => impact.schemeId)),
   );
-  const decisionEvents = eventList.filter(needsDecision).sort((a, b) => parseDeadline(a.internalDeadline) - parseDeadline(b.internalDeadline));
-  const nearestDecision = decisionEvents[0];
+  const fundingEvents = eventList
+    .filter((event) => event.schemeImpacts.some((impact) => impact.direction === "Funding" && impact.cashAmount > 0))
+    .sort((a, b) => parseDeadline(a.internalDeadline) - parseDeadline(b.internalDeadline));
+  const nearestFunding = fundingEvents[0];
   const totalFunding = eventList.flatMap((event) => event.schemeImpacts)
     .filter((impact) => impact.direction === "Funding")
     .reduce((total, impact) => total + impact.cashAmount, 0);
-  const sortedEvents = [...eventList].sort((a, b) => {
-    const priority = actionPriority(a) - actionPriority(b);
-    if (priority !== 0) return priority;
-    const deadline = parseDeadline(a.internalDeadline) - parseDeadline(b.internalDeadline);
-    if (deadline !== 0) return deadline;
-    return materiality(b) - materiality(a);
-  });
+  const sortedEvents = eventList;
 
   const schemeRows = desk.schemes.map((scheme) => {
     const impacts = eventList
@@ -229,7 +206,7 @@ export default function Dashboard() {
                   {arrivedToday.length} notices arrived today. {eventsAffectingSchemes.length} affect your schemes.{" "}
                   {impactedSchemeIds.size} of {desk.schemes.length} schemes impacted.{" "}
                   {totalFunding > 0 ? `${formatInr(totalFunding)} to fund` : "No funding required"}
-                  {nearestDecision ? ` by ${shortDeadline(nearestDecision.internalDeadline)} for ${nearestDecision.issuer}.` : "."}
+                  {nearestFunding ? ` by ${shortDeadline(nearestFunding.internalDeadline)} for ${nearestFunding.issuer}.` : "."}
                 </p>
               </div>
               <div className="grid shrink-0 grid-cols-2 gap-3 text-sm sm:grid-cols-4 lg:grid-cols-2">
@@ -266,8 +243,8 @@ export default function Dashboard() {
                     <TableHead>Arrived</TableHead>
                     <TableHead>Schemes impacted</TableHead>
                     <TableHead>Impact</TableHead>
-                    <TableHead>NAV impact</TableHead>
-                    <TableHead>Needs from you</TableHead>
+                    <TableHead>Materiality</TableHead>
+                    <TableHead>Attention</TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -297,9 +274,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">{navImpactCopy(event)}</TableCell>
                         <TableCell>
-                          <span className={needsDecision(event) ? "font-semibold text-[#a32020]" : "text-slate-600"}>
-                            {needsFromYou(event)}
-                          </span>
+                          {event.attention
+                            ? <span className="inline-flex rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{event.attention}</span>
+                            : <span className="text-slate-500">{needsFromYou(event)}</span>}
                         </TableCell>
                         <TableCell>
                           <Link href={`/events/${event.id}`}>

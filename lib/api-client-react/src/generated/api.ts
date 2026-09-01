@@ -2253,7 +2253,7 @@ export const getListTasksUrl = () => {
 }
 
 /**
- * @summary List operational tasks and risk flags
+ * @summary List operational tasks and flags
  */
 export const listTasks = async ( options?: Parameters<typeof customFetch>[1]): Promise<Task[]> => {
 
@@ -2300,7 +2300,7 @@ export type ListTasksQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List operational tasks and risk flags
+ * @summary List operational tasks and flags
  */
 
 export function useListTasks<TData = Awaited<ReturnType<typeof listTasks>>, TError = ErrorType<unknown>>(

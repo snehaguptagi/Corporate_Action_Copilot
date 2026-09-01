@@ -8,7 +8,6 @@
 
 export type ListEventsParams = {
 status?: string;
-risk?: string;
 search?: string;
 eventType?: string;
 };

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ARKA_EVENT, ARKA_SCHEME_SEED, calculateArkaFixtureValues } from "../src/lib/arka-desk";
-import { countArrivalsOnDate, getSeededEventSnapshot, SEED_DATE_ANCHOR, syncCalculationInput } from "../src/lib/corporate-actions-v2";
+import { countArrivalsOnDate, deriveEventSignals, getSeededEventSnapshot, SEED_DATE_ANCHOR, sortCorporateActionEvents, syncCalculationInput } from "../src/lib/corporate-actions-v2";
 
 const parseDisplayDate = (value: string) => {
   const [day, month, year] = value.split(" ");
@@ -92,6 +92,41 @@ test("today arrival count is derived from receivedAt", () => {
   assert.equal(before, 3);
   events[0].receivedAt = "2026-08-20T08:45:00.000Z";
   assert.equal(countArrivalsOnDate(events, SEED_DATE_ANCHOR), before - 1);
+});
+
+test("event attention is shown only for a concrete decision, constraint, or break", () => {
+  const events = getSeededEventSnapshot();
+  const byId = (id: string) => {
+    const event = events.find((current) => current.id === id);
+    assert.ok(event);
+    return deriveEventSignals(event, SEED_DATE_ANCHOR);
+  };
+  assert.match(byId("evt-ind-scheme").attention ?? "", /^Decision due in \d+ days$/);
+  assert.equal(byId("evt-bharat-rights").attention, "SEBI 10% headroom");
+  assert.equal(byId("evt-ind-dividend-break").attention, "Settlement break");
+  assert.equal(byId("evt-ind-split").attention, null);
+  assert.equal(byId("evt-ind-bonus").attention, null);
+});
+
+test("materiality is exact NAV impact and value-neutral actions use cash impact instead of zero", () => {
+  const events = getSeededEventSnapshot();
+  const rights = events.find((event) => event.id === "evt-bharat-rights");
+  const dividend = events.find((event) => event.id === "evt-ind-dividend-review");
+  const split = events.find((event) => event.id === "evt-ind-split");
+  assert.ok(rights && dividend && split);
+  const expectedLargest = Math.max(...rights.schemeImpacts.filter((impact: Record<string, unknown>) => impact.affected).map((impact: Record<string, number>) => impact.navImpactPaise));
+  assert.equal(deriveEventSignals(rights).materialityPaise, expectedLargest);
+  assert.equal(deriveEventSignals(dividend).materialityPaise, null);
+  assert.equal(deriveEventSignals(dividend).cashImpactAmount, 1_912_500);
+  assert.equal(deriveEventSignals(split).materialityPaise, null);
+  assert.equal(deriveEventSignals(split).cashImpactAmount, null);
+});
+
+test("priority order puts a due decision above constraints, breaks, and settled events", () => {
+  const ordered = sortCorporateActionEvents(getSeededEventSnapshot(), SEED_DATE_ANCHOR);
+  assert.equal(ordered[0].id, "evt-ind-scheme");
+  assert.ok(ordered.findIndex((event) => event.id === "evt-bharat-rights") < ordered.findIndex((event) => event.id === "evt-ind-bonus"));
+  assert.ok(ordered.findIndex((event) => event.id === "evt-ind-dividend-break") < ordered.findIndex((event) => event.id === "evt-ind-bonus"));
 });
 
 test("IST deadline and IST-midnight record date validate without changing calendar date", () => {

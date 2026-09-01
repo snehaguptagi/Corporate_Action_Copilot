@@ -282,10 +282,6 @@ paths:
           schema:
             type: string
         - in: query
-          name: risk
-          schema:
-            type: string
-        - in: query
           name: search
           schema:
             type: string
@@ -587,7 +583,7 @@ paths:
     get:
       operationId: listTasks
       tags: [copilot]
-      summary: List operational tasks and risk flags
+      summary: List operational tasks and flags
       responses:
         "200":
           description: Operational tasks
@@ -951,7 +947,7 @@ components:
         flag: { type: ["string", "null"] }
     EventSummary:
       type: object
-      required: [id, reference, issuer, security, eventType, processingType, status, risk, marketDeadline, internalDeadline, affectedAccounts, amount, currency, receivedAt, source, schemeImpacts]
+      required: [id, reference, issuer, security, eventType, processingType, status, marketDeadline, internalDeadline, affectedAccounts, amount, currency, receivedAt, source, schemeImpacts, materialityPaise, cashImpactAmount, attention]
       properties:
         id: { type: string }
         reference: { type: string }
@@ -960,7 +956,6 @@ components:
         eventType: { type: string }
         processingType: { type: string }
         status: { type: string }
-        risk: { type: string }
         marketDeadline: { type: string }
         internalDeadline: { type: string }
         affectedAccounts: { type: number }
@@ -974,6 +969,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DashboardSchemeImpact"
+        materialityPaise: { type: ["number", "null"] }
+        cashImpactAmount: { type: ["number", "null"] }
+        attention: { type: ["string", "null"] }
         cashDirection: { type: string, enum: [Receivable, Payable] }
         isHero: { type: boolean }
         noticeReference: { type: string }

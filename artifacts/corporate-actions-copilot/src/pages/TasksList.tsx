@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -24,14 +23,6 @@ export default function TasksList() {
     });
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch(priority.toUpperCase()) {
-      case 'HIGH': return <AlertTriangle className="w-4 h-4 text-destructive" />;
-      case 'MEDIUM': return <Clock className="w-4 h-4 text-warning" />;
-      default: return <CheckCircle className="w-4 h-4 text-slate-400" />;
-    }
-  };
-
   if (isLoading) {
     return <div className="p-8">Loading tasks...</div>;
   }
@@ -39,7 +30,7 @@ export default function TasksList() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto">
       <div className="border-b bg-white px-8 py-6 shrink-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Tasks & Risk Management</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Approvals</h1>
         <p className="text-sm text-slate-500 mt-1">Review and resolve operational flags and maker-checker tasks.</p>
       </div>
       
@@ -51,7 +42,6 @@ export default function TasksList() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead className="w-[50px]"></TableHead>
                 <TableHead>Task</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Related Event</TableHead>
@@ -63,14 +53,13 @@ export default function TasksList() {
             <TableBody>
               {tasks?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                     No active tasks.
                   </TableCell>
                 </TableRow>
               ) : (
                 tasks?.map((task, index) => (
                   <TableRow key={`${task.id}-${index}`}>
-                    <TableCell>{getPriorityIcon(task.priority)}</TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-900">{task.title}</div>
                       <div className="text-xs text-slate-500">{task.detail}</div>

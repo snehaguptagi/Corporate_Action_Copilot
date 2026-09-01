@@ -19,7 +19,6 @@ function rightsEvent() {
     settlementStage: "Validated",
     eventType: "Rights issue",
     processingType: "Voluntary",
-    risk: "High",
     currency: "EUR",
     requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate"],
     terms: [

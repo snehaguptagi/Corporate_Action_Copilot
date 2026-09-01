@@ -30,7 +30,6 @@ function rightsFixture(): EventData {
     processingType: "Voluntary",
     status: "Validated",
     settlementStage: "Validated",
-    risk: "High",
     marketDeadline: "30 Aug 2026 · 17:30 CEST",
     internalDeadline: "30 Aug 2026 · 14:00 CEST",
     affectedAccounts: 0,

@@ -1,0 +1,38 @@
+Remove the High / Medium / Low risk label from the product and rank by something
+that is actually computed.
+
+The problem: "risk" is never defined anywhere. Nobody set it, no rule produces
+it, and it appears as a filter on the corporate actions page and a badge on the
+dashboard. Currently every one of the seven events is flagged High, so the label
+carries no information and the ranking it drives is arbitrary.
+
+Replace it with two things that are derived from real figures:
+
+1. MATERIALITY — the largest NAV impact per unit across the affected schemes,
+   in paise, which is already computed for events that have one. Display the
+   number, not a bucket. Sub-paise precision matters here: 0.60 paise and 22.00
+   paise are two orders of magnitude apart and both are real. Where an event
+   type has no NAV impact (dividend, split, bonus are value-neutral) show the
+   money figure instead and leave materiality blank rather than zero.
+
+2. ATTENTION — a badge shown ONLY when something concrete is true:
+     "Decision due in N days"     when a voluntary event needs an election
+     "SEBI 10% headroom"          when exercising would breach the cap
+     "Cash short"                 when the scheme cannot fund its entitlement
+     "Settlement break"           when reconciliation failed
+   No badge otherwise. An event that needs nothing must look like it needs
+   nothing.
+
+RANKING for the dashboard and the archive:
+   first  — events needing a decision, soonest deadline first
+   then   — events with a constraint or a break
+   then   — everything else, by materiality descending
+An event whose own reason text says "No action currently required" must never
+appear at the top. That is happening now: Bharat Renewables is ranked High while
+its reason reads "No action currently required".
+
+Remove the risk field from the API, the schema, the filters and the seed. Run
+`pnpm --filter @workspace/api-spec run codegen` after changing openapi.yaml.
+
+Verify: no High/Medium/Low anywhere; ranking puts a due decision above a
+settled event; an event with no constraint and no decision carries no badge.

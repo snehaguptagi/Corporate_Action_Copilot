@@ -649,7 +649,6 @@ export const ApproveArkaDeskResponse = zod.object({
  */
 export const ListEventsQueryParams = zod.object({
   "status": zod.coerce.string().optional(),
-  "risk": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
   "eventType": zod.coerce.string().optional()
 })
@@ -662,7 +661,6 @@ export const ListEventsResponseItem = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -682,6 +680,9 @@ export const ListEventsResponseItem = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -712,7 +713,6 @@ export const CreateIntakeResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -732,6 +732,9 @@ export const CreateIntakeResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -1131,7 +1134,6 @@ export const CreateCaseFromIntakeDraftResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -1151,6 +1153,9 @@ export const CreateCaseFromIntakeDraftResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -1364,7 +1369,6 @@ export const GetEventResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -1384,6 +1388,9 @@ export const GetEventResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -1586,7 +1593,6 @@ export const UpdateEventResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -1606,6 +1612,9 @@ export const UpdateEventResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -1803,7 +1812,6 @@ export const CalculateEventResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -1823,6 +1831,9 @@ export const CalculateEventResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -2023,7 +2034,6 @@ export const SaveElectionResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -2043,6 +2053,9 @@ export const SaveElectionResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -2241,7 +2254,6 @@ export const ApproveEventResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -2261,6 +2273,9 @@ export const ApproveEventResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -2458,7 +2473,6 @@ export const UpdateInstructionResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -2478,6 +2492,9 @@ export const UpdateInstructionResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -2680,7 +2697,6 @@ export const SaveReconciliationResponse = zod.object({
   "eventType": zod.string(),
   "processingType": zod.string(),
   "status": zod.string(),
-  "risk": zod.string(),
   "marketDeadline": zod.string(),
   "internalDeadline": zod.string(),
   "affectedAccounts": zod.number(),
@@ -2700,6 +2716,9 @@ export const SaveReconciliationResponse = zod.object({
   "navImpactTreatment": zod.string(),
   "flag": zod.string().nullable()
 })),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
   "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
   "isHero": zod.boolean().optional(),
   "noticeReference": zod.string().optional(),
@@ -2879,7 +2898,7 @@ export const SaveReconciliationResponse = zod.object({
 
 
 /**
- * @summary List operational tasks and risk flags
+ * @summary List operational tasks and flags
  */
 export const ListTasksResponseItem = zod.object({
   "id": zod.string(),

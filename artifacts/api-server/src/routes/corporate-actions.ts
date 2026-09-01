@@ -56,6 +56,7 @@ import {
   recordElection,
   saveCorporateActionEvent,
   simulateInstruction,
+  sortCorporateActionEvents,
   toSummary,
 } from "../lib/corporate-actions-v2";
 import {
@@ -127,11 +128,10 @@ router.get("/events", async (req, res): Promise<void> => {
   const events = (await getCorporateActionEvents()).filter((event) => {
     const haystack = `${event.reference} ${event.issuer} ${event.security} ${event.eventType}`.toLowerCase();
     return (!query.status || event.status === query.status)
-      && (!query.risk || event.risk === query.risk)
       && (!query.eventType || event.eventType === query.eventType)
       && (!search || haystack.includes(search));
   });
-  res.json(ListEventsResponse.parse(events.map(toSummary)));
+  res.json(ListEventsResponse.parse(sortCorporateActionEvents(events).map(toSummary)));
 });
 
 router.post("/intake", async (req, res): Promise<void> => {

@@ -291,7 +291,6 @@ export interface EventSummary {
   eventType: string;
   processingType: string;
   status: string;
-  risk: string;
   marketDeadline: string;
   internalDeadline: string;
   affectedAccounts: number;
@@ -300,6 +299,12 @@ export interface EventSummary {
   receivedAt: string;
   source: EventSummarySource;
   schemeImpacts: DashboardSchemeImpact[];
+  /** @nullable */
+  materialityPaise: number | null;
+  /** @nullable */
+  cashImpactAmount: number | null;
+  /** @nullable */
+  attention: string | null;
   cashDirection?: EventSummaryCashDirection;
   isHero?: boolean;
   noticeReference?: string;
@@ -677,7 +682,6 @@ returnTo?: string;
 
 export type ListEventsParams = {
 status?: string;
-risk?: string;
 search?: string;
 eventType?: string;
 };

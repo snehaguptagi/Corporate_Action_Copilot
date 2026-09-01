@@ -644,7 +644,9 @@ export default function EventWorkbench() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-mono text-lg font-bold text-slate-800">{data.reference}</h1>
-                <Badge variant={data.risk === "High" ? "destructive" : data.risk === "Medium" ? "warning" : "secondary"}>{data.risk} risk</Badge>
+                {data.materialityPaise !== null && <Badge variant="outline">{data.materialityPaise.toFixed(2)} paise materiality</Badge>}
+                {data.materialityPaise === null && data.cashImpactAmount !== null && <Badge variant="outline">{money(data.cashImpactAmount, data.currency)} cash impact</Badge>}
+                {data.attention && <Badge variant="warning">{data.attention}</Badge>}
                 <Badge variant="outline">{data.status}</Badge>
               </div>
                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">

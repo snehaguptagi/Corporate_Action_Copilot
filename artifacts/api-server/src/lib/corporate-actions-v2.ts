@@ -1577,7 +1577,10 @@ export function buildSchemeSummaries(events: EventData[], desk: EventData): Even
     const open = impacts.filter(({ event }) => !["Closed", "Reconciled"].includes(event.status));
     const fundingNeeded = open.filter(({ impact }) => impact.direction === "Funding")
       .reduce((total, { impact }) => total + Number(impact.cashAmount ?? 0), 0);
-    const cashAvailable = Number(scheme.cashAvailableCrore ?? 0) * 10_000_000;
+    const seedScheme = ARKA_SCHEME_SEED.find((candidate) => candidate.id === scheme.id);
+    const cashAvailable = seedScheme?.treasuryCashPaise != null
+      ? Number(seedScheme.treasuryCashPaise) / 100
+      : Number(scheme.cashAvailableCrore ?? 0) * 10_000_000;
     const exposure = issuerExposuresForScheme(events, scheme)[0];
     const closest = [...open].sort((left, right) => Date.parse(left.event.internalDeadlineAt) - Date.parse(right.event.internalDeadlineAt))[0]?.event;
     return {

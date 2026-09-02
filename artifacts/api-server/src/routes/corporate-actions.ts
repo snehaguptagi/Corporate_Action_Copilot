@@ -169,7 +169,7 @@ router.get("/schemes/:schemeId", async (req, res): Promise<void> => {
     const fundingNeeded = contributions
       .filter((contribution) => contribution.cashDirection === "Funding")
       .reduce((total, contribution) => total + contribution.cashAmount, 0);
-    const cashAvailable = Number(seed.cashBudgetPaise ?? 0n) / 100;
+    const cashAvailable = Number(seed.treasuryCashPaise) / 100;
     const shortfall = Math.max(0, fundingNeeded - cashAvailable);
     const rightsEvent = openEvents.find((event) => event.eventType === "Rights issue" && event.schemeImpacts.some((impact: any) => impact.schemeId === scheme.id && impact.affected));
     const rightsImpact = rightsEvent?.schemeImpacts.find((impact: any) => impact.schemeId === scheme.id);

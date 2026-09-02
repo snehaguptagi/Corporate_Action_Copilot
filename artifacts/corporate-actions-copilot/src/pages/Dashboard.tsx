@@ -110,7 +110,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-white px-5 py-6 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
@@ -142,11 +142,11 @@ export default function Dashboard() {
               <div className="grid shrink-0 grid-cols-2 gap-3 text-sm sm:grid-cols-4 lg:grid-cols-2">
                 <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
                   <span className="block text-xs text-slate-500">Last 24 hours</span>
-                  <strong className="text-lg text-slate-950">{dashboard.arrivalCount24h}</strong>
+                   <strong className="figure text-left text-lg text-slate-950">{dashboard.arrivalCount24h}</strong>
                 </div>
                 <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
                   <span className="block text-xs text-slate-500">Affect Arka</span>
-                  <strong className="text-lg text-slate-950">{dashboard.portfolioEventCount}</strong>
+                   <strong className="figure text-left text-lg text-slate-950">{dashboard.portfolioEventCount}</strong>
                 </div>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function Dashboard() {
               Corporate actions <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-lg border border-stone-200 bg-card shadow-sm">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -171,10 +171,10 @@ export default function Dashboard() {
                     <TableHead>Issuer + ISIN</TableHead>
                     <TableHead>Action</TableHead>
                     <TableHead>Arrived</TableHead>
-                    <TableHead>Schemes impacted</TableHead>
-                    <TableHead>Impact</TableHead>
-                    <TableHead>Materiality</TableHead>
-                    <TableHead>Attention</TableHead>
+                     <TableHead className="text-right">Schemes impacted</TableHead>
+                     <TableHead>Impact</TableHead>
+                     <TableHead className="text-right">Materiality</TableHead>
+                     <TableHead>Attention</TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -184,7 +184,7 @@ export default function Dashboard() {
                     const impact = impactCopy(event);
                     return (
                       <TableRow key={event.id} className="group align-top">
-                        <TableCell>
+                         <TableCell className="figure">
                           <div className="font-semibold text-slate-950">{event.issuer}</div>
                           <div className="mt-1 font-mono text-[11px] text-slate-500">{isinFromSecurity(event.security)}</div>
                         </TableCell>
@@ -202,7 +202,7 @@ export default function Dashboard() {
                           <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{impact.label}</div>
                            <div className={`figure mt-1 font-semibold ${impact.tone}`}>{impact.value}</div>
                         </TableCell>
-                         <TableCell className="figure font-medium text-foreground">{navImpactCopy(event)}</TableCell>
+                         <TableCell className="figure">{navImpactCopy(event)}</TableCell>
                         <TableCell>
                           {event.attention
                             ? <span className="inline-flex rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{event.attention}</span>
@@ -227,7 +227,7 @@ export default function Dashboard() {
             <h2 id="scheme-impact" className="text-lg font-semibold text-slate-950">Your schemes</h2>
             <p className="mt-1 text-sm text-slate-500">The same corporate actions viewed from each fund you manage.</p>
           </div>
-          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-lg border border-stone-200 bg-card shadow-sm">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>

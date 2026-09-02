@@ -15,7 +15,7 @@ export default function Portfolio() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-white px-5 py-6 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
         <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Portfolio</h1>
         <p className="mt-2 text-sm text-slate-600">All ten schemes ranked by current NAV impact. Every scheme remains openable, even when nothing is happening.</p>

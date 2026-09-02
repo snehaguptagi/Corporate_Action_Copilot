@@ -19,7 +19,7 @@ export default function SchemeDetail() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-white px-5 py-6 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
         <div className="mx-auto max-w-6xl">
           <Link href="/portfolio" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
             <ArrowLeft className="h-3.5 w-3.5" /> Portfolio
@@ -87,12 +87,12 @@ export default function SchemeDetail() {
             <CardContent className="p-5 text-sm leading-7 text-slate-700">
               {scheme.headroom.maximumRights > 0 ? (
                 <p>
-                  {scheme.headroom.issuer} is <strong>{scheme.headroom.currentPercent.toFixed(2)}% of NAV</strong>. Exercising in full takes it to{" "}
-                  <strong>{scheme.headroom.postActionPercent.toFixed(2)}%</strong> and breaches the {scheme.headroom.capPercent}% cap.
-                  Maximum you can take is <strong>{scheme.headroom.maximumRights.toLocaleString("en-IN")} rights</strong>.
+                  {scheme.headroom.issuer} is <strong className="figure-inline">{scheme.headroom.currentPercent.toFixed(2)}% of NAV</strong>. Exercising in full takes it to{" "}
+                  <strong className="figure-inline">{scheme.headroom.postActionPercent.toFixed(2)}%</strong> and breaches the <span className="figure-inline">{scheme.headroom.capPercent}%</span> cap.
+                  Maximum you can take is <strong className="figure-inline">{scheme.headroom.maximumRights.toLocaleString("en-IN")} rights</strong>.
                 </p>
               ) : scheme.contributions.length > 0 ? (
-                <p>The largest open corporate action leaves {scheme.headroom.distanceToCapPercent.toFixed(2)} percentage points to the 10% single-issuer cap.</p>
+                <p>The largest open corporate action leaves <span className="figure-inline">{scheme.headroom.distanceToCapPercent.toFixed(2)}</span> percentage points to the <span className="figure-inline">10%</span> single-issuer cap.</p>
               ) : <p>No open corporate action is consuming issuer headroom.</p>}
             </CardContent>
           </Card>

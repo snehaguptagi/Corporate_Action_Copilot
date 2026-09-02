@@ -1,0 +1,84 @@
+Small, precise cleanup. All figures below are measured from the running app.
+
+═══ 1. TABULAR NUMERALS ARE ONLY HALF DONE ═══
+Measured: 18 of 33 table cells have font-variant-numeric: tabular-nums. The
+mono face (Spline Sans Mono) landed and the impact table is correct, but the
+remaining numeric cells still use proportional digits, so columns misalign
+wherever those appear.
+
+Sweep EVERY figure in the product, not just <td> in the impact table:
+  - money, share quantities, paise, percentages, ratios
+  - figures rendered as plain text or through a component rather than a table
+    cell (the decision totals, the funding-gap lines, the constraint sentences,
+    the archive's cash column, the scheme page contributions)
+Each gets the mono face, tabular-nums, and right alignment when it sits in a
+column. Text columns stay left-aligned.
+
+Add a check: every element whose text matches a currency, quantity or
+percentage pattern must resolve to the mono family.
+
+═══ 2. FOUR NEAR-IDENTICAL WHITES, AND ONE FAILS CONTRAST ═══
+Measured on the sidebar:
+  oklab(0.971046 0.00202635 0.0048672 / 0.8)   22 uses
+  oklab(0.971046 0.00202635 0.0048672 / 0.75)  22 uses
+  oklab(0.971046 0.00202635 0.0048672 / 0.5)    8 uses
+  rgb(255, 255, 255)                            22 uses
+That is the same near-white at four opacities — Tailwind opacity modifiers
+(text-white/80, /75, /50) bypassing the token set.
+
+The /0.5 one is the problem: white at 50% opacity on the dark warm ground
+rgb(42, 34, 29) will not clear 4.5:1, and it is being used for real content,
+not decoration.
+
+Replace all four with two solid tokens — a primary and a secondary foreground
+for dark surfaces — each meeting 4.5:1 against rgb(42, 34, 29). No opacity
+modifiers on text.
+
+═══ 3. TWO COLOURS ARE NOT FROM THE PALETTE ═══
+  rgb(0, 0, 0)                  21 uses — pure black, while the palette ink is
+                                rgb(42, 34, 29). Pure black is not in the
+                                system; find these and use the ink token.
+  oklch(0.696 0.17 162.48)       2 uses — Tailwind's default emerald-500,
+                                hardcoded rather than coming from the semantic
+                                "good/comfortable" token.
+  oklab(0.642663 ... / 0.05)     4 uses — the orange accent at 5% alpha, from a
+                                bg-primary/5 utility. Make it a real token
+                                (accent-soft) so the value is named once.
+
+After this the palette should be about ten named colours. Measured today: 21
+distinct values in use.
+
+Then add the guard: no component may contain a raw rgb(), oklch() or oklab()
+literal, and no opacity modifier on a text colour. Every colour comes from a
+token.
+
+═══ 4. WHAT THE WARM PALETTE IS NOW — LOCK IT IN ═══
+The clash is fixed: the cool blue-grey oklch(0.554 0.046 257.417) and the maroon
+rgb(75, 27, 47) are both gone. What remains is coherent, so name it and stop
+drifting:
+  ink            rgb(42, 34, 29)     warm near-black, 198 uses
+  ink-muted      rgb(120, 108, 100)  warm grey, 21 uses
+  ground         rgb(249, 247, 246)
+  surface        rgb(255, 255, 255)
+  surface-2      rgb(243, 240, 236)
+  accent         rgb(209, 73, 0)     the one accent
+  accent-soft    the 5% alpha version above, as a solid token
+  plus three semantic: good / attention / breach, reserved for STATUS ONLY
+Document these in one place. Semantic colour must never be used decoratively —
+if a cell is green it means the state is good, not that green looked nice there.
+
+═══ DO NOT ═══
+- Do not change any layout, copy, route or number.
+- Do not add dark mode.
+- Do not touch the decision logic — it is correct now.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- every currency, quantity and percentage in the product renders in the mono
+  face with tabular-nums;
+- a DOM scan finds no rgb()/oklch()/oklab() literal outside the token
+  definitions;
+- no text colour uses an opacity modifier;
+- every foreground on the dark sidebar clears 4.5:1 against rgb(42, 34, 29);
+- distinct colours in use drops from 21 to roughly ten;
+- pure black rgb(0, 0, 0) appears nowhere.

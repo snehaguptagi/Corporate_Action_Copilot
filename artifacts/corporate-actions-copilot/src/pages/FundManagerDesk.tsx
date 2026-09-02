@@ -27,6 +27,10 @@ import { formatInr } from "@/lib/format";
 import { fundManagerStatus } from "@/lib/status";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+function Figure({ children }: { children: React.ReactNode }) {
+  return <span className="figure-inline">{children}</span>;
+}
+
 function SectionHeading({ index, eyebrow, title, description }: { index: string; eyebrow: string; title: string; description: string; }) {
   void eyebrow;
   void description;
@@ -46,25 +50,22 @@ function actionStatement(data: EventDetail) {
   const quantity = data.schemeImpacts.filter((impact) => impact.affected).reduce((total, impact) => total + impact.eligibleQuantity, 0);
   const resultQuantity = data.schemeImpacts.filter((impact) => impact.affected).reduce((total, impact) => total + (impact.quantityResult ?? 0), 0);
   if (data.eventType === "Cash dividend") {
-    return `${data.issuer} is paying ${termValue(data, "rate")} per share. Record date ${termValue(data, "recordDate")}. Nothing to decide.`;
+    return <>{data.issuer} is paying <Figure>{termValue(data, "rate")}</Figure> per share. Record date <Figure>{termValue(data, "recordDate")}</Figure>. Nothing to decide.</>;
   }
   if (data.eventType === "Stock split") {
-    return `${data.issuer} is splitting each share into ${termValue(data, "splitRatio").replace(" for 1", "")}. Your ${integer.format(quantity)} shares become ${integer.format(resultQuantity)}. Nothing to decide.`;
+    return <>{data.issuer} is splitting each share into <Figure>{termValue(data, "splitRatio").replace(" for 1", "")}</Figure>. Your <Figure>{integer.format(quantity)}</Figure> shares become <Figure>{integer.format(resultQuantity)}</Figure>. Nothing to decide.</>;
   }
   if (data.eventType === "Bonus issue") {
-    return `${data.issuer} is issuing ${termValue(data, "bonusRatio").replace(" for ", " bonus share for every ")} held. Nothing to decide.`;
+    return <>{data.issuer} is issuing <Figure>{termValue(data, "bonusRatio").replace(" for ", " bonus share for every ")}</Figure> held. Nothing to decide.</>;
   }
   if (data.eventType === "Tender offer") {
-    return `${data.issuer} is buying back up to ${termValue(data, "maximumAcceptance")} at ${termValue(data, "offerPrice")}.`;
+    return <>{data.issuer} is buying back up to <Figure>{termValue(data, "maximumAcceptance")}</Figure> at <Figure>{termValue(data, "offerPrice")}</Figure>.</>;
   }
   if (data.eventType === "Rights issue") {
-    const discount = data.discountPercentage && data.referencePrice
-      ? `, a ${data.discountPercentage.toFixed(1)}% discount to the ₹${integer.format(data.referencePrice)} close`
-      : "";
-    return `${data.issuer} is offering ${termValue(data, "rightsRatio").replace(" for ", " new share for every ")} you hold, at ${termValue(data, "subscriptionPrice")}${discount}.`;
+    return <>{data.issuer} is offering <Figure>{termValue(data, "rightsRatio").replace(" for ", " new share for every ")}</Figure> you hold, at <Figure>{termValue(data, "subscriptionPrice")}</Figure>{data.discountPercentage && data.referencePrice ? <>, a <Figure>{data.discountPercentage.toFixed(1)}%</Figure> discount to the <Figure>₹{integer.format(data.referencePrice)}</Figure> close</> : ""}.</>;
   }
   if (data.eventType === "Merger / demerger") {
-    return `${data.issuer} is merging under a scheme where you receive ${termValue(data, "shareExchangeRatio")} shares plus ${termValue(data, "cashRate")} per share.`;
+    return <>{data.issuer} is merging under a scheme where you receive <Figure>{termValue(data, "shareExchangeRatio")}</Figure> shares plus <Figure>{termValue(data, "cashRate")}</Figure> per share.</>;
   }
   return `${data.issuer} announced a ${data.eventType.toLowerCase()}.`;
 }
@@ -170,10 +171,10 @@ export default function FundManagerDesk() {
   const primarySource = data.sourceRecords.find((source) => source.primary);
   const daysLeft = daysUntil(data.internalDeadlineAt);
   const statement1 = actionStatement(data);
-  const statement2 = `${daysLeft ?? "No"} day${daysLeft === 1 ? "" : "s"} left. Decide by ${data.internalDeadline}.`;
+  const statement2 = <><Figure>{daysLeft ?? "No"}</Figure> day{daysLeft === 1 ? "" : "s"} left. Decide by <Figure>{data.internalDeadline}</Figure>.</>;
   const statement3 = primarySource
-    ? `Received ${formatIstDate(primarySource.receivedAt)} from ${data.isEarlySighting ? "the exchange" : "your custodian"} (${primarySource.provider}, ${primarySource.messageType}). ${data.sourceAgreement}`
-    : `Received ${formatIstDate(data.receivedAt)} from ${data.source}. ${data.sourceAgreement}`;
+    ? <>Received <Figure>{formatIstDate(primarySource.receivedAt)}</Figure> from {data.isEarlySighting ? "the exchange" : "your custodian"} ({primarySource.provider}, {primarySource.messageType}). {data.sourceAgreement}</>
+    : <>Received <Figure>{formatIstDate(data.receivedAt)}</Figure> from {data.source}. {data.sourceAgreement}</>;
   const statusCopy = fundManagerStatus(data.status, data.isEarlySighting);
 
   return (
@@ -192,7 +193,7 @@ export default function FundManagerDesk() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="border-primary/35 bg-primary/5 text-primary">India · {data.currency} only</Badge>
+              <Badge variant="outline" className="border-primary/35 bg-accent-soft text-primary">India · {data.currency} only</Badge>
               <Badge variant="outline">{data.reference}</Badge>
             </div>
           </div>
@@ -240,10 +241,10 @@ export default function FundManagerDesk() {
                     {affectedSchemes.map((scheme) => (
                       <TableRow key={scheme.id} className="text-xs">
                         <TableCell><Link href={`/schemes/${scheme.schemeId}`} className="font-semibold text-primary hover:underline">{scheme.schemeName}</Link></TableCell>
-                        <TableCell className="text-right font-mono">{integer.format(scheme.eligibleQuantity)}</TableCell>
-                        <TableCell className="text-right font-mono">{scheme.cashAmount ? formatInr(scheme.cashAmount) : "No cash movement"}</TableCell>
+                        <TableCell className="figure">{integer.format(scheme.eligibleQuantity)}</TableCell>
+                        <TableCell className="figure">{scheme.cashAmount ? formatInr(scheme.cashAmount) : "No cash movement"}</TableCell>
                          <TableCell>{scheme.direction}</TableCell>
-                         <TableCell className="text-right font-mono">{scheme.navImpactPaise == null ? "Neutral" : `${scheme.navImpactPaise.toFixed(2)} paise`}</TableCell>
+                          <TableCell className="figure">{scheme.navImpactPaise == null ? "Neutral" : `${scheme.navImpactPaise.toFixed(2)} paise`}</TableCell>
                       </TableRow>
                     ))}
                      {affectedSchemes.length === 0 && (
@@ -304,8 +305,8 @@ export default function FundManagerDesk() {
                       {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
                         <div key={row.id} className="text-foreground">
                           <strong>{row.name}</strong>: {row.id === "arka-focused-25"
-                            ? `Bharat Renewables is 9.39% of NAV. Exercising all ${integer.format(row.entitlementRights)} rights reaches 10.77% and breaches the 10% cap. Maximum: ${integer.format(permittedRights(row))} rights. Sell the remaining ${integer.format(row.entitlementRights - permittedRights(row))} on exchange before the RE window closes.`
-                            : `Needs ${formatInr(row.fullCashCrore * 10_000_000)}, has ${formatInr(row.cashAvailableCrore * 10_000_000)}. Short ${formatInr((row.fullCashCrore - row.cashAvailableCrore) * 10_000_000)}. Cash covers ${integer.format(permittedRights(row))} of ${integer.format(row.entitlementRights)} rights.`}
+                            ? <>Bharat Renewables is <Figure>9.39%</Figure> of NAV. Exercising all <Figure>{integer.format(row.entitlementRights)}</Figure> rights reaches <Figure>10.77%</Figure> and breaches the <Figure>10%</Figure> cap. Maximum: <Figure>{integer.format(permittedRights(row))}</Figure> rights. Sell the remaining <Figure>{integer.format(row.entitlementRights - permittedRights(row))}</Figure> on exchange before the RE window closes.</>
+                            : <>Needs <Figure>{formatInr(row.fullCashCrore * 10_000_000)}</Figure>, has <Figure>{formatInr(row.cashAvailableCrore * 10_000_000)}</Figure>. Short <Figure>{formatInr((row.fullCashCrore - row.cashAvailableCrore) * 10_000_000)}</Figure>. Cash covers <Figure>{integer.format(permittedRights(row))}</Figure> of <Figure>{integer.format(row.entitlementRights)}</Figure> rights.</>}
                         </div>
                       ))}
                     </CardContent>
@@ -413,7 +414,7 @@ export default function FundManagerDesk() {
                   <TableBody>
                     {(data.audit ?? []).map((entry: any) => (
                       <TableRow key={entry.id} className="text-xs">
-                        <TableCell>{formatIstDate(entry.timestamp)}</TableCell>
+                        <TableCell className="figure">{formatIstDate(entry.timestamp)}</TableCell>
                         <TableCell>{entry.actor}</TableCell>
                         <TableCell>{entry.action}</TableCell>
                       </TableRow>

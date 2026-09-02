@@ -58,7 +58,7 @@ export default function EventsList() {
       </div>
       <div className="p-8">
         <Card>
-          <CardHeader className="border-b bg-white">
+          <CardHeader className="border-b bg-card">
             <div className="mt-4 flex flex-wrap gap-3">
               <div className="relative min-w-[260px] flex-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />

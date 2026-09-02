@@ -47,6 +47,8 @@
   --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
   --color-sidebar-accent: hsl(var(--sidebar-accent));
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-muted-foreground: hsl(var(--sidebar-muted-foreground));
+  --color-accent-soft: hsl(var(--accent-soft));
 
   /* Warm aliases for legacy utility names still used by product pages. */
   --color-slate-50: hsl(var(--background));
@@ -106,6 +108,7 @@
   
   --accent: 43 100% 50%;
   --accent-foreground: 24 18% 14%;
+  --accent-soft: 21 100% 96%;
   
   /* Signal colors */
   --destructive: 350 75% 45%;
@@ -124,6 +127,7 @@
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 24 12% 23%;
   --sidebar-accent-foreground: 30 30% 98%;
+  --sidebar-muted-foreground: 30 30% 82%;
 
   --input: 30 14% 87%;
   --ring: 21 100% 41%;
@@ -159,6 +163,7 @@
   
   --accent: 43 100% 50%;
   --accent-foreground: 24 18% 10%;
+  --accent-soft: 21 70% 22%;
   
   --destructive: 350 89% 60%;
   --destructive-foreground: 0 0% 100%;
@@ -176,6 +181,7 @@
   --sidebar-primary-foreground: 24 18% 10%;
   --sidebar-accent: 335 38% 22%;
   --sidebar-accent-foreground: 30 30% 98%;
+  --sidebar-muted-foreground: 30 12% 70%;
 
   --input: 24 12% 25%;
   --ring: 21 100% 57%;
@@ -218,5 +224,9 @@
     font-family: var(--app-font-mono);
     font-variant-numeric: tabular-nums;
     text-align: right;
+  }
+  .figure-inline {
+    font-family: var(--app-font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }

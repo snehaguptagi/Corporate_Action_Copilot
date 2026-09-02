@@ -101,7 +101,7 @@ export default function NoticeIntake() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50/50">
-      <header className="border-b bg-white px-5 py-6 sm:px-8">
+      <header className="border-b bg-card px-5 py-6 sm:px-8">
         <div className="mx-auto max-w-3xl">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Log an early sighting</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">Capture an NSE or BSE filing before the custodian notification arrives. The result is indicative and cannot be acted on.</p>
@@ -134,7 +134,7 @@ export default function NoticeIntake() {
                     disabled={isProcessing}
                     className="flex-1"
                   />
-                  {file && <span className="text-xs text-slate-500 whitespace-nowrap">{(file.size / 1024 / 1024).toFixed(2)} MB</span>}
+                  {file && <span className="figure text-left text-xs text-slate-500 whitespace-nowrap">{(file.size / 1024 / 1024).toFixed(2)} MB</span>}
                 </div>
               </div>
 

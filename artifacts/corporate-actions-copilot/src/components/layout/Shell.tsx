@@ -45,7 +45,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, 0) ?? 0;
 
   const isStale = Date.now() - latestReceived > 24 * 60 * 60 * 1000;
-  const feedDotColor = isStale ? "bg-amber-500" : "bg-emerald-500";
+  const feedDotColor = isStale ? "bg-warning" : "bg-success";
   
   if (authLoading) {
     return <AuthMessage title="Loading your profile..." detail="Connecting to the enterprise sign-in service." />
@@ -91,7 +91,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          <div className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2 px-2 mt-4 flex items-center justify-between">
+          <div className="text-xs font-semibold text-sidebar-muted-foreground uppercase tracking-wider mb-2 px-2 mt-4 flex items-center justify-between">
             Menu
             <div className="flex items-center gap-1.5" title={isStale ? "Feed may be delayed" : "Feed active"}>
               <div className={`h-2 w-2 rounded-full ${feedDotColor}`} />
@@ -103,7 +103,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <Link key={item.href} href={item.href} className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 active
                   ? "bg-sidebar-primary/10 text-sidebar-primary"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}>
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.label}
@@ -120,10 +120,10 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
               <div className="flex flex-col text-sm">
                 <span className="font-medium leading-none">{activeRole.name}</span>
-                <span className="text-xs text-sidebar-foreground/60 mt-1">{activeRole.role}</span>
+                <span className="text-xs text-sidebar-muted-foreground mt-1">{activeRole.role}</span>
               </div>
             </div>
-            <button onClick={logout} className="text-sidebar-foreground/50 hover:text-sidebar-foreground" title="Sign out">
+            <button onClick={logout} className="text-sidebar-muted-foreground hover:text-sidebar-foreground" title="Sign out">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
@@ -151,7 +151,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <Link key={item.href} href={item.href} className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
                   active
                     ? "bg-sidebar-primary/15 text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    : "text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}>
                   <item.icon className="h-3.5 w-3.5" />
                   {item.label}

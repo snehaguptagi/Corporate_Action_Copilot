@@ -11,14 +11,14 @@ export default function AuditLog() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50/50">
-      <div className="border-b bg-white px-8 py-6 shrink-0">
+      <div className="border-b bg-card px-8 py-6 shrink-0">
         <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Audit trail</h1>
         <p className="text-sm text-slate-500 mt-1">Immutable record of all operational decisions and actions.</p>
       </div>
 
       <div className="p-8">
         <Card>
-          <CardHeader className="bg-white border-b">
+          <CardHeader className="bg-card border-b">
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <Table>

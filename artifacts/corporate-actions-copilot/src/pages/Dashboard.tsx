@@ -111,12 +111,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-              <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio operations</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Monitor incoming notices, assess scheme impact, and control decisions from one place.</p>
-          </div>
+      <header className="border-b border-stone-200 bg-card px-5 py-8 sm:px-8">
+        <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Corporate Actions Copilot</p>
+          <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio operations</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Monitor incoming notices, assess scheme impact, and control decisions from one place.</p>
         </div>
       </header>
 

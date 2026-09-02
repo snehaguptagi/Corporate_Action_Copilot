@@ -974,6 +974,38 @@ export const ListEventsResponse = zod.array(ListEventsResponseItem)
 
 
 /**
+ * @summary Search public web sources for indicative corporate-action notices
+ */
+export const searchLiveCorporateActionsBodyQueryMin = 3;
+export const searchLiveCorporateActionsBodyQueryMax = 240;
+
+
+
+export const SearchLiveCorporateActionsBody = zod.object({
+  "query": zod.string().min(searchLiveCorporateActionsBodyQueryMin).max(searchLiveCorporateActionsBodyQueryMax)
+})
+
+export const SearchLiveCorporateActionsResponse = zod.object({
+  "mode": zod.enum(['Indicative discovery']),
+  "query": zod.string(),
+  "searchedAt": zod.string(),
+  "warning": zod.string(),
+  "notices": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "sourceUrl": zod.string(),
+  "publishedAt": zod.string(),
+  "issuer": zod.string(),
+  "eventType": zod.string(),
+  "summary": zod.string(),
+  "terms": zod.array(zod.string()),
+  "whyRelevant": zod.string(),
+  "confidence": zod.enum(['Unverified'])
+}))
+})
+
+
+/**
  * @summary Create a corporate-action case from a named synthetic sample
  */
 export const CreateIntakeBody = zod.object({

@@ -724,6 +724,49 @@ export interface IntakeInput {
   noticeText?: string;
 }
 
+export interface LiveDiscoveryInput {
+  /**
+     * @minLength 3
+     * @maxLength 240
+     */
+  query: string;
+}
+
+export type LiveDiscoveryNoticeConfidence = typeof LiveDiscoveryNoticeConfidence[keyof typeof LiveDiscoveryNoticeConfidence];
+
+
+export const LiveDiscoveryNoticeConfidence = {
+  Unverified: 'Unverified',
+} as const;
+
+export interface LiveDiscoveryNotice {
+  id: string;
+  title: string;
+  sourceUrl: string;
+  publishedAt: string;
+  issuer: string;
+  eventType: string;
+  summary: string;
+  terms: string[];
+  whyRelevant: string;
+  confidence: LiveDiscoveryNoticeConfidence;
+}
+
+export type LiveDiscoveryResponseMode = typeof LiveDiscoveryResponseMode[keyof typeof LiveDiscoveryResponseMode];
+
+
+export const LiveDiscoveryResponseMode = {
+  Indicative_discovery: 'Indicative discovery',
+} as const;
+
+export interface LiveDiscoveryResponse {
+  mode: LiveDiscoveryResponseMode;
+  query: string;
+  searchedAt: string;
+  warning: string;
+  notices: LiveDiscoveryNotice[];
+}
+
 export interface RequestUploadUrlInput {
   name: string;
   size: number;

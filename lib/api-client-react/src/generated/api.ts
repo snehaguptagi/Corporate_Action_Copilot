@@ -44,6 +44,8 @@ import type {
   IntakeValidationInput,
   ListAuditParams,
   ListEventsParams,
+  LiveDiscoveryInput,
+  LiveDiscoveryResponse,
   LogoutBrowserSessionParams,
   LogoutSuccess,
   MobileTokenExchangeRequest,
@@ -1464,6 +1466,77 @@ export function useListEvents<TData = Awaited<ReturnType<typeof listEvents>>, TE
 
 
 
+
+export const getSearchLiveCorporateActionsUrl = () => {
+
+
+
+
+  return `/api/discovery/search`
+}
+
+/**
+ * @summary Search public web sources for indicative corporate-action notices
+ */
+export const searchLiveCorporateActions = async (liveDiscoveryInput: LiveDiscoveryInput, options?: Parameters<typeof customFetch>[1]): Promise<LiveDiscoveryResponse> => {
+
+  return customFetch<LiveDiscoveryResponse>(getSearchLiveCorporateActionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(liveDiscoveryInput)
+  }
+);}
+
+
+
+
+
+export const getSearchLiveCorporateActionsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchLiveCorporateActions>>, TError,{data: BodyType<LiveDiscoveryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof searchLiveCorporateActions>>, TError,{data: BodyType<LiveDiscoveryInput>}, TContext> => {
+
+const mutationKey = ['searchLiveCorporateActions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchLiveCorporateActions>>, {data: BodyType<LiveDiscoveryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  searchLiveCorporateActions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SearchLiveCorporateActionsMutationResult = NonNullable<Awaited<ReturnType<typeof searchLiveCorporateActions>>>
+    export type SearchLiveCorporateActionsMutationBody = BodyType<LiveDiscoveryInput>
+    export type SearchLiveCorporateActionsMutationError = ErrorType<void>
+
+    /**
+ * @summary Search public web sources for indicative corporate-action notices
+ */
+export const useSearchLiveCorporateActions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchLiveCorporateActions>>, TError,{data: BodyType<LiveDiscoveryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof searchLiveCorporateActions>>,
+        TError,
+        {data: BodyType<LiveDiscoveryInput>},
+        TContext
+      > => {
+      return useMutation(getSearchLiveCorporateActionsMutationOptions(options));
+    }
 
 export const getCreateIntakeUrl = () => {
 

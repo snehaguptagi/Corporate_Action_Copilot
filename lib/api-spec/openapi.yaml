@@ -345,6 +345,30 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/EventSummary"
+  /discovery/search:
+    post:
+      operationId: searchLiveCorporateActions
+      tags: [copilot]
+      summary: Search public web sources for indicative corporate-action notices
+      security:
+        - CorporateActionSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiveDiscoveryInput"
+      responses:
+        "200":
+          description: Indicative web discovery results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveDiscoveryResponse"
+        "400":
+          description: Invalid search query
+        "502":
+          description: Web discovery provider unavailable
   /intake:
     post:
       operationId: createIntake
@@ -1549,6 +1573,49 @@ components:
         fileName: { type: string }
         source: { type: string }
         noticeText: { type: string }
+    LiveDiscoveryInput:
+      type: object
+      additionalProperties: false
+      required: [query]
+      properties:
+        query:
+          type: string
+          minLength: 3
+          maxLength: 240
+    LiveDiscoveryNotice:
+      type: object
+      additionalProperties: false
+      required: [id, title, sourceUrl, publishedAt, issuer, eventType, summary, terms, whyRelevant, confidence]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        sourceUrl: { type: string }
+        publishedAt: { type: string }
+        issuer: { type: string }
+        eventType: { type: string }
+        summary: { type: string }
+        terms:
+          type: array
+          items: { type: string }
+        whyRelevant: { type: string }
+        confidence:
+          type: string
+          enum: [Unverified]
+    LiveDiscoveryResponse:
+      type: object
+      additionalProperties: false
+      required: [mode, query, searchedAt, warning, notices]
+      properties:
+        mode:
+          type: string
+          enum: [Indicative discovery]
+        query: { type: string }
+        searchedAt: { type: string }
+        warning: { type: string }
+        notices:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDiscoveryNotice"
     RequestUploadUrlInput:
       type: object
       required: [name, size, contentType]

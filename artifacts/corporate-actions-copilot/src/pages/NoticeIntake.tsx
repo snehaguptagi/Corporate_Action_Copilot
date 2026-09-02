@@ -32,13 +32,14 @@ export default function NoticeIntake() {
 
   const [file, setFile] = useState<File | null>(null);
   const [textData, setTextData] = useState("");
+  const [sourceUrl, setSourceUrl] = useState(() => new URLSearchParams(window.location.search).get("sourceUrl") ?? "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file && !textData.trim()) {
-      setErrorMsg("Please provide either a PDF or pasted text/feed payload.");
+    if (!file && !textData.trim() && !sourceUrl.trim()) {
+      setErrorMsg("Please provide a source URL, PDF, or pasted text/feed payload.");
       return;
     }
     if (file && file.size > 12 * 1024 * 1024) {
@@ -63,9 +64,10 @@ export default function NoticeIntake() {
 
       // 1. Capture source
       const captureBody = {
-        sourceType: file ? "upload" : "text",
-        sourceLabel: file ? `NSE/BSE filing · ${file.name}` : "NSE/BSE early sighting",
+        sourceType: file ? "upload" : sourceUrl.trim() ? "url" : "text",
+        sourceLabel: file ? `NSE/BSE filing · ${file.name}` : sourceUrl.trim() ? "Public web discovery" : "NSE/BSE early sighting",
         objectPath,
+        sourceUrl: sourceUrl.trim() || undefined,
         sourceText: textData.trim() || undefined,
       };
 
@@ -122,6 +124,19 @@ export default function NoticeIntake() {
                   <p>{errorMsg}</p>
                 </div>
               )}
+
+              <div className="space-y-3">
+                <Label htmlFor="source-url">Public source URL</Label>
+                <Input
+                  id="source-url"
+                  type="url"
+                  placeholder="https://..."
+                  value={sourceUrl}
+                  onChange={(event) => setSourceUrl(event.target.value)}
+                  disabled={isProcessing}
+                />
+                <p className="text-xs leading-5 text-slate-500">Web discoveries remain indicative. Capture the original exchange, issuer, regulator, or custodian notice wherever possible.</p>
+              </div>
 
               <div className="space-y-3">
                 <Label htmlFor="pdf-upload">PDF Notice (Primary)</Label>

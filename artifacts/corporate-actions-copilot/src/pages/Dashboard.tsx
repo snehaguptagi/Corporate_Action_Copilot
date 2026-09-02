@@ -63,7 +63,7 @@ function shortDeadline(display: string) {
 
 function StatTile({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: string }) {
   return (
-    <div className="dashboard-panel">
+    <div className="px-4 py-3.5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
       <p className={`figure mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</p>
       <p className="figure-inline mt-0.5 text-xs text-muted-foreground">{sub}</p>
@@ -130,45 +130,49 @@ export default function Dashboard() {
             <CalendarClock className="h-4 w-4 shrink-0 text-primary" />
             {dashboard.arrivalCount24h} notices arrived in the last 24 hours; {dashboard.arrivalsAffectingSchemes24h} of them touch your schemes.
           </p>
-          <p className="figure-inline mt-1.5 max-w-3xl text-xs leading-5 text-muted-foreground">
-            {dashboard.dataTrust.conflictingSourceCount > 0
-              ? `${dashboard.dataTrust.conflictingSourceCount} notice${dashboard.dataTrust.conflictingSourceCount === 1 ? "" : "s"} carry disagreeing sources.`
-              : "No source disagreements open."}
-            {dashboard.dataTrust.lastDeliveryChannel ? ` Latest delivery ${relativeArrival(dashboard.dataTrust.lastDeliveryAt)} via ${dashboard.dataTrust.lastDeliveryChannel.toLowerCase()}.` : ""}
-            {dashboard.dataTrust.allSynthetic ? " All records here are synthetic teaching data." : ""}
-          </p>
-          <p className="figure-inline mt-0.5 max-w-3xl text-xs leading-5 text-muted-foreground">
-            Last quarter: {formatInr(dashboard.lastQuarter.capturedAmount)} captured, {dashboard.lastQuarter.forfeitedAmount > 0 ? formatInr(dashboard.lastQuarter.forfeitedAmount) : "nothing"} forfeited, {dashboard.lastQuarter.lapsedCount} entitlement{dashboard.lastQuarter.lapsedCount === 1 ? "" : "s"} lapsed, {dashboard.lastQuarter.deadlinesMet} of {dashboard.lastQuarter.deadlinesTotal} deadlines met.
-          </p>
         </div>
       </header>
 
       <main className="flex-1 space-y-4 p-4 sm:p-5">
-        <section aria-label="Today's numbers" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile
-            label="Needs you"
-            value={String(dashboard.needsYouCount)}
-            sub={`${dashboard.needsNothingCount} need nothing from you`}
-            tone={dashboard.needsYouCount > 0 ? "text-amber-700" : "text-slate-800"}
-          />
-          <StatTile
-            label="At stake if you do nothing"
-            value={dashboard.atStakeAmount > 0 ? formatInr(dashboard.atStakeAmount) : "Nothing"}
-            sub="Open voluntary entitlements left to lapse"
-            tone={dashboard.atStakeAmount > 0 ? "text-rose-700" : "text-slate-800"}
-          />
-          <StatTile
-            label="Due within 3 days"
-            value={String(dashboard.dueWithin3DaysCount)}
-            sub={dashboard.dueWithin3DaysCount > 0 ? "Internal deadlines inside 72 hours" : "No deadline inside 72 hours"}
-            tone={dashboard.dueWithin3DaysCount > 0 ? "text-amber-700" : "text-slate-800"}
-          />
-          <StatTile
-            label="Open settlement breaks"
-            value={String(dashboard.settlementBreakCount)}
-            sub={dashboard.settlementBreakCount > 0 ? "Custodian cash does not match" : "Settlements match"}
-            tone={dashboard.settlementBreakCount > 0 ? "text-rose-700" : "text-slate-800"}
-          />
+        <section aria-label="Today's numbers" className="overflow-hidden rounded-lg border border-stone-200 bg-card shadow-sm">
+          <div className="grid grid-cols-2 divide-y divide-stone-200 lg:grid-cols-4 lg:divide-y-0 lg:divide-x">
+            <StatTile
+              label="Needs you"
+              value={String(dashboard.needsYouCount)}
+              sub={`${dashboard.needsNothingCount} need nothing from you`}
+              tone={dashboard.needsYouCount > 0 ? "text-amber-700" : "text-foreground"}
+            />
+            <StatTile
+              label="At stake if you do nothing"
+              value={dashboard.atStakeAmount > 0 ? formatInr(dashboard.atStakeAmount) : "Nothing"}
+              sub="Open voluntary entitlements left to lapse"
+              tone={dashboard.atStakeAmount > 0 ? "text-rose-700" : "text-foreground"}
+            />
+            <StatTile
+              label="Due within 3 days"
+              value={String(dashboard.dueWithin3DaysCount)}
+              sub={dashboard.dueWithin3DaysCount > 0 ? "Internal deadlines inside 72 hours" : "No deadline inside 72 hours"}
+              tone={dashboard.dueWithin3DaysCount > 0 ? "text-amber-700" : "text-foreground"}
+            />
+            <StatTile
+              label="Open settlement breaks"
+              value={String(dashboard.settlementBreakCount)}
+              sub={dashboard.settlementBreakCount > 0 ? "Custodian cash does not match" : "Settlements match"}
+              tone={dashboard.settlementBreakCount > 0 ? "text-rose-700" : "text-foreground"}
+            />
+          </div>
+          <div className="flex flex-col gap-1 border-t border-stone-200 bg-stone-50 px-4 py-2.5 text-xs leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <p className="figure-inline">
+              Last quarter: {formatInr(dashboard.lastQuarter.capturedAmount)} captured, {dashboard.lastQuarter.forfeitedAmount > 0 ? formatInr(dashboard.lastQuarter.forfeitedAmount) : "nothing"} forfeited, {dashboard.lastQuarter.lapsedCount} lapsed, {dashboard.lastQuarter.deadlinesMet} of {dashboard.lastQuarter.deadlinesTotal} deadlines met.
+            </p>
+            <p className="figure-inline sm:text-right">
+              {dashboard.dataTrust.conflictingSourceCount > 0
+                ? `${dashboard.dataTrust.conflictingSourceCount} notice${dashboard.dataTrust.conflictingSourceCount === 1 ? "" : "s"} with disagreeing sources`
+                : "No source disagreements"}
+              {dashboard.dataTrust.lastDeliveryChannel ? ` · latest delivery ${relativeArrival(dashboard.dataTrust.lastDeliveryAt)} via ${dashboard.dataTrust.lastDeliveryChannel.toLowerCase()}` : ""}
+              {dashboard.dataTrust.allSynthetic ? " · synthetic teaching data" : ""}
+            </p>
+          </div>
         </section>
 
         <section aria-label="Attention queue" className="dashboard-panel">
@@ -243,14 +247,12 @@ export default function Dashboard() {
         </section>
 
         <section aria-labelledby="inbound-actions">
-          <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h2 id="inbound-actions" className="text-lg font-semibold text-slate-950">Inbound corporate actions</h2>
-              <p className="mt-1 text-sm text-slate-500">What arrived, what it touches, and what Arka needs to do.</p>
+              <h2 id="inbound-actions" className="text-sm font-semibold tracking-tight text-foreground">Inbound corporate actions</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">What arrived, what it touches, and what Arka needs to do.</p>
             </div>
-            <Link href="/events" className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent hover:text-accent-foreground gap-1.5">
-              Corporate actions <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
           </div>
           <div className="overflow-hidden rounded-lg border border-stone-200 bg-card shadow-sm">
             <div className="overflow-x-auto">

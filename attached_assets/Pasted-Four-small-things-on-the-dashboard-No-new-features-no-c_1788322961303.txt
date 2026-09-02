@@ -1,0 +1,65 @@
+Four small things on the dashboard. No new features, no charts. Three are
+deletions and one is a bug fix. Do all four.
+
+1. THE NAV RENDERS TWICE.
+   A DOM scan at desktop width finds Dashboard, Portfolio, Corporate actions
+   and Analysis each appearing TWICE, each with its own icon — the desktop
+   sidebar and the mobile sheet are both mounted at all times. That is why
+   there are two icons per item.
+   Mount the mobile nav only below its breakpoint, or render one shared list.
+   Verify: each nav item appears exactly once in the DOM at desktop width.
+
+2. TWO DASHBOARD NUMBERS ARE WRONG.
+
+   a) The headline sentence reads:
+        "4 notices in the last 24 hours. 31 affect your schemes."
+      There are 31 open corporate actions in total, so the second number is an
+      all-time count sitting inside a sentence about the last 24 hours. It
+      parses as "31 of the 4". Either both numbers describe the same window, or
+      they become separate statements.
+      Add a test: when both numbers describe the same window, the second can
+      never exceed the first.
+
+   b) GET /api/dashboard returns
+        nearestDeadline      "15 Jun 2026 · 15:00 IST"
+        nearestFundingIssuer "Coastal Energy Ltd"
+      Today is 2 Sep 2026, so the "nearest" deadline is nearly three months in
+      the PAST. A closed or expired event is being selected.
+      Filter to future deadlines on open events only.
+      Add a test: the nearest deadline is always after now.
+
+3. THE SAME THREE NUMBERS APPEAR THREE TIMES. Delete two of the three.
+   Currently the page shows:
+     - the headline sentence ("4 notices in the last 24 hours...")
+     - two tiles: "Last 24 hours 4" and "Affect Arka 31"
+     - a "CONTROL PULSE" block: "NOTICES 4 / SCHEMES TOUCHED 8/10 /
+       NEEDS ATTENTION 9"
+   Keep the sentence. Delete both tile strips, including the CONTROL PULSE
+   heading and its "Portfolio coverage at a glance" subtitle and the
+   Impacted/Unaffected legend.
+
+4. REMOVE THE "YOUR SCHEMES" TABLE FROM THE DASHBOARD.
+   It is the Portfolio page duplicated — same content, same treatment. The
+   dashboard links to Portfolio; it does not contain it. Delete the section and
+   add a single link to /portfolio in its place.
+
+ALSO, one rename in the same pass:
+   The H1 reads "Portfolio operations", which says nothing and collides with
+   the Portfolio page. Replace it with the situation, computed:
+       "9 corporate actions need you. ₹24.24 cr to fund by 16 Sep."
+   Keep the product name as the eyebrow above it. If nothing needs a decision,
+   say that instead.
+
+AND one display fix:
+   Materiality is blank on 3 of 5 inbound rows because those events are
+   value-neutral. Blank reads as missing data. Show "Neutral" or the cash
+   figure instead, matching how the archive already handles it.
+
+DO NOT: add any chart, add any tile, touch the Portfolio page, or touch the
+corporate action page.
+
+VERIFY: typecheck and tests pass; each nav item appears once; the headline
+sentence is internally consistent with a test enforcing it; the nearest
+deadline is in the future with a test; the dashboard shows those three numbers
+exactly once; there is no scheme table on the dashboard; no materiality cell
+is blank.

@@ -15,6 +15,9 @@ export default function Portfolio() {
   const openActionCount = schemes.reduce((total, scheme) => total + scheme.openActions.length, 0);
   const flaggedSchemeCount = schemes.filter((scheme) => Boolean(scheme.flag)).length;
   const totalShortfall = schemes.reduce((total, scheme) => total + scheme.shortfall, 0);
+  const exceptionSchemes = schemes.filter((scheme) => scheme.shortfall > 0);
+  const reviewSchemes = schemes.filter((scheme) => scheme.shortfall <= 0 && Boolean(scheme.flag));
+  const coveredSchemes = schemes.filter((scheme) => scheme.openActions.length > 0 && scheme.shortfall <= 0 && !scheme.flag);
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
@@ -53,17 +56,32 @@ export default function Portfolio() {
               </div>
             </div>
           </div>
-          <div className="dashboard-panel flex flex-col justify-between">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Reading the book</div>
-              <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">Where to focus first</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Open actions are ranked by NAV materiality. Flags call out concentration pressure, funding gaps, and eligibility exceptions.</p>
+          <div className="dashboard-panel flex flex-col">
+            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Where to focus first</div>
+            <div className="mt-3 flex-1 space-y-2">
+              <TriageRow
+                icon={<ShieldAlert className="h-4 w-4" />}
+                toneClass="border-destructive/30 bg-destructive/5 text-destructive"
+                label="Exception"
+                hint="Funding shortfall blocks settlement"
+                schemes={exceptionSchemes}
+              />
+              <TriageRow
+                icon={<AlertCircle className="h-4 w-4" />}
+                toneClass="border-warning/40 bg-warning/5 text-warning"
+                label="Review"
+                hint="Flagged for concentration or eligibility"
+                schemes={reviewSchemes}
+              />
+              <TriageRow
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                toneClass="border-success/30 bg-success/5 text-success"
+                label="Covered"
+                hint="Open actions funded and within limits"
+                schemes={coveredSchemes}
+              />
             </div>
-            <div className="mt-5 flex flex-wrap gap-2 text-xs font-medium">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1.5 text-success"><CheckCircle2 className="h-3.5 w-3.5" /> Covered</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 px-2.5 py-1.5 text-warning"><AlertCircle className="h-3.5 w-3.5" /> Review</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1.5 text-destructive"><ShieldAlert className="h-3.5 w-3.5" /> Exception</span>
-            </div>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">Work from the top down. Each scheme name opens its control view.</p>
           </div>
         </section>
         <Card className="overflow-hidden border border-stone-200 shadow-sm">
@@ -175,6 +193,29 @@ export default function Portfolio() {
           </CardContent>
         </Card>
       </main>
+    </div>
+  );
+}
+
+function TriageRow({ icon, toneClass, label, hint, schemes }: { icon: React.ReactNode; toneClass: string; label: string; hint: string; schemes: { id: string; name: string }[] }) {
+  return (
+    <div className={`flex items-start gap-3 rounded-md border px-3 py-2.5 ${toneClass}`}>
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm font-semibold">{label}</span>
+          <span className="figure-inline text-sm font-semibold">{schemes.length}</span>
+        </div>
+        <div className="text-xs text-muted-foreground">{hint}</div>
+        {schemes.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs">
+            {schemes.slice(0, 3).map((scheme) => (
+              <Link key={scheme.id} href={`/schemes/${scheme.id}`} className="font-medium text-primary hover:underline">{scheme.name}</Link>
+            ))}
+            {schemes.length > 3 && <span className="text-muted-foreground">+{schemes.length - 3} more</span>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

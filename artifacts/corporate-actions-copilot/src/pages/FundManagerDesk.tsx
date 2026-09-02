@@ -425,39 +425,40 @@ export default function FundManagerDesk() {
                         </div>
                       </CardContent>
                     </Card>
-                  )) : affectedSchemes.map((impact: any) => (
-                    <Card key={impact.id} className="rounded border-border bg-card shadow-none">
-                      <CardContent className="grid gap-4 p-4 md:grid-cols-[1fr,1.5fr,auto] items-center">
-                        <div>
-                          <div className="text-sm font-semibold text-foreground">{impact.schemeName}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">Entitlement: {integer.format(impact.quantityResult ?? impact.eligibleQuantity)}</div>
-                          {impact.electionDecision && <Badge className="mt-2" variant="outline">{impact.electionDecision.optionLabel} · {impact.electionDecision.quantityElected} · {impact.approval}</Badge>}
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <Select disabled={Boolean(impact.electionDecision)} value={electionOptions[impact.id] ?? (data.options.find((o:any)=>o.default)?.id || "")} onValueChange={(val) => setElectionOptions(prev => ({...prev, [impact.id]: val}))}>
-                            <SelectTrigger className="w-[180px] text-xs"><SelectValue placeholder="Option" /></SelectTrigger>
-                            <SelectContent>
-                              {data.options.map((opt:any) => <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            className="w-[120px] text-xs"
-                            type="number"
-                            disabled={Boolean(impact.electionDecision)}
-                            value={electionQuantities[impact.id] ?? (impact.quantityResult ?? impact.eligibleQuantity)}
-                            onChange={(e) => setElectionQuantities(prev => ({...prev, [impact.id]: e.target.value}))}
-                          />
-                        </div>
-                        <div>
-                          {!impact.electionDecision && (
-                             <Button onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
-                              Submit Election
-                            </Button>
+                  )) : (
+                    <div className="overflow-hidden rounded-md border border-border/70">
+                      {affectedSchemes.map((impact: any, rowIndex: number) => (
+                        <div key={impact.id} className={`flex flex-wrap items-center gap-3 px-4 py-2.5 ${rowIndex > 0 ? "border-t border-border/60" : ""}`}>
+                          <div className="min-w-[220px] flex-1">
+                            <span className="text-sm font-semibold text-foreground">{impact.schemeName}</span>
+                            <span className="figure-inline ml-2 text-xs text-muted-foreground">Entitlement: {integer.format(impact.quantityResult ?? impact.eligibleQuantity)}</span>
+                          </div>
+                          {impact.electionDecision ? (
+                            <Badge variant="outline">{impact.electionDecision.optionLabel} · {impact.electionDecision.quantityElected} · {impact.approval}</Badge>
+                          ) : (
+                            <>
+                              <Select value={electionOptions[impact.id] ?? (data.options.find((o:any)=>o.default)?.id || "")} onValueChange={(val) => setElectionOptions(prev => ({...prev, [impact.id]: val}))}>
+                                <SelectTrigger className="w-[170px] text-xs"><SelectValue placeholder="Option" /></SelectTrigger>
+                                <SelectContent>
+                                  {data.options.map((opt:any) => <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                aria-label={`${impact.schemeName} quantity`}
+                                className="figure w-[110px] text-xs"
+                                type="number"
+                                value={electionQuantities[impact.id] ?? (impact.quantityResult ?? impact.eligibleQuantity)}
+                                onChange={(e) => setElectionQuantities(prev => ({...prev, [impact.id]: e.target.value}))}
+                              />
+                              <Button size="sm" onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
+                                Submit
+                              </Button>
+                            </>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      ))}
+                    </div>
+                  )}
                   {isRightsHero && <Card className="rounded border-border bg-warning/5 shadow-none"><CardContent className="space-y-3 p-5"><div className="grid gap-2 text-sm sm:grid-cols-4"><span className="figure text-left">Exercise <strong>{integer.format(totals.exercise)}</strong></span><span className="figure text-left">ASBA funding <strong>{formatInr(totals.cash)}</strong></span><span className="figure text-left">Sell <strong>{integer.format(totals.sell)}</strong> rights</span><span className="figure text-left">Value forfeited <strong>{formatInr(totals.forfeited * rightsValue)}</strong></span></div><Button disabled={blockedRights.length > 0 || saveArka.isPending || submitArka.isPending} onClick={() => saveArka.mutate({ data: { decisions: rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => ({ schemeId: row.id, rights: rightsOption(row.id) === "exercise" ? rightsQty(row) : 0 })) } }, { onSuccess: () => submitArka.mutate() })}>{blockedRights.length > 0 ? `Resolve blocked schemes: ${blockedRights.map((row: any) => row.name).join(", ")}` : "Submit to Compliance"}</Button></CardContent></Card>}
                 </div>
               </Section>

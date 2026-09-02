@@ -77,6 +77,54 @@ export interface Dashboard {
   recentActivity: AuditEntry[];
 }
 
+export interface SchemeContribution {
+  eventId: string;
+  eventName: string;
+  eventType: string;
+  navImpactPaise: number;
+  cashAmount: number;
+  cashDirection: string;
+  deadline: string;
+  status: string;
+}
+
+export interface SchemeFunding {
+  needed: number;
+  available: number;
+  shortfall: number;
+  status: string;
+}
+
+export interface SchemeHeadroom {
+  issuer: string;
+  currentPercent: number;
+  distanceToCapPercent: number;
+  postActionPercent: number;
+  capPercent: number;
+  maximumRights: number;
+}
+
+export interface SchemeHolding {
+  eventId: string;
+  eventName: string;
+  issuer: string;
+  security: string;
+  isin: string;
+  quantity: number;
+  asOfDate: string;
+}
+
+export interface SchemeDetail {
+  id: string;
+  name: string;
+  category: string;
+  situation: string;
+  contributions: SchemeContribution[];
+  funding: SchemeFunding;
+  headroom: SchemeHeadroom;
+  holdings: SchemeHolding[];
+}
+
 export interface ArkaDeskEvent {
   reference: string;
   issuer: string;
@@ -162,6 +210,7 @@ export interface ArkaSchemeImpact {
   entitlementRights: number;
   decisionRights: number;
   fullCashCrore: number;
+  cashAvailableCrore: number;
   exerciseCashPaise: number;
   exerciseCashCrore: number;
   navHitPaise: number;

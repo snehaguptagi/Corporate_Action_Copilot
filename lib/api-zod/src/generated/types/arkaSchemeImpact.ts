@@ -17,6 +17,7 @@ export interface ArkaSchemeImpact {
   entitlementRights: number;
   decisionRights: number;
   fullCashCrore: number;
+  cashAvailableCrore: number;
   exerciseCashPaise: number;
   exerciseCashCrore: number;
   navHitPaise: number;

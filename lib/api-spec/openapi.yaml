@@ -195,6 +195,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+  /schemes/{schemeId}:
+    get:
+      operationId: getScheme
+      tags: [schemes]
+      summary: Get a fund manager scheme accountability view
+      security:
+        - CorporateActionSession: []
+      parameters:
+        - name: schemeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Scheme accountability view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemeDetail"
+        "404":
+          description: Scheme not found
   /desk:
     get:
       operationId: getArkaDesk
@@ -747,6 +768,67 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuditEntry"
+    SchemeDetail:
+      type: object
+      required: [id, name, category, situation, contributions, funding, headroom, holdings]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        situation: { type: string }
+        contributions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemeContribution"
+        funding:
+          $ref: "#/components/schemas/SchemeFunding"
+        headroom:
+          $ref: "#/components/schemas/SchemeHeadroom"
+        holdings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemeHolding"
+    SchemeContribution:
+      type: object
+      required: [eventId, eventName, eventType, navImpactPaise, cashAmount, cashDirection, deadline, status]
+      properties:
+        eventId: { type: string }
+        eventName: { type: string }
+        eventType: { type: string }
+        navImpactPaise: { type: number }
+        cashAmount: { type: number }
+        cashDirection: { type: string }
+        deadline: { type: string }
+        status: { type: string }
+    SchemeFunding:
+      type: object
+      required: [needed, available, shortfall, status]
+      properties:
+        needed: { type: number }
+        available: { type: number }
+        shortfall: { type: number }
+        status: { type: string }
+    SchemeHeadroom:
+      type: object
+      required: [issuer, currentPercent, distanceToCapPercent, postActionPercent, capPercent, maximumRights]
+      properties:
+        issuer: { type: string }
+        currentPercent: { type: number }
+        distanceToCapPercent: { type: number }
+        postActionPercent: { type: number }
+        capPercent: { type: number }
+        maximumRights: { type: number }
+    SchemeHolding:
+      type: object
+      required: [eventId, eventName, issuer, security, isin, quantity, asOfDate]
+      properties:
+        eventId: { type: string }
+        eventName: { type: string }
+        issuer: { type: string }
+        security: { type: string }
+        isin: { type: string }
+        quantity: { type: number }
+        asOfDate: { type: string }
     ArkaDesk:
       type: object
       required: [event, calendar, securityMaster, terms, rule, funnel, schemes, totals, submission]
@@ -857,7 +939,7 @@ components:
               reason: { type: string }
     ArkaSchemeImpact:
       type: object
-      required: [id, schemeCode, name, category, aumCrore, navPaise, holdingQuantity, entitlementRights, decisionRights, fullCashCrore, exerciseCashPaise, exerciseCashCrore, navHitPaise, navHitPercent, capUsagePercent, sebiLimitPercent, forfeitedRights, eligibilityStatus, blockers, decisionState]
+      required: [id, schemeCode, name, category, aumCrore, navPaise, holdingQuantity, entitlementRights, decisionRights, fullCashCrore, cashAvailableCrore, exerciseCashPaise, exerciseCashCrore, navHitPaise, navHitPercent, capUsagePercent, sebiLimitPercent, forfeitedRights, eligibilityStatus, blockers, decisionState]
       properties:
         id: { type: string }
         schemeCode: { type: string }
@@ -869,6 +951,7 @@ components:
         entitlementRights: { type: number }
         decisionRights: { type: number }
         fullCashCrore: { type: number }
+        cashAvailableCrore: { type: number }
         exerciseCashPaise: { type: number }
         exerciseCashCrore: { type: number }
         navHitPaise: { type: number }

@@ -51,6 +51,7 @@ import type {
   ReconciliationInput,
   RequestUploadUrlInput,
   RequestUploadUrlResult,
+  SchemeDetail,
   SignInInput,
   Task
 } from './api.schemas';
@@ -845,6 +846,83 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSchemeUrl = (schemeId: string,) => {
+
+
+
+
+  return `/api/schemes/${schemeId}`
+}
+
+/**
+ * @summary Get a fund manager scheme accountability view
+ */
+export const getScheme = async (schemeId: string, options?: Parameters<typeof customFetch>[1]): Promise<SchemeDetail> => {
+
+  return customFetch<SchemeDetail>(getGetSchemeUrl(schemeId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSchemeQueryKey = (schemeId: string,) => {
+    return [
+    `/api/schemes/${schemeId}`
+    ] as const;
+    }
+
+
+export const getGetSchemeQueryOptions = <TData = Awaited<ReturnType<typeof getScheme>>, TError = ErrorType<void>>(schemeId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheme>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSchemeQueryKey(schemeId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScheme>>> = ({ signal }) => getScheme(schemeId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: schemeId !== null && schemeId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScheme>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSchemeQueryResult = NonNullable<Awaited<ReturnType<typeof getScheme>>>
+export type GetSchemeQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a fund manager scheme accountability view
+ */
+
+export function useGetScheme<TData = Awaited<ReturnType<typeof getScheme>>, TError = ErrorType<void>>(
+ schemeId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheme>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSchemeQueryOptions(schemeId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

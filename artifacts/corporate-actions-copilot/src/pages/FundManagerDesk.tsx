@@ -6,7 +6,7 @@ import {
   type EventDetail,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { Link, useParams } from "wouter";
 import {
   AlertTriangle,
   Landmark,
@@ -28,14 +28,12 @@ function crore(value: number) {
 }
 
 function SectionHeading({ index, eyebrow, title, description }: { index: string; eyebrow: string; title: string; description: string; }) {
+  void eyebrow;
+  void description;
   return (
-    <div className="mb-4 flex items-start gap-3">
+    <div className="mb-4 flex items-center gap-3">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#dc6900] text-xs font-bold text-white">{index}</div>
-      <div>
-        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#dc6900]">{eyebrow}</div>
-        <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-[#5b1235]">{title}</h2>
-        <p className="mt-1 max-w-4xl text-xs leading-5 text-muted-foreground">{description}</p>
-      </div>
+      <h2 className="text-lg font-semibold tracking-tight text-[#5b1235]">{title}</h2>
     </div>
   );
 }
@@ -122,6 +120,15 @@ export default function FundManagerDesk() {
   const statement3 = primarySource
     ? `Received ${formatIstDate(primarySource.receivedAt)} from your custodian (${primarySource.provider}, ${primarySource.messageType}). ${data.sourceAgreement}`
     : `Received ${formatIstDate(data.receivedAt)} from ${data.source}. ${data.sourceAgreement}`;
+  const statusCopy = data.status === "Awaiting approval"
+    ? "With Compliance"
+    : !isMandatory && ["Validated", "Election required"].includes(data.status)
+      ? "Awaiting your decision"
+      : data.status === "Under review"
+        ? "Terms being confirmed"
+        : data.status === "Break identified"
+          ? "Settlement difference found"
+          : data.status;
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#f7f5f2]">
@@ -135,7 +142,7 @@ export default function FundManagerDesk() {
               </div>
               <h1 className="text-2xl font-semibold tracking-tight text-[#5b1235] sm:text-3xl">{data.issuer} {data.eventType.toLowerCase()}</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5b1235] font-medium">
-                Status: {data.status} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}
+                {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -180,7 +187,7 @@ export default function FundManagerDesk() {
                   <TableBody>
                     {affectedSchemes.map((scheme) => (
                       <TableRow key={scheme.id} className="text-xs">
-                        <TableCell className="font-semibold text-[#5b1235]">{scheme.schemeName}</TableCell>
+                        <TableCell><Link href={`/schemes/${scheme.schemeId}`} className="font-semibold text-primary hover:underline">{scheme.schemeName}</Link></TableCell>
                         <TableCell className="text-right font-mono">{integer.format(scheme.eligibleQuantity)}</TableCell>
                         <TableCell className="text-right font-mono">{scheme.cashAmount ? crore(scheme.cashAmount / 10000000) : "-"}</TableCell>
                         <TableCell>{scheme.direction}</TableCell>

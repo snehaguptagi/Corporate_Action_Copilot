@@ -1,0 +1,99 @@
+SCOPE: the portfolio. The fund manager's unit of accountability is the SCHEME —
+NAV per unit is what they are judged on. Today a scheme is only ever a table row.
+Do not touch the corporate-action identity work or the decision surface.
+
+PRINCIPLE: fewer fields, each one insightful. A number the fund manager already
+knows (AUM) is not insight. A number that tells them where to look is.
+
+═══ A. A SCHEME BECOMES SOMETHING YOU CAN OPEN ═══
+Create /schemes/:id. It answers one question: "is this fund of mine okay?"
+
+Open with one sentence stating the situation, computed:
+  "3 corporate actions are moving Arka Focused 25 this month. Together they cost
+   22.0 paise per unit — 0.46% of NAV. One of them breaches the SEBI
+   single-issuer cap."
+For a scheme with nothing open:
+  "Nothing is affecting Arka Mid Cap Fund right now."
+
+Then exactly four things, in this order:
+
+1. WHAT IS MOVING IT — the open corporate actions touching this scheme, each
+   showing ITS OWN contribution to the total:
+     Bharat Renewables rights   22.0 paise   ₹15.30 cr funding   decide by 15 Sep
+     Meridian buyback            neutral      ₹68.0 lakh receivable
+   The per-event contribution is the insight. A total nobody can decompose is
+   not useful.
+
+2. THE FUNDING GAP — not "funding needed" alone. Show it as a gap:
+     "Needs ₹15.30 cr. Has ₹40.00 cr. Comfortable."
+     "Needs ₹2.55 cr. Has ₹1.80 cr. Short ₹75.00 lakh."
+   Today the dashboard flags Small Cap as "Cash short" without ever showing by
+   how much. The number IS the point.
+
+3. SEBI HEADROOM — the largest single-issuer position as a percentage of NAV,
+   the distance to 10%, and what would consume it:
+     "Bharat Renewables is 9.39% of NAV. Exercising in full takes it to 10.77%
+      and breaches the cap. Maximum you can take is 10,27,007 rights."
+
+4. HOLDINGS — the scheme's positions in the securities that have open corporate
+   actions. Not the whole portfolio; only what is in play.
+
+Nothing else on this page. No AUM tile, no NAV tile, no charts.
+
+═══ B. THE DASHBOARD PORTFOLIO BLOCK ═══
+"Your schemes" currently lists ten schemes with AUM, open actions, NAV impact,
+funding needed and a flag word. Three changes:
+
+1. RANK BY IMPACT, not alphabetically or by seed order. The fund manager should
+   read the list top-down and stop when it stops mattering. Focused 25 carries
+   this event at 22.0 paise; the next is 3.93. That ordering is the message.
+
+2. SHOW THE GAP, not the requirement. Replace "Funding needed ₹2.55 cr" with
+   the needs/has/short form from A2. A funding number with no cash number beside
+   it cannot be acted on.
+
+3. DROP the AUM column. It never changes and never affects a decision. If a
+   scheme's size matters it is already reflected in NAV impact per unit, which
+   is the number that does the work.
+
+Schemes with nothing open collapse to a single quiet line at the bottom:
+  "4 schemes unaffected: Value, ELSS, Mid Cap, Banking & Financial."
+Do not give them a row each with "None / Neutral / None / None" as today.
+
+═══ C. LINK THE TWO DIRECTIONS ═══
+Scheme names on the corporate-action page link to /schemes/:id.
+Corporate-action names on the scheme page link to /events/:id.
+That is what makes it one product rather than two lists.
+
+═══ D. CARRY-OVER FIXES FROM THE LAST STEP ═══
+1. Section 01 on the corporate-action page still carries the subtitle "Notice
+   terms, calendar, and security details extracted from the source document." It
+   describes the field grid that was just deleted. Remove it — the three
+   sentences need no introduction.
+2. The header still reads "Status: Validated". That is internal workflow
+   vocabulary. Say what it means to the fund manager, or drop it. For a rights
+   issue awaiting a decision: "Awaiting your decision".
+3. Each section carries an eyebrow, a title AND a subtitle — "CONFIRMED EVENT /
+   What it is / Notice terms, calendar and security..." Three layers of heading
+   for one section. Keep one.
+
+═══ DO NOT ═══
+- Do not touch section 03 Options or section 05 Decision — that is the next step.
+- Do not add charts, sparklines or NAV history.
+- Do not add a scheme to the nav. Schemes are reached from the dashboard and
+  from corporate actions.
+- Do not add fields. This step should REDUCE the dashboard table by one column
+  and four rows.
+
+Declare new endpoints/fields in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+All figures server-side.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- /schemes/:id renders for all ten schemes, including ones with nothing open;
+- per-event contributions on a scheme sum to that scheme's total NAV impact;
+- the funding gap shows cash available beside cash needed everywhere it appears;
+- the dashboard scheme list is ordered by NAV impact descending;
+- unaffected schemes occupy one line, not four rows;
+- scheme names and corporate-action names link both ways.

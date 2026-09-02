@@ -6,3 +6,4 @@
 - [Server-side PDF intake](server-pdf-intake.md) — Use system PDF utilities for intake extraction; parser imports can crash the Replit Node runtime.
 - [Dividend withholding scope](dividend-withholding-scope.md) — Model withholding as a validated event-level rate; reconcile settlement against net cash.
 - [Single scheme impact model](single-scheme-impact-model.md) — Derive scheme impacts on event arrival and reuse them across decisions and operations.
+- [Scheme accountability view](scheme-accountability-view.md) — Scheme pages decompose NAV impact, funding gaps, cap headroom, and only holdings currently in play.

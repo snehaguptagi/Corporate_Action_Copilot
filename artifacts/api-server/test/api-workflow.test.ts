@@ -5,6 +5,7 @@ import { inArray } from "drizzle-orm";
 import { corporateActionEventsTable, db, pool } from "@workspace/db";
 import app from "../src/app";
 import { demoUsers, ensureCorporateActionSeedData } from "../src/lib/corporate-actions-v2";
+import { ARKA_SCHEME_SEED } from "../src/lib/arka-desk";
 
 process.env.CORPORATE_ACTIONS_POC = "true";
 
@@ -134,6 +135,36 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     const response = await request("/not-a-real-route");
     assert.equal(response.status, 404);
     assert.deepEqual(response.body, { error: "API route not found." });
+  });
+
+  test("renders a decomposable accountability view for every Arka scheme", async () => {
+    for (const seed of ARKA_SCHEME_SEED) {
+      const response = await request(`/schemes/${seed.id}`, {}, analystSession);
+      assert.equal(response.status, 200, `${seed.schemeName} should render`);
+      assert.equal(response.body.id, seed.id);
+      const contributionTotal = response.body.contributions.reduce(
+        (total: number, contribution: EventData) => total + contribution.navImpactPaise,
+        0,
+      );
+      const displayedTotal = response.body.situation.match(/cost ([\d.]+) paise/)?.[1];
+      if (response.body.contributions.length > 0) {
+        assert.equal(contributionTotal.toFixed(2), displayedTotal);
+      } else {
+        assert.match(response.body.situation, /Nothing is affecting/);
+      }
+      assert.ok(response.body.funding.available >= 0);
+      assert.equal(
+        response.body.funding.shortfall,
+        Math.max(0, response.body.funding.needed - response.body.funding.available),
+      );
+      if (seed.id === "arka-focused-25") {
+        assert.equal(response.body.funding.needed, 153_000_000);
+        assert.equal(response.body.funding.available, 400_000_000);
+        assert.equal(response.body.headroom.currentPercent, 9.39);
+        assert.equal(response.body.headroom.postActionPercent, 10.77);
+        assert.equal(response.body.headroom.maximumRights, 1_027_007);
+      }
+    }
   });
 
   test("derives workflow roles from signed sessions and blocks maker self-approval", async () => {

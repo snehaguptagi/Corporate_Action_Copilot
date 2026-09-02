@@ -168,8 +168,17 @@ export default function Dashboard() {
       .reduce((total, { impact }) => total + impact.cashAmount, 0);
     const navImpact = impacts.reduce((total, { impact }) => total + (impact.navImpactPaise ?? 0), 0);
     const flag = impacts.find(({ impact }) => impact.flag)?.impact.flag ?? null;
-    return { scheme, openActions, funding, navImpact, flag };
+    const cashAvailable = scheme.cashAvailableCrore * 10_000_000;
+    const shortfall = Math.max(0, funding - cashAvailable);
+    return { scheme, openActions, funding, cashAvailable, shortfall, navImpact, flag };
   });
+  const affectedSchemeRows = schemeRows
+    .filter(({ openActions }) => openActions.length > 0)
+    .sort((left, right) => right.navImpact - left.navImpact);
+  const unaffectedSchemeRows = schemeRows.filter(({ openActions }) => openActions.length === 0);
+  const unaffectedLabels = unaffectedSchemeRows.map(({ scheme }) => (
+    scheme.category === "Banking" ? "Banking & Financial" : scheme.category
+  ));
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
@@ -296,37 +305,40 @@ export default function Dashboard() {
                 <TableHeader>
                   <TableRow className="bg-[#f7f3f0] hover:bg-[#f7f3f0]">
                     <TableHead>Scheme</TableHead>
-                    <TableHead>AUM</TableHead>
                     <TableHead>Open corporate actions touching it</TableHead>
                     <TableHead>Total NAV impact</TableHead>
-                    <TableHead>Funding needed</TableHead>
+                    <TableHead>Funding gap</TableHead>
                     <TableHead>Flag</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {schemeRows.map(({ scheme, openActions, funding, navImpact, flag }) => (
+                  {affectedSchemeRows.map(({ scheme, openActions, funding, cashAvailable, shortfall, navImpact, flag }) => (
                     <TableRow key={scheme.id}>
                       <TableCell>
-                        <div className="font-semibold text-slate-950">{scheme.name}</div>
+                        <Link href={`/schemes/${scheme.id}`} className="font-semibold text-primary hover:underline">{scheme.name}</Link>
                         <div className="mt-1 text-xs text-slate-500">{scheme.category}</div>
                       </TableCell>
-                      <TableCell className="font-medium text-slate-700">₹{scheme.aumCrore.toLocaleString("en-IN")} cr</TableCell>
                       <TableCell>
-                        {openActions.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {openActions.map(({ event }) => (
-                              <Link key={event.id} href={`/events/${event.id}`} className="inline-flex rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-slate-700 hover:border-orange-300 hover:text-primary">
-                                {actionName(event.eventType)}
-                              </Link>
-                            ))}
-                          </div>
-                        ) : <span className="text-slate-400">None</span>}
+                        <div className="flex flex-wrap gap-1.5">
+                          {openActions.map(({ event }) => (
+                            <Link key={event.id} href={`/events/${event.id}`} className="inline-flex rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-slate-700 hover:border-orange-300 hover:text-primary">
+                              {event.issuer} {actionName(event.eventType).toLowerCase()}
+                            </Link>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {navImpact > 0 ? <span className="font-semibold text-[#a32020]">{navImpact.toFixed(2)} paise</span> : <span className="text-slate-500">Neutral</span>}
                       </TableCell>
                       <TableCell>
-                        {funding > 0 ? <span className="font-semibold text-rose-700">{formatInr(funding)}</span> : <span className="text-slate-400">None</span>}
+                        {funding > 0 ? (
+                          <div className="text-xs leading-5 text-slate-700">
+                            <div>Needs <strong>{formatInr(funding)}</strong> · Has <strong>{formatInr(cashAvailable)}</strong></div>
+                            <div className={shortfall > 0 ? "font-semibold text-rose-700" : "font-semibold text-emerald-700"}>
+                              {shortfall > 0 ? `Short ${formatInr(shortfall)}` : "Comfortable"}
+                            </div>
+                          </div>
+                        ) : <span className="text-slate-500">No funding gap</span>}
                       </TableCell>
                       <TableCell>
                         {flag ? (
@@ -337,6 +349,13 @@ export default function Dashboard() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {unaffectedSchemeRows.length > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-4 text-sm text-slate-500">
+                        {unaffectedSchemeRows.length} schemes unaffected: {unaffectedLabels.join(", ")}.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>

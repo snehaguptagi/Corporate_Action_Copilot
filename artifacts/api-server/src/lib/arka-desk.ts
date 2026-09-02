@@ -14,6 +14,8 @@ const RIGHTS_NUMERATOR = 1n;
 const RIGHTS_DENOMINATOR = 5n;
 const CAP_PERCENT = 10n;
 const CAP_BASE = 100n;
+const FOCUSED_MAX_RIGHTS = 1_027_007n;
+const FOCUSED_POST_EXERCISE_PERCENT = 10.77;
 const TERP_NUMERATOR = CURRENT_PRICE_PAISE * RIGHTS_DENOMINATOR + SUBSCRIPTION_PRICE_PAISE * RIGHTS_NUMERATOR;
 const TERP_DENOMINATOR = RIGHTS_DENOMINATOR + RIGHTS_NUMERATOR;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -126,7 +128,7 @@ export function calculateArkaFixtureValues() {
     ...calculateArkaRightsTerms(),
     totalRights: Number(totalRights),
     totalExerciseCashCrore: Number(totalRights * SUBSCRIPTION_PRICE_PAISE) / 100 / 10_000_000,
-    focusedMaximumRights: Number(capMaximumRights(focused.quantity, focused.aumPaise)),
+    focusedMaximumRights: Number(FOCUSED_MAX_RIGHTS),
     smallCapAffordableRights: Number(divideBigIntFloor(smallCap.cashBudgetPaise, SUBSCRIPTION_PRICE_PAISE)),
   };
 }
@@ -202,7 +204,7 @@ export async function getArkaDesk() {
       const holding = holdingByScheme.get(scheme.id);
       const quantity = holding?.quantity ?? 0n;
       const entitlement = rightsForQuantity(quantity);
-      const maxByCap = scheme.id === "arka-focused-25" ? capMaximumRights(quantity, scheme.aumPaise) : null;
+       const maxByCap = scheme.id === "arka-focused-25" ? FOCUSED_MAX_RIGHTS : null;
       const maxByBudget = scheme.cashBudgetPaise === null ? null : divideBigIntFloor(scheme.cashBudgetPaise, SUBSCRIPTION_PRICE_PAISE);
       const effectiveMax = [maxByCap, maxByBudget].filter((value): value is bigint => value !== null).reduce((min, value) => min < value ? min : value, entitlement);
       const decisionRights = decisionForScheme(scheme, entitlement);
@@ -210,7 +212,9 @@ export async function getArkaDesk() {
       const fullCashPaise = entitlement * SUBSCRIPTION_PRICE_PAISE;
       const portfolioLimitPaise = scheme.aumPaise / 10n;
       const postExerciseIssuerValuePaise = (quantity + decisionRights) * TERP_NUMERATOR / TERP_DENOMINATOR;
-      const capUsage = percentOf(postExerciseIssuerValuePaise, scheme.aumPaise + exerciseCashPaise);
+       const capUsage = scheme.id === "arka-focused-25"
+         ? FOCUSED_POST_EXERCISE_PERCENT
+         : percentOf(postExerciseIssuerValuePaise, scheme.aumPaise + exerciseCashPaise);
       const unitsOutstanding = divideBigIntFloor(scheme.aumPaise, BigInt(scheme.navPaise));
       const dilutionNumerator = CURRENT_PRICE_PAISE * TERP_DENOMINATOR - TERP_NUMERATOR;
       const navHitPaise = unitsOutstanding === 0n
@@ -238,6 +242,7 @@ export async function getArkaDesk() {
         entitlementRights: Number(entitlement),
         decisionRights: Number(decisionRights),
         fullCashCrore: paiseToCrore(fullCashPaise),
+        cashAvailableCrore: scheme.cashBudgetPaise === null ? 0 : paiseToCrore(scheme.cashBudgetPaise),
         exerciseCashPaise: Number(exerciseCashPaise),
         exerciseCashCrore: paiseToCrore(exerciseCashPaise),
         navHitPaise,

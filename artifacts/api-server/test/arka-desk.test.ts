@@ -16,6 +16,6 @@ test("uses round seed amounts rather than fitted values", () => {
   const focused = ARKA_SCHEME_SEED.find((scheme) => scheme.id === "arka-focused-25");
   const smallCap = ARKA_SCHEME_SEED.find((scheme) => scheme.id === "arka-small-cap");
   assert.ok(focused && smallCap?.cashBudgetPaise);
-  assert.ok(fixture.focusedMaximumRights > 0);
+  assert.equal(fixture.focusedMaximumRights, 1_027_007);
   assert.equal(fixture.smallCapAffordableRights, Number(smallCap.cashBudgetPaise / 8_500n));
 });

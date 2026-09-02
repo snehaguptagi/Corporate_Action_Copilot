@@ -15,6 +15,8 @@ import {
   ExtractIntakeDraftParams,
   ExtractIntakeDraftResponse,
   GetDashboardResponse,
+  GetSchemeParams,
+  GetSchemeResponse,
   GetEventParams,
   GetEventResponse,
   GetIntakeDraftParams,
@@ -59,6 +61,7 @@ import {
   sortCorporateActionEvents,
   toSummary,
 } from "../lib/corporate-actions-v2";
+import { ARKA_SCHEME_SEED, getArkaDesk } from "../lib/arka-desk";
 import {
   createCaseFromIntakeDraft,
   createIntakeDraft,
@@ -114,6 +117,88 @@ const workflowError = (res: any, error: unknown) => {
 router.get("/dashboard", async (_req, res): Promise<void> => {
   const events = await getCorporateActionEvents();
   res.json(GetDashboardResponse.parse(buildDashboard(events)));
+});
+
+router.get("/schemes/:schemeId", async (req, res): Promise<void> => {
+  const params = parse(GetSchemeParams, req.params, res);
+  if (!params) return;
+  try {
+    const [desk, events] = await Promise.all([getArkaDesk(), getCorporateActionEvents()]);
+    const scheme = desk.schemes.find((candidate: any) => candidate.id === params.schemeId);
+    const seed = ARKA_SCHEME_SEED.find((candidate) => candidate.id === params.schemeId);
+    if (!scheme || !seed) {
+      res.status(404).json({ error: "Scheme not found." });
+      return;
+    }
+    const openEvents = events.filter((event) => !["Closed", "Reconciled"].includes(event.status));
+    const contributions = openEvents.flatMap((event) => {
+      const impact = event.schemeImpacts.find((candidate: any) => candidate.schemeId === scheme.id);
+      if (!impact?.affected) return [];
+      return [{
+        eventId: event.id,
+        eventName: `${event.issuer} ${event.eventType.toLowerCase()}`,
+        eventType: event.eventType,
+        navImpactPaise: impact.navImpactPaise ?? 0,
+        cashAmount: impact.cashAmount ?? 0,
+        cashDirection: impact.direction,
+        deadline: event.internalDeadline,
+        status: event.status,
+      }];
+    });
+    const fundingNeeded = contributions
+      .filter((contribution) => contribution.cashDirection === "Funding")
+      .reduce((total, contribution) => total + contribution.cashAmount, 0);
+    const cashAvailable = Number(seed.cashBudgetPaise ?? 0n) / 100;
+    const shortfall = Math.max(0, fundingNeeded - cashAvailable);
+    const rightsEvent = openEvents.find((event) => event.eventType === "Rights issue" && event.schemeImpacts.some((impact: any) => impact.schemeId === scheme.id && impact.affected));
+    const rightsImpact = rightsEvent?.schemeImpacts.find((impact: any) => impact.schemeId === scheme.id);
+    const currentExposure = scheme.holdingQuantity > 0 ? Number(((scheme.holdingQuantity * 120) / (Number(seed.aumPaise) / 100) * 100).toFixed(2)) : 0;
+    const postActionExposure = rightsImpact?.navImpactPaise != null ? scheme.capUsagePercent : currentExposure;
+    const holdings = openEvents.flatMap((event) => {
+      const impact = event.schemeImpacts.find((candidate: any) => candidate.schemeId === scheme.id);
+      const position = event.positions?.find((candidate: any) => candidate.fund === scheme.name);
+      if (!impact?.affected || !position) return [];
+      return [{
+        eventId: event.id,
+        eventName: `${event.issuer} ${event.eventType.toLowerCase()}`,
+        issuer: event.issuer,
+        security: event.security,
+        isin: event.securityMaster?.isin ?? "",
+        quantity: position.eligibleQuantity ?? position.settledQuantity ?? 0,
+        asOfDate: position.positionDate,
+      }];
+    });
+    const totalNavImpact = contributions.reduce((total, contribution) => total + contribution.navImpactPaise, 0);
+    const navImpactPercent = scheme.navPaise > 0 ? Number((totalNavImpact / scheme.navPaise * 100).toFixed(2)) : 0;
+    const hasCapBreach = contributions.some((contribution) => contribution.eventType === "Rights issue") && postActionExposure > 10;
+    const situation = contributions.length === 0
+      ? `Nothing is affecting ${scheme.name} right now.`
+      : `${contributions.length} corporate action${contributions.length === 1 ? "" : "s"} ${contributions.length === 1 ? "is" : "are"} moving ${scheme.name} this month. Together they cost ${totalNavImpact.toFixed(2)} paise per unit, ${navImpactPercent.toFixed(2)}% of NAV.${hasCapBreach ? " One of them breaches the SEBI single-issuer cap." : ""}`;
+    res.json(GetSchemeResponse.parse({
+      id: scheme.id,
+      name: scheme.name,
+      category: scheme.category,
+      situation,
+      contributions,
+      funding: {
+        needed: fundingNeeded,
+        available: cashAvailable,
+        shortfall,
+        status: shortfall > 0 ? "Short" : "Comfortable",
+      },
+      headroom: {
+        issuer: rightsEvent?.issuer ?? "Largest issuer",
+        currentPercent: currentExposure,
+        distanceToCapPercent: Math.max(0, 10 - currentExposure),
+        postActionPercent: postActionExposure,
+        capPercent: 10,
+        maximumRights: rightsImpact?.flag === "SEBI 10% headroom" ? (scheme.maxRightsByCap ?? 0) : 0,
+      },
+      holdings,
+    }));
+  } catch (error) {
+    workflowError(res, error);
+  }
 });
 
 router.get("/session", (req, res): void => {

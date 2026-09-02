@@ -162,6 +162,54 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * @summary Get a fund manager scheme accountability view
+ */
+export const GetSchemeParams = zod.object({
+  "schemeId": zod.coerce.string()
+})
+
+export const GetSchemeResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "situation": zod.string(),
+  "contributions": zod.array(zod.object({
+  "eventId": zod.string(),
+  "eventName": zod.string(),
+  "eventType": zod.string(),
+  "navImpactPaise": zod.number(),
+  "cashAmount": zod.number(),
+  "cashDirection": zod.string(),
+  "deadline": zod.string(),
+  "status": zod.string()
+})),
+  "funding": zod.object({
+  "needed": zod.number(),
+  "available": zod.number(),
+  "shortfall": zod.number(),
+  "status": zod.string()
+}),
+  "headroom": zod.object({
+  "issuer": zod.string(),
+  "currentPercent": zod.number(),
+  "distanceToCapPercent": zod.number(),
+  "postActionPercent": zod.number(),
+  "capPercent": zod.number(),
+  "maximumRights": zod.number()
+}),
+  "holdings": zod.array(zod.object({
+  "eventId": zod.string(),
+  "eventName": zod.string(),
+  "issuer": zod.string(),
+  "security": zod.string(),
+  "isin": zod.string(),
+  "quantity": zod.number(),
+  "asOfDate": zod.string()
+}))
+})
+
+
+/**
  * @summary Get the Arka Mutual Fund Bharat Renewables decision desk
  */
 export const GetArkaDeskResponse = zod.object({
@@ -242,6 +290,7 @@ export const GetArkaDeskResponse = zod.object({
   "entitlementRights": zod.number(),
   "decisionRights": zod.number(),
   "fullCashCrore": zod.number(),
+  "cashAvailableCrore": zod.number(),
   "exerciseCashPaise": zod.number(),
   "exerciseCashCrore": zod.number(),
   "navHitPaise": zod.number(),
@@ -367,6 +416,7 @@ export const SaveArkaDeskDecisionsResponse = zod.object({
   "entitlementRights": zod.number(),
   "decisionRights": zod.number(),
   "fullCashCrore": zod.number(),
+  "cashAvailableCrore": zod.number(),
   "exerciseCashPaise": zod.number(),
   "exerciseCashCrore": zod.number(),
   "navHitPaise": zod.number(),
@@ -485,6 +535,7 @@ export const SubmitArkaDeskResponse = zod.object({
   "entitlementRights": zod.number(),
   "decisionRights": zod.number(),
   "fullCashCrore": zod.number(),
+  "cashAvailableCrore": zod.number(),
   "exerciseCashPaise": zod.number(),
   "exerciseCashCrore": zod.number(),
   "navHitPaise": zod.number(),
@@ -607,6 +658,7 @@ export const ApproveArkaDeskResponse = zod.object({
   "entitlementRights": zod.number(),
   "decisionRights": zod.number(),
   "fullCashCrore": zod.number(),
+  "cashAvailableCrore": zod.number(),
   "exerciseCashPaise": zod.number(),
   "exerciseCashCrore": zod.number(),
   "navHitPaise": zod.number(),

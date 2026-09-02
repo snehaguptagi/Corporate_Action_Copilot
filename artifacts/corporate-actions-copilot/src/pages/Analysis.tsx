@@ -1,6 +1,6 @@
 import { useGetAnalysis } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, GitCompareArrows, ShieldAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatInr } from "@/lib/format";
@@ -15,7 +15,7 @@ export default function Analysis() {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
-        <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Cross-event analysis</h1>
+        <h1 className="mt-2 flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><GitCompareArrows className="h-6 w-6 text-primary" />Cross-event analysis</h1>
         <p className="mt-2 text-sm text-slate-600">Aggregate concentration risk, cross-event funding obligations, and historical execution performance per scheme.</p>
       </header>
       

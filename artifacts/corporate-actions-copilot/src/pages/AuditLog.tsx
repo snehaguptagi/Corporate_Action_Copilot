@@ -1,4 +1,5 @@
 import { useListAudit } from "@workspace/api-client-react";
+import { ScrollText } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ export default function AuditLog() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50/50">
       <div className="border-b bg-card px-8 py-4 shrink-0">
-        <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Audit trail</h1>
+        <h1 className="flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><ScrollText className="h-6 w-6 text-primary" />Audit trail</h1>
         <p className="text-sm text-slate-500 mt-1">Immutable record of all operational decisions and actions.</p>
       </div>
 

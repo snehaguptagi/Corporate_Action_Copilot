@@ -1,4 +1,5 @@
 import { useListTasks, useResolveTask, getListTasksQueryKey, getGetDashboardQueryKey } from "@workspace/api-client-react";
+import { ClipboardCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,7 +31,7 @@ export default function TasksList() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto">
       <div className="border-b bg-card px-8 py-4 shrink-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Approvals</h1>
+        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-slate-900"><ClipboardCheck className="h-6 w-6 text-primary" />Approvals</h1>
         <p className="text-sm text-slate-500 mt-1">Review and resolve operational flags and maker-checker tasks.</p>
       </div>
       

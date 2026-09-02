@@ -22,7 +22,7 @@ export default function Portfolio() {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
-        <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio</h1>
+        <h1 className="flex items-center gap-2.5 text-[30px] font-semibold tracking-[-0.03em] text-foreground"><Layers3 className="h-7 w-7 text-primary" />Portfolio</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ten schemes ranked by corporate-action exposure, concentration headroom, and cash readiness. Every row opens into its control view.</p>
       </header>
       <main className="flex-1 p-4 sm:p-5">
@@ -34,18 +34,18 @@ export default function Portfolio() {
                   <Layers3 className="h-3.5 w-3.5" />
                   Portfolio control view
                 </div>
-                <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">Exposure across the live book</h2>
+                <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground">Exposure across the live book</h2>
               </div>
               <span className="figure-inline text-xs font-medium text-muted-foreground">{schemes.length} schemes</span>
             </div>
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <PortfolioMetric label="Schemes touched" value={`${impactedSchemeCount}/${schemes.length}`} icon={<Layers3 className="h-4 w-4" />} />
               <PortfolioMetric label="Open actions" value={openActionCount} icon={<CheckCircle2 className="h-4 w-4" />} />
               <PortfolioMetric label="Flagged" value={flaggedSchemeCount} icon={<ShieldAlert className="h-4 w-4" />} />
               <PortfolioMetric label="Funding shortfall" value={totalShortfall > 0 ? formatInr(totalShortfall) : "None"} icon={<CircleDollarSign className="h-4 w-4" />} />
             </div>
-            <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <div className="mt-3">
+              <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted-foreground">
                 <span>Scheme coverage</span>
                 <span className="figure-inline">{impactedSchemeCount} impacted · {schemes.length - impactedSchemeCount} clear</span>
               </div>
@@ -222,9 +222,9 @@ function TriageRow({ icon, toneClass, label, hint, schemes }: { icon: React.Reac
 
 function PortfolioMetric({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-border/80 bg-background/70 px-3 py-3">
+    <div className="rounded-md border border-border/80 bg-background/70 px-3 py-2">
       <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{icon}{label}</div>
-      <div className="figure mt-2 text-left text-xl font-semibold tracking-tight text-foreground">{value}</div>
+      <div className="figure mt-1 text-left text-xl font-semibold tracking-tight text-foreground">{value}</div>
     </div>
   );
 }

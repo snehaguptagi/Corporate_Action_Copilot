@@ -1,5 +1,5 @@
 import { useGetDashboard, type EventSummary } from "@workspace/api-client-react";
-import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, CheckCircle2, CircleAlert, Radio } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, CheckCircle2, CircleAlert, LayoutDashboard, Radio } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -114,7 +114,7 @@ export default function Dashboard() {
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Corporate Actions Copilot</p>
-          <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio operations</h1>
+          <h1 className="mt-2 flex items-center justify-center gap-2.5 text-[30px] font-semibold tracking-[-0.03em] text-foreground"><LayoutDashboard className="h-7 w-7 text-primary" />Portfolio operations</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Monitor incoming notices, assess scheme impact, and control decisions from one place.</p>
         </div>
       </header>

@@ -251,7 +251,7 @@
     border: 1px solid hsl(var(--border));
     border-radius: 0.45rem;
     background: hsl(var(--card));
-    padding: 1.25rem;
+    padding: 0.875rem;
     box-shadow: 0 8px 24px hsl(var(--foreground) / 0.035);
   }
 

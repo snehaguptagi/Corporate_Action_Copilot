@@ -355,11 +355,14 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
   const eventId = `evt-intake-${randomUUID()}`;
   const allEvents = await getCorporateActionEvents();
   const isin = values.securityIdentifier || "";
+  const isPublicWebDiscovery = draft.source.type === "url";
   const isCustodianNotification = draft.source.type === "structured-feed" || /SBI-SG|MT564/i.test(draft.source.label);
   const matchingSighting = isCustodianNotification
     ? allEvents.find((candidate) => candidate.isEarlySighting && candidate.eventType === eventType && candidate.securityMaster?.isin === isin)
     : undefined;
-  const knownHolding = allEvents.find((candidate) => !candidate.isEarlySighting && candidate.securityMaster?.isin === isin);
+  const knownHolding = isPublicWebDiscovery
+    ? undefined
+    : allEvents.find((candidate) => !candidate.isEarlySighting && candidate.securityMaster?.isin === isin);
   const decisionBlockedReason = "Awaiting custodian notification. You can review the likely impact now, but an instruction cannot be sent until SBI-SG confirms this action.";
   const now = new Date();
   const fallbackDeadline = new Date(now.getTime() + 14 * 86_400_000).toISOString();
@@ -383,17 +386,21 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
     amount: 0,
     currency: "INR",
     receivedAt: draft.source.receivedAt,
-    source: isCustodianNotification ? "Custodian · SBI-SG" : "Exchange filing · NSE/BSE",
+    source: isCustodianNotification ? "Custodian · SBI-SG" : isPublicWebDiscovery ? "Public web discovery" : "Exchange filing · NSE/BSE",
     sourceRecords: [{
-      id: `${eventId}-${isCustodianNotification ? "sbi" : "exchange"}`,
-      channel: isCustodianNotification ? "Custodian" : "Exchange announcement",
-      provider: isCustodianNotification ? "SBI-SG" : "NSE/BSE",
-      messageType: isCustodianNotification ? "MT564" : "SEBI LODR filing",
+      id: `${eventId}-${isCustodianNotification ? "sbi" : isPublicWebDiscovery ? "web" : "exchange"}`,
+      channel: isCustodianNotification ? "Custodian" : isPublicWebDiscovery ? "Public web source" : "Exchange announcement",
+      provider: isCustodianNotification ? "SBI-SG" : isPublicWebDiscovery ? new URL(draft.source.sourceUrl).hostname : "NSE/BSE",
+      messageType: isCustodianNotification ? "MT564" : isPublicWebDiscovery ? "URL evidence" : "SEBI LODR filing",
       receivedAt: draft.source.receivedAt,
       assertedFields: Object.fromEntries(draft.terms.map((item) => [item.key, item.value])),
       primary: true,
     }],
-    sourceAgreement: isCustodianNotification ? "Custodian terms received and compared with the early sighting." : "Awaiting SBI-SG MT564 confirmation.",
+    sourceAgreement: isCustodianNotification
+      ? "Custodian terms received and compared with the early sighting."
+      : isPublicWebDiscovery
+        ? "One public web source captured. Original exchange or issuer evidence and custodian confirmation are still required."
+        : "Awaiting SBI-SG MT564 confirmation.",
     isEarlySighting: !isCustodianNotification,
     impactBasis: isCustodianNotification ? "Confirmed" : "Indicative",
     decisionBlockedReason: isCustodianNotification ? "" : decisionBlockedReason,
@@ -425,7 +432,7 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
     tasks: [],
     validation: { missingTerms: [], isReady: isCustodianNotification },
     calculation: { calculationRunAt: "", rounding: "Round cash to 2 decimal places and securities down to whole units unless notice terms specify otherwise.", assumptions: "Holdings matching must be completed before calculation.", sourceRule: "CA-CONTROL-003" },
-    audit: [{ id: `audit-${eventId}`, eventId, action: isCustodianNotification ? "Custodian notification received" : "Early sighting logged", actor: actor.name, actorId: actor.id, actorRole: actor.role, actorType: "user", timestamp: new Date().toISOString(), detail: isCustodianNotification ? "SBI-SG MT564 terms were captured." : "Exchange evidence was captured for indicative impact planning.", previousValue: "", newValue: isCustodianNotification ? "Under review" : "Early sighting", reason: "", evidenceId: draft.id, workflowStatus: isCustodianNotification ? "Under review" : "Early sighting" }],
+    audit: [{ id: `audit-${eventId}`, eventId, action: isCustodianNotification ? "Custodian notification received" : "Early sighting logged", actor: actor.name, actorId: actor.id, actorRole: actor.role, actorType: "user", timestamp: new Date().toISOString(), detail: isCustodianNotification ? "SBI-SG MT564 terms were captured." : isPublicWebDiscovery ? "A public web source was captured for verification. No custodian or portfolio facts were inferred." : "Exchange evidence was captured for indicative impact planning.", previousValue: "", newValue: isCustodianNotification ? "Under review" : "Early sighting", reason: "", evidenceId: draft.id, workflowStatus: isCustodianNotification ? "Under review" : "Early sighting" }],
     securityMaster: { securityId: "", isin: values.securityIdentifier || "", ticker: "", securityName: values.issuer || "", currency: "N/A", market: "", status: "Pending match" },
   };
   const { corporateActionEventsTable, db } = await import("@workspace/db");

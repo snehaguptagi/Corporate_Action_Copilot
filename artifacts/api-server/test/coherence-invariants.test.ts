@@ -44,6 +44,12 @@ test("seed source contains no hardcoded calendar date or timestamp literal", () 
 test("seeded events include six source channels and one explicit disagreement", () => {
   const events = getSeededEventSnapshot();
   for (const event of events.filter((candidate) => !candidate.isEarlySighting)) {
+    if (event.id === "evt-near-miss") {
+      assert.equal(event.sourceRecords.length, 1);
+      assert.equal(event.sourceRecords[0].provider, "Arka Mutual Fund POC");
+      assert.match(event.sourceAgreement, /No live source evidence/);
+      continue;
+    }
     assert.equal(event.sourceRecords.length, 6);
     assert.equal(event.sourceRecords.find((source: any) => source.primary)?.provider, "SBI-SG");
     assert.equal(event.sourceRecords.find((source: any) => source.primary)?.messageType, "MT564");

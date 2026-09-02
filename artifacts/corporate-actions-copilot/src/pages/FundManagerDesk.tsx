@@ -169,11 +169,15 @@ export default function FundManagerDesk() {
   };
 
   const primarySource = data.sourceRecords.find((source) => source.primary);
+  const isPublicWebDiscovery = data.source === "Public web discovery";
+  const isPocScenario = !data.id.startsWith("evt-intake-");
   const daysLeft = daysUntil(data.internalDeadlineAt);
   const statement1 = actionStatement(data);
   const statement2 = <><Figure>{daysLeft ?? "No"}</Figure> day{daysLeft === 1 ? "" : "s"} left. Decide by <Figure>{data.internalDeadline}</Figure>.</>;
-  const statement3 = primarySource
-    ? <>Received <Figure>{formatIstDate(primarySource.receivedAt)}</Figure> from {data.isEarlySighting ? "the exchange" : "your custodian"} ({primarySource.provider}, {primarySource.messageType}). {data.sourceAgreement}</>
+  const statement3 = isPocScenario
+    ? <>Simulated POC scenario. The issuer, notice, holdings and source records on this screen are not live fetched data.</>
+    : primarySource
+    ? <>Received <Figure>{formatIstDate(primarySource.receivedAt)}</Figure> from {isPublicWebDiscovery ? "a public web source" : data.isEarlySighting ? "the exchange" : "your custodian"} ({primarySource.provider}, {primarySource.messageType}). {data.sourceAgreement}</>
     : <>Received <Figure>{formatIstDate(data.receivedAt)}</Figure> from {data.source}. {data.sourceAgreement}</>;
   const statusCopy = fundManagerStatus(data.status, data.isEarlySighting);
 
@@ -186,6 +190,8 @@ export default function FundManagerDesk() {
               <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 <Landmark className="h-3.5 w-3.5" />
                 Arka Mutual Fund
+                {isPocScenario && <Badge variant="outline">Simulated POC scenario</Badge>}
+                {isPublicWebDiscovery && <Badge variant="warning">Unverified web discovery</Badge>}
               </div>
               <h1 className="text-[28px] font-semibold tracking-tight text-foreground">{data.issuer} {data.eventType.toLowerCase()}</h1>
               <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-foreground">
@@ -248,7 +254,7 @@ export default function FundManagerDesk() {
                       </TableRow>
                     ))}
                      {affectedSchemes.length === 0 && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">No affected schemes.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">{isPublicWebDiscovery ? "No portfolio impact calculated. Match holdings and confirm authoritative evidence first." : "No affected schemes."}</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

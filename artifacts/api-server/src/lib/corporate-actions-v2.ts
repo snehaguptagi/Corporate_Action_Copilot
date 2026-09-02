@@ -250,6 +250,21 @@ if (concentrationCreepEvent) {
   concentrationCreepEvent.analysisExposureChangePercent = 1.96;
 }
 
+const konkanPocScenario = preloadedEvents.find((event) => event.id === "evt-near-miss");
+if (konkanPocScenario) {
+  konkanPocScenario.source = "Simulated POC source";
+  konkanPocScenario.sourceRecords = [{
+    id: "evt-near-miss-simulated",
+    channel: "Simulated scenario",
+    provider: "Arka Mutual Fund POC",
+    messageType: "Training fixture",
+    receivedAt: konkanPocScenario.receivedAt,
+    assertedFields: {},
+    primary: true,
+  }];
+  konkanPocScenario.sourceAgreement = "No live source evidence is attached. All notice, holding and election values are simulated for workflow training.";
+}
+
 const OVERLAP_SCHEMES: Record<string, string[]> = {
   "evt-ind-dividend-review": ["arka-flexi-cap", "arka-nifty-50"],
   "evt-ind-split": ["arka-large-cap"],
@@ -1375,7 +1390,10 @@ export async function getCorporateActionEvents(): Promise<EventData[]> {
   const rows = await db.select().from(corporateActionEventsTable).orderBy(desc(corporateActionEventsTable.updatedAt));
   return rows.map((row) => {
     const stored = row.data as EventData;
-    const event = INDIAN_EVENT_META[stored.id] ? resolveSeedEvent(stored) : clone(stored);
+    const corrected = stored.id === "evt-near-miss"
+      ? { ...stored, source: konkanPocScenario?.source, sourceRecords: konkanPocScenario?.sourceRecords, sourceAgreement: konkanPocScenario?.sourceAgreement }
+      : stored;
+    const event = INDIAN_EVENT_META[stored.id] ? resolveSeedEvent(corrected) : clone(corrected);
     refreshValidation(event);
     return event;
   });
@@ -1387,7 +1405,10 @@ export async function getCorporateActionEvent(id: string): Promise<EventData | n
   const [row] = await db.select().from(corporateActionEventsTable).where(eq(corporateActionEventsTable.id, id));
   if (!row) return null;
   const stored = row.data as EventData;
-  const event = INDIAN_EVENT_META[stored.id] ? resolveSeedEvent(stored) : clone(stored);
+  const corrected = stored.id === "evt-near-miss"
+    ? { ...stored, source: konkanPocScenario?.source, sourceRecords: konkanPocScenario?.sourceRecords, sourceAgreement: konkanPocScenario?.sourceAgreement }
+    : stored;
+  const event = INDIAN_EVENT_META[stored.id] ? resolveSeedEvent(corrected) : clone(corrected);
   refreshValidation(event);
   return event;
 }

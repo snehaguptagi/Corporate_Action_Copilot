@@ -28,7 +28,7 @@ export default function SchemeDetail() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
         <div className="mx-auto max-w-6xl">
           <Link href="/portfolio" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
             <ArrowLeft className="h-3.5 w-3.5" /> Portfolio
@@ -36,7 +36,7 @@ export default function SchemeDetail() {
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">{scheme.category}</p>
            <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">{scheme.name}</h1>
            <p className="mt-4 max-w-4xl text-base leading-7 text-foreground">{scheme.situation}</p>
-          <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <SchemeFact label="Fund size" value={`₹${scheme.aumCrore.toLocaleString("en-IN")} cr`} />
             <SchemeFact label="NAV per unit" value={`₹${scheme.navRupees.toFixed(2)}`} />
             <SchemeFact label="Holdings" value={`${scheme.totalHoldings}`} />
@@ -46,7 +46,7 @@ export default function SchemeDetail() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-7 px-5 py-8 sm:px-8">
+      <main className="mx-auto max-w-6xl space-y-4 px-5 py-4 sm:px-8">
         <section>
           <SectionTitle number="1">What is moving it</SectionTitle>
           <Card className="overflow-hidden shadow-sm">

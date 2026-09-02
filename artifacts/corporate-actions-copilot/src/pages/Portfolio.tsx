@@ -18,12 +18,12 @@ export default function Portfolio() {
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
         <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ten schemes ranked by corporate-action exposure, concentration headroom, and cash readiness. Every row opens into its control view.</p>
       </header>
-      <main className="flex-1 p-5 sm:p-8">
-        <section className="mb-6 grid gap-4 xl:grid-cols-[1.35fr_0.9fr]">
+      <main className="flex-1 p-4 sm:p-5">
+        <section className="mb-4 grid gap-3 xl:grid-cols-[1.35fr_0.9fr]">
           <div className="dashboard-panel dashboard-panel--accent">
             <div className="flex items-start justify-between gap-4">
               <div>

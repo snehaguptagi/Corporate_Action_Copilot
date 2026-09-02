@@ -36,15 +36,15 @@ function Section({ index, title, summary, defaultOpen = true, children }: { inde
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
-      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-stone-50 sm:px-5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">{index}</span>
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-stone-50 sm:px-5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">{index}</span>
         <span className="min-w-0 flex-1">
           <span className="block text-lg font-semibold tracking-tight text-foreground">{title}</span>
           {summary && <span className="block truncate text-xs text-muted-foreground">{summary}</span>}
         </span>
         <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && <div className="border-t border-border/60 p-4 sm:p-5">{children}</div>}
+      {open && <div className="border-t border-border/60 p-3 sm:p-4">{children}</div>}
     </section>
   );
 }
@@ -231,8 +231,8 @@ export default function FundManagerDesk() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-background">
-      <div className="mx-auto w-full max-w-[1560px] px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-5 border-b border-border pb-5">
+      <div className="mx-auto w-full max-w-[1560px] px-4 py-4 sm:px-6 lg:px-8">
+        <header className="mb-3 border-b border-border pb-3">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
@@ -252,20 +252,20 @@ export default function FundManagerDesk() {
           </div>
         </header>
 
-        <div className="space-y-8">
+        <div className="space-y-3">
           {data.isEarlySighting && (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950">
               <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
             </div>
           )}
           <Section index="01" title="What it is" summary="Terms, deadline and security identifiers">
-            <div className="space-y-3 text-base leading-7 text-foreground">
+            <div className="space-y-2 text-sm leading-6 text-foreground">
               <p>{statement1}</p>
               <p>{statement2}</p>
               <p>{statement3}</p>
             </div>
             {!isMandatory && daysLeft !== null && (
-              <div className="mt-5 rounded-md border border-border/60 bg-stone-50 p-4">
+              <div className="mt-3 rounded-md border border-border/60 bg-stone-50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
                   <span>Received <span className="figure-inline">{formatIstDate(data.receivedAt)}</span></span>
                   <span className={daysLeft <= 3 ? "font-semibold text-destructive" : "font-semibold text-foreground"}>
@@ -278,7 +278,7 @@ export default function FundManagerDesk() {
                 </div>
               </div>
             )}
-            <div className="mt-5 flex flex-wrap gap-4 border-t border-border/50 pt-4 text-xs text-muted-foreground">
+            <div className="mt-3 flex flex-wrap gap-4 border-t border-border/50 pt-3 text-xs text-muted-foreground">
               <span>ISIN: {data.securityMaster?.isin ?? "N/A"}</span>
               <span>Ticker: {data.securityMaster?.ticker ?? "N/A"}</span>
               <span>Ref: {data.reference}</span>
@@ -287,7 +287,7 @@ export default function FundManagerDesk() {
 
           <Section index="02" title="What it touches" summary={`${affectedSchemes.length} affected scheme${affectedSchemes.length === 1 ? "" : "s"}${totalExpectedCash > 0 ? ` · ${formatInr(totalExpectedCash)} expected` : ""}`}>
             {affectedSchemes.length > 0 && (
-              <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <ImpactStat label="Affected schemes" value={String(affectedSchemes.length)} />
                 <ImpactStat label="Eligible quantity" value={integer.format(totalEligibleQuantity)} />
                 <ImpactStat label="Expected cash" value={totalExpectedCash > 0 ? formatInr(totalExpectedCash) : "None"} />

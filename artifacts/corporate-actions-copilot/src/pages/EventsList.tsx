@@ -51,7 +51,7 @@ export default function EventsList() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50/50">
-      <div className="border-b bg-card px-8 py-6">
+      <div className="border-b bg-card px-8 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function EventsList() {
         </div>
       </div>
       <div className="p-8">
-        <Card className="mb-6 border-amber-200 bg-amber-50/30">
+        <Card className="mb-4 border-amber-200 bg-amber-50/30">
           <CardHeader className="border-b border-amber-200 bg-amber-50/60">
             <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
               <div>
@@ -102,7 +102,7 @@ export default function EventsList() {
               ) : (
                 <div className="divide-y">
                   {discovery.notices.map((notice) => (
-                    <article key={notice.id} className="grid gap-4 px-5 py-5 lg:grid-cols-[1fr_auto]">
+                    <article key={notice.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[1fr_auto]">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold text-slate-900">{notice.title}</h3>

@@ -103,21 +103,21 @@ export default function NoticeIntake() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50/50">
-      <header className="border-b bg-card px-5 py-6 sm:px-8">
+      <header className="border-b bg-card px-5 py-4 sm:px-8">
         <div className="mx-auto max-w-3xl">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Log an early sighting</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">Capture an NSE or BSE filing before the custodian notification arrives. The result is indicative and cannot be acted on.</p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
+      <main className="mx-auto max-w-3xl px-5 py-4 sm:px-8">
         <Card>
           <CardHeader>
             <CardTitle>Provide exchange evidence</CardTitle>
             <CardDescription>Upload an NSE/BSE filing or paste its text. SBI-SG must still confirm the action by MT564.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {errorMsg && (
                 <div className="flex items-center gap-2 rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-800 border border-rose-200">
                   <AlertCircle className="h-4 w-4 shrink-0" />

@@ -14,18 +14,18 @@ export default function Analysis() {
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
         <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Cross-event analysis</h1>
         <p className="mt-2 text-sm text-slate-600">Aggregate concentration risk, cross-event funding obligations, and historical execution performance per scheme.</p>
       </header>
       
-      <main className="flex-1 space-y-10 p-5 sm:p-8">
+      <main className="flex-1 space-y-5 p-4 sm:p-5">
         <section aria-labelledby="historical-performance">
           <div className="mb-4">
             <h2 id="historical-performance" className="text-lg font-semibold text-slate-950">Historical performance</h2>
           </div>
           
-          <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="rounded border border-stone-200 bg-card p-4 shadow-sm">
               <div className="mb-1 text-xs font-medium text-slate-500">Value captured</div>
               <div className="figure text-xl font-semibold text-emerald-700">{formatInr(analysis.history.capturedAmount)}</div>
@@ -93,7 +93,7 @@ export default function Analysis() {
             <h2 id="cross-event-risks" className="text-lg font-semibold text-slate-950">Cross-event concentration and funding <span className="text-sm font-normal text-slate-500">(10% issuer cap)</span></h2>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             {analysis.schemes.filter(scheme => scheme.openEventCount > 0).map(scheme => (
                <Card key={scheme.schemeId} className="overflow-hidden border border-stone-200 shadow-sm">
                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 bg-muted/50 px-5 py-4">

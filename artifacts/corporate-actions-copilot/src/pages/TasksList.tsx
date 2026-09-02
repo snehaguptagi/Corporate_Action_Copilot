@@ -29,7 +29,7 @@ export default function TasksList() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto">
-      <div className="border-b bg-card px-8 py-6 shrink-0">
+      <div className="border-b bg-card px-8 py-4 shrink-0">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Approvals</h1>
         <p className="text-sm text-slate-500 mt-1">Review and resolve operational flags and maker-checker tasks.</p>
       </div>

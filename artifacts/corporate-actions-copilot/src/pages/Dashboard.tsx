@@ -111,7 +111,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-card px-5 py-8 sm:px-8">
+      <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Corporate Actions Copilot</p>
           <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio operations</h1>
@@ -119,11 +119,11 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="flex-1 space-y-6 p-5 sm:p-8">
+      <main className="flex-1 space-y-4 p-4 sm:p-5">
         <section aria-labelledby="morning-status">
            <div className="overflow-hidden rounded border border-primary/30 bg-card shadow-sm">
              <div className="h-1 bg-primary" />
-            <div className="flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-4 px-5 py-4 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
               <div>
                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                   <CalendarClock className="h-4 w-4" />
@@ -165,12 +165,12 @@ export default function Dashboard() {
                 Live ledger
               </span>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="mt-4 grid grid-cols-3 gap-3">
               <VisualMetric label="Notices" value={dashboard.arrivalCount24h} detail="last 24 hours" />
               <VisualMetric label="Schemes touched" value={`${dashboard.impactedSchemeCount}/${dashboard.totalSchemeCount}`} detail="portfolio coverage" />
               <VisualMetric label="Needs attention" value={attentionCount} detail="decision or exception" />
             </div>
-            <div className="mt-6">
+            <div className="mt-4">
               <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
                 <span>Scheme coverage</span>
                 <span className="figure-inline">{dashboard.impactedSchemeCount} impacted · {unaffectedSchemeRows.length} unaffected</span>

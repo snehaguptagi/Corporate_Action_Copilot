@@ -124,6 +124,29 @@ export default function Dashboard() {
       </header>
 
       <main className="flex-1 space-y-4 p-4 sm:p-5">
+        <section aria-label="Attention queue" className="dashboard-panel">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">What needs a look</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Ranked by urgency, then deadline.</p>
+            </div>
+            <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
+          </div>
+          <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+            {queue.slice(0, 6).map((event) => (
+              <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted">
+                <span className={`h-8 w-1 rounded-full ${event.attention || isDecisionNeeded(event.status) ? "bg-warning" : "bg-success"}`} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-foreground">{event.issuer}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{actionName(event.eventType)} · {relativeArrival(event.receivedAt)}</span>
+                </span>
+                {event.attention || isDecisionNeeded(event.status) ? <CircleAlert className="h-4 w-4 shrink-0 text-warning" /> : <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />}
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <section aria-label="Funding and headroom" className="grid gap-4 lg:grid-cols-2">
           <FundingByWeek events={sortedEvents} now={now} />
           {schemes ? <CapHeadroom schemes={schemes} /> : <div className="dashboard-panel text-sm text-muted-foreground">Loading scheme headroom...</div>}
@@ -133,30 +156,8 @@ export default function Dashboard() {
           <DeadlineTimeline events={sortedEvents} now={now} />
         </section>
 
-        <section aria-label="Volume versus money and attention queue" className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+        <section aria-label="Volume versus money">
           <VolumeVersusValue events={sortedEvents} />
-          <div className="dashboard-panel">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">What needs a look</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Ranked by urgency, then deadline.</p>
-              </div>
-              <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
-            </div>
-            <div className="mt-3 space-y-1">
-              {queue.slice(0, 5).map((event) => (
-                <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted">
-                  <span className={`h-8 w-1 rounded-full ${event.attention || isDecisionNeeded(event.status) ? "bg-warning" : "bg-success"}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-foreground">{event.issuer}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{actionName(event.eventType)} · {relativeArrival(event.receivedAt)}</span>
-                  </span>
-                  {event.attention || isDecisionNeeded(event.status) ? <CircleAlert className="h-4 w-4 shrink-0 text-warning" /> : <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />}
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                </Link>
-              ))}
-            </div>
-          </div>
         </section>
 
         <section aria-labelledby="inbound-actions">

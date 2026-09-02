@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react"
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, ShieldAlert, LogIn, LogOut, BriefcaseBusiness, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { LayoutDashboard, FileText, ShieldAlert, LogIn, LogOut, BriefcaseBusiness, Building2, ChartNoAxesCombined, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { useAuth } from "@workspace/replit-auth-web"
 import {
   getGetSessionQueryKey,
@@ -45,6 +45,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/portfolio", label: "Portfolio", icon: BriefcaseBusiness },
+    { href: "/issuers", label: "Issuers", icon: Building2 },
     { href: "/events", label: "Corporate actions", icon: FileText },
     { href: "/analysis", label: "Analysis", icon: ChartNoAxesCombined },
   ]

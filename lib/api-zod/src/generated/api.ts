@@ -134,6 +134,70 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary List every issuer the house holds, ranked by exposure
+ */
+export const ListIssuersResponseItem = zod.object({
+  "issuerId": zod.string(),
+  "issuer": zod.string(),
+  "isin": zod.string(),
+  "houseExposureAmount": zod.number(),
+  "percentOfAum": zod.number(),
+  "schemesHolding": zod.number(),
+  "openActionCount": zod.number(),
+  "tightestHeadroomPercent": zod.number().nullable(),
+  "attention": zod.string().nullable()
+})
+export const ListIssuersResponse = zod.array(ListIssuersResponseItem)
+
+
+/**
+ * @summary Get the issuer accountability view
+ */
+export const GetIssuerParams = zod.object({
+  "issuerId": zod.coerce.string()
+})
+
+export const GetIssuerResponse = zod.object({
+  "issuerId": zod.string(),
+  "issuer": zod.string(),
+  "isin": zod.string(),
+  "situation": zod.string(),
+  "houseExposure": zod.object({
+  "totalAmount": zod.number(),
+  "percentOfAum": zod.number(),
+  "schemeCount": zod.number(),
+  "totalSchemeCount": zod.number(),
+  "largestSchemeName": zod.string(),
+  "largestSchemeAmount": zod.number()
+}),
+  "perScheme": zod.array(zod.object({
+  "schemeId": zod.string(),
+  "schemeName": zod.string(),
+  "holdingQuantity": zod.number(),
+  "valueAmount": zod.number(),
+  "percentOfNav": zod.number(),
+  "headroomPercent": zod.number().nullable()
+})),
+  "events": zod.array(zod.object({
+  "eventId": zod.string(),
+  "eventName": zod.string(),
+  "eventType": zod.string(),
+  "receivedAt": zod.string(),
+  "status": zod.string(),
+  "open": zod.boolean(),
+  "capturedAmount": zod.number().nullable(),
+  "forfeitedAmount": zod.number().nullable()
+})),
+  "summary": zod.object({
+  "actionsLastQuarter": zod.number(),
+  "receivedAmount": zod.number(),
+  "forfeitedAmount": zod.number(),
+  "openDecisionCount": zod.number()
+})
+})
+
+
+/**
  * @summary Get operations dashboard summary
  */
 export const GetDashboardResponse = zod.object({
@@ -145,6 +209,32 @@ export const GetDashboardResponse = zod.object({
   "totalFunding": zod.number(),
   "nearestDeadline": zod.string(),
   "nearestFundingIssuer": zod.string(),
+  "needsYouCount": zod.number(),
+  "needsNothingCount": zod.number(),
+  "atStakeAmount": zod.number(),
+  "dueWithin3DaysCount": zod.number(),
+  "settlementBreakCount": zod.number(),
+  "topHouseExposures": zod.array(zod.object({
+  "issuerId": zod.string(),
+  "issuer": zod.string(),
+  "houseExposureAmount": zod.number(),
+  "schemesHolding": zod.number(),
+  "tightestHeadroomPercent": zod.number().nullable(),
+  "attention": zod.string().nullable()
+})),
+  "dataTrust": zod.object({
+  "conflictingSourceCount": zod.number(),
+  "lastDeliveryChannel": zod.string(),
+  "lastDeliveryAt": zod.string(),
+  "allSynthetic": zod.boolean()
+}),
+  "lastQuarter": zod.object({
+  "capturedAmount": zod.number(),
+  "forfeitedAmount": zod.number(),
+  "lapsedCount": zod.number(),
+  "deadlinesMet": zod.number(),
+  "deadlinesTotal": zod.number()
+}),
   "inboundEvents": zod.array(zod.object({
   "id": zod.string(),
   "reference": zod.string(),

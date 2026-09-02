@@ -23,6 +23,9 @@ import {
   GetEventResponse,
   GetIntakeDraftParams,
   GetIntakeDraftResponse,
+  GetIssuerParams,
+  GetIssuerResponse,
+  ListIssuersResponse,
   ListAuditQueryParams,
   ListAuditResponse,
   ListEventsQueryParams,
@@ -53,6 +56,8 @@ import {
   approveControlledEvent,
   buildDashboard,
   buildAnalysis,
+  buildIssuerDetail,
+  buildIssuerSummaries,
   issuerExposuresForScheme,
   buildSchemeSummaries,
   calculateEventImpacts,
@@ -163,6 +168,23 @@ router.get("/analysis", async (_req, res): Promise<void> => {
 router.get("/schemes", async (_req, res): Promise<void> => {
   const [events, desk] = await Promise.all([getCorporateActionEvents(), getArkaDesk()]);
   res.json(ListSchemesResponse.parse(buildSchemeSummaries(events, desk)));
+});
+
+router.get("/issuers", async (_req, res): Promise<void> => {
+  const [events, desk] = await Promise.all([getCorporateActionEvents(), getArkaDesk()]);
+  res.json(ListIssuersResponse.parse(buildIssuerSummaries(events, desk)));
+});
+
+router.get("/issuers/:issuerId", async (req, res): Promise<void> => {
+  const params = parse(GetIssuerParams, req.params, res);
+  if (!params) return;
+  const [events, desk] = await Promise.all([getCorporateActionEvents(), getArkaDesk()]);
+  const detail = buildIssuerDetail(events, desk, params.issuerId);
+  if (!detail) {
+    res.status(404).json({ error: "Issuer not found." });
+    return;
+  }
+  res.json(GetIssuerResponse.parse(detail));
 });
 
 router.get("/schemes/:schemeId", async (req, res): Promise<void> => {

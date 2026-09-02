@@ -183,6 +183,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /issuers:
+    get:
+      operationId: listIssuers
+      tags: [issuers]
+      summary: List every issuer the house holds, ranked by exposure
+      responses:
+        "200":
+          description: Held issuers ranked by house exposure
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IssuerSummary"
+  /issuers/{issuerId}:
+    get:
+      operationId: getIssuer
+      tags: [issuers]
+      summary: Get the issuer accountability view
+      parameters:
+        - name: issuerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Issuer accountability view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuerDetail"
+        "404":
+          description: Issuer not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /dashboard:
     get:
       operationId: getDashboard
@@ -837,7 +874,7 @@ components:
         - status
     Dashboard:
       type: object
-      required: [arrivalCount24h, arrivalsAffectingSchemes24h, portfolioEventCount, impactedSchemeCount, totalSchemeCount, totalFunding, nearestDeadline, nearestFundingIssuer, inboundEvents, schemes]
+      required: [arrivalCount24h, arrivalsAffectingSchemes24h, portfolioEventCount, impactedSchemeCount, totalSchemeCount, totalFunding, nearestDeadline, nearestFundingIssuer, needsYouCount, needsNothingCount, atStakeAmount, dueWithin3DaysCount, settlementBreakCount, topHouseExposures, dataTrust, lastQuarter, inboundEvents, schemes]
       properties:
         arrivalCount24h: { type: number }
         arrivalsAffectingSchemes24h: { type: number }
@@ -847,6 +884,19 @@ components:
         totalFunding: { type: number }
         nearestDeadline: { type: string }
         nearestFundingIssuer: { type: string }
+        needsYouCount: { type: number }
+        needsNothingCount: { type: number }
+        atStakeAmount: { type: number }
+        dueWithin3DaysCount: { type: number }
+        settlementBreakCount: { type: number }
+        topHouseExposures:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardHouseExposure"
+        dataTrust:
+          $ref: "#/components/schemas/DashboardDataTrust"
+        lastQuarter:
+          $ref: "#/components/schemas/DashboardLastQuarter"
         inboundEvents:
           type: array
           items:
@@ -855,6 +905,106 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SchemeSummary"
+    DashboardHouseExposure:
+      type: object
+      required: [issuerId, issuer, houseExposureAmount, schemesHolding, tightestHeadroomPercent, attention]
+      properties:
+        issuerId: { type: string }
+        issuer: { type: string }
+        houseExposureAmount: { type: number }
+        schemesHolding: { type: number }
+        tightestHeadroomPercent: { type: ["number", "null"] }
+        attention: { type: ["string", "null"] }
+    DashboardDataTrust:
+      type: object
+      required: [conflictingSourceCount, lastDeliveryChannel, lastDeliveryAt, allSynthetic]
+      properties:
+        conflictingSourceCount: { type: number }
+        lastDeliveryChannel: { type: string }
+        lastDeliveryAt: { type: string }
+        allSynthetic: { type: boolean }
+    DashboardLastQuarter:
+      type: object
+      required: [capturedAmount, forfeitedAmount, lapsedCount, deadlinesMet, deadlinesTotal]
+      properties:
+        capturedAmount: { type: number }
+        forfeitedAmount: { type: number }
+        lapsedCount: { type: number }
+        deadlinesMet: { type: number }
+        deadlinesTotal: { type: number }
+    IssuerSummary:
+      type: object
+      required: [issuerId, issuer, isin, houseExposureAmount, percentOfAum, schemesHolding, openActionCount, tightestHeadroomPercent, attention]
+      properties:
+        issuerId: { type: string }
+        issuer: { type: string }
+        isin: { type: string }
+        houseExposureAmount: { type: number }
+        percentOfAum: { type: number }
+        schemesHolding: { type: number }
+        openActionCount: { type: number }
+        tightestHeadroomPercent: { type: ["number", "null"] }
+        attention: { type: ["string", "null"] }
+    IssuerDetail:
+      type: object
+      required: [issuerId, issuer, isin, situation, houseExposure, perScheme, events, summary]
+      properties:
+        issuerId: { type: string }
+        issuer: { type: string }
+        isin: { type: string }
+        situation: { type: string }
+        houseExposure:
+          $ref: "#/components/schemas/IssuerHouseExposure"
+        perScheme:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssuerSchemeRow"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssuerEventRow"
+        summary:
+          $ref: "#/components/schemas/IssuerQuarterSummary"
+    IssuerHouseExposure:
+      type: object
+      required: [totalAmount, percentOfAum, schemeCount, totalSchemeCount, largestSchemeName, largestSchemeAmount]
+      properties:
+        totalAmount: { type: number }
+        percentOfAum: { type: number }
+        schemeCount: { type: number }
+        totalSchemeCount: { type: number }
+        largestSchemeName: { type: string }
+        largestSchemeAmount: { type: number }
+    IssuerSchemeRow:
+      type: object
+      required: [schemeId, schemeName, holdingQuantity, valueAmount, percentOfNav, headroomPercent]
+      properties:
+        schemeId: { type: string }
+        schemeName: { type: string }
+        holdingQuantity: { type: number }
+        valueAmount: { type: number }
+        percentOfNav: { type: number }
+        headroomPercent: { type: ["number", "null"] }
+    IssuerEventRow:
+      type: object
+      required: [eventId, eventName, eventType, receivedAt, status, open, capturedAmount, forfeitedAmount]
+      properties:
+        eventId: { type: string }
+        eventName: { type: string }
+        eventType: { type: string }
+        receivedAt: { type: string }
+        status: { type: string }
+        open: { type: boolean }
+        capturedAmount: { type: ["number", "null"] }
+        forfeitedAmount: { type: ["number", "null"] }
+    IssuerQuarterSummary:
+      type: object
+      required: [actionsLastQuarter, receivedAmount, forfeitedAmount, openDecisionCount]
+      properties:
+        actionsLastQuarter: { type: number }
+        receivedAmount: { type: number }
+        forfeitedAmount: { type: number }
+        openDecisionCount: { type: number }
     Analysis:
       type: object
       required: [generatedAt, purpose, conclusion, schemes, history, decisions]

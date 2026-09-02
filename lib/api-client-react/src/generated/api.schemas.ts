@@ -51,6 +51,32 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface DashboardHouseExposure {
+  issuerId: string;
+  issuer: string;
+  houseExposureAmount: number;
+  schemesHolding: number;
+  /** @nullable */
+  tightestHeadroomPercent: number | null;
+  /** @nullable */
+  attention: string | null;
+}
+
+export interface DashboardDataTrust {
+  conflictingSourceCount: number;
+  lastDeliveryChannel: string;
+  lastDeliveryAt: string;
+  allSynthetic: boolean;
+}
+
+export interface DashboardLastQuarter {
+  capturedAmount: number;
+  forfeitedAmount: number;
+  lapsedCount: number;
+  deadlinesMet: number;
+  deadlinesTotal: number;
+}
+
 export type EventSourceRecordAssertedFields = {[key: string]: string};
 
 export interface EventSourceRecord {
@@ -209,8 +235,80 @@ export interface Dashboard {
   totalFunding: number;
   nearestDeadline: string;
   nearestFundingIssuer: string;
+  needsYouCount: number;
+  needsNothingCount: number;
+  atStakeAmount: number;
+  dueWithin3DaysCount: number;
+  settlementBreakCount: number;
+  topHouseExposures: DashboardHouseExposure[];
+  dataTrust: DashboardDataTrust;
+  lastQuarter: DashboardLastQuarter;
   inboundEvents: EventSummary[];
   schemes: SchemeSummary[];
+}
+
+export interface IssuerSummary {
+  issuerId: string;
+  issuer: string;
+  isin: string;
+  houseExposureAmount: number;
+  percentOfAum: number;
+  schemesHolding: number;
+  openActionCount: number;
+  /** @nullable */
+  tightestHeadroomPercent: number | null;
+  /** @nullable */
+  attention: string | null;
+}
+
+export interface IssuerHouseExposure {
+  totalAmount: number;
+  percentOfAum: number;
+  schemeCount: number;
+  totalSchemeCount: number;
+  largestSchemeName: string;
+  largestSchemeAmount: number;
+}
+
+export interface IssuerSchemeRow {
+  schemeId: string;
+  schemeName: string;
+  holdingQuantity: number;
+  valueAmount: number;
+  percentOfNav: number;
+  /** @nullable */
+  headroomPercent: number | null;
+}
+
+export interface IssuerEventRow {
+  eventId: string;
+  eventName: string;
+  eventType: string;
+  receivedAt: string;
+  status: string;
+  open: boolean;
+  /** @nullable */
+  capturedAmount: number | null;
+  /** @nullable */
+  forfeitedAmount: number | null;
+}
+
+export interface IssuerQuarterSummary {
+  actionsLastQuarter: number;
+  receivedAmount: number;
+  forfeitedAmount: number;
+  openDecisionCount: number;
+}
+
+export interface IssuerDetail {
+  issuerId: string;
+  issuer: string;
+  isin: string;
+  situation: string;
+  houseExposure: IssuerHouseExposure;
+  perScheme: IssuerSchemeRow[];
+  events: IssuerEventRow[];
+  summary: IssuerQuarterSummary;
 }
 
 export interface IssuerExposure {

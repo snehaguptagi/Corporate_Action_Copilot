@@ -5,6 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardDataTrust } from './dashboardDataTrust';
+import type { DashboardHouseExposure } from './dashboardHouseExposure';
+import type { DashboardLastQuarter } from './dashboardLastQuarter';
 import type { EventSummary } from './eventSummary';
 import type { SchemeSummary } from './schemeSummary';
 
@@ -17,6 +20,14 @@ export interface Dashboard {
   totalFunding: number;
   nearestDeadline: string;
   nearestFundingIssuer: string;
+  needsYouCount: number;
+  needsNothingCount: number;
+  atStakeAmount: number;
+  dueWithin3DaysCount: number;
+  settlementBreakCount: number;
+  topHouseExposures: DashboardHouseExposure[];
+  dataTrust: DashboardDataTrust;
+  lastQuarter: DashboardLastQuarter;
   inboundEvents: EventSummary[];
   schemes: SchemeSummary[];
 }

@@ -61,6 +61,16 @@ function shortDeadline(display: string) {
   return parts.length >= 2 ? `${parts[0]} ${parts[1]}` : display;
 }
 
+function StatTile({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: string }) {
+  return (
+    <div className="dashboard-panel">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+      <p className={`figure mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</p>
+      <p className="figure-inline mt-0.5 text-xs text-muted-foreground">{sub}</p>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
   const { data: schemes } = useListSchemes();
@@ -104,8 +114,8 @@ export default function Dashboard() {
     return Date.parse(left.internalDeadlineAt) - Date.parse(right.internalDeadlineAt);
   });
 
-  const headline = attentionEvents.length > 0
-    ? `${attentionEvents.length} corporate actions need you.${dashboard.totalFunding > 0 && dashboard.nearestDeadline ? ` ${formatInr(dashboard.totalFunding)} to fund by ${shortDeadline(dashboard.nearestDeadline)}.` : ""}`
+  const headline = dashboard.needsYouCount > 0
+    ? `${dashboard.needsYouCount} corporate action${dashboard.needsYouCount === 1 ? " needs" : "s need"} you.${dashboard.totalFunding > 0 && dashboard.nearestDeadline ? ` ${formatInr(dashboard.totalFunding)} to fund by ${shortDeadline(dashboard.nearestDeadline)}.` : ""}`
     : dashboard.totalFunding > 0 && dashboard.nearestDeadline
       ? `Nothing needs a decision. ${formatInr(dashboard.totalFunding)} to fund by ${shortDeadline(dashboard.nearestDeadline)}.`
       : "Nothing needs a decision right now.";
@@ -120,10 +130,47 @@ export default function Dashboard() {
             <CalendarClock className="h-4 w-4 shrink-0 text-primary" />
             {dashboard.arrivalCount24h} notices arrived in the last 24 hours; {dashboard.arrivalsAffectingSchemes24h} of them touch your schemes.
           </p>
+          <p className="figure-inline mt-1.5 max-w-3xl text-xs leading-5 text-muted-foreground">
+            {dashboard.dataTrust.conflictingSourceCount > 0
+              ? `${dashboard.dataTrust.conflictingSourceCount} notice${dashboard.dataTrust.conflictingSourceCount === 1 ? "" : "s"} carry disagreeing sources.`
+              : "No source disagreements open."}
+            {dashboard.dataTrust.lastDeliveryChannel ? ` Latest delivery ${relativeArrival(dashboard.dataTrust.lastDeliveryAt)} via ${dashboard.dataTrust.lastDeliveryChannel.toLowerCase()}.` : ""}
+            {dashboard.dataTrust.allSynthetic ? " All records here are synthetic teaching data." : ""}
+          </p>
+          <p className="figure-inline mt-0.5 max-w-3xl text-xs leading-5 text-muted-foreground">
+            Last quarter: {formatInr(dashboard.lastQuarter.capturedAmount)} captured, {dashboard.lastQuarter.forfeitedAmount > 0 ? formatInr(dashboard.lastQuarter.forfeitedAmount) : "nothing"} forfeited, {dashboard.lastQuarter.lapsedCount} entitlement{dashboard.lastQuarter.lapsedCount === 1 ? "" : "s"} lapsed, {dashboard.lastQuarter.deadlinesMet} of {dashboard.lastQuarter.deadlinesTotal} deadlines met.
+          </p>
         </div>
       </header>
 
       <main className="flex-1 space-y-4 p-4 sm:p-5">
+        <section aria-label="Today's numbers" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile
+            label="Needs you"
+            value={String(dashboard.needsYouCount)}
+            sub={`${dashboard.needsNothingCount} need nothing from you`}
+            tone={dashboard.needsYouCount > 0 ? "text-amber-700" : "text-slate-800"}
+          />
+          <StatTile
+            label="At stake if you do nothing"
+            value={dashboard.atStakeAmount > 0 ? formatInr(dashboard.atStakeAmount) : "Nothing"}
+            sub="Open voluntary entitlements left to lapse"
+            tone={dashboard.atStakeAmount > 0 ? "text-rose-700" : "text-slate-800"}
+          />
+          <StatTile
+            label="Due within 3 days"
+            value={String(dashboard.dueWithin3DaysCount)}
+            sub={dashboard.dueWithin3DaysCount > 0 ? "Internal deadlines inside 72 hours" : "No deadline inside 72 hours"}
+            tone={dashboard.dueWithin3DaysCount > 0 ? "text-amber-700" : "text-slate-800"}
+          />
+          <StatTile
+            label="Open settlement breaks"
+            value={String(dashboard.settlementBreakCount)}
+            sub={dashboard.settlementBreakCount > 0 ? "Custodian cash does not match" : "Settlements match"}
+            tone={dashboard.settlementBreakCount > 0 ? "text-rose-700" : "text-slate-800"}
+          />
+        </section>
+
         <section aria-label="Attention queue" className="dashboard-panel">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -156,8 +203,43 @@ export default function Dashboard() {
           <DeadlineTimeline events={sortedEvents} now={now} />
         </section>
 
-        <section aria-label="Volume versus money">
+        <section aria-label="Volume versus money and top exposures" className="grid gap-4 lg:grid-cols-2">
           <VolumeVersusValue events={sortedEvents} />
+          <div className="dashboard-panel">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">Top house exposures</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Largest issuer positions across all ten schemes.</p>
+              </div>
+              <Link href="/issuers" className="text-xs font-semibold text-primary hover:underline">All issuers</Link>
+            </div>
+            <Table className="mt-2">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="h-8 px-2">Issuer</TableHead>
+                  <TableHead className="h-8 px-2 text-right">Exposure</TableHead>
+                  <TableHead className="h-8 px-2 text-right">Schemes</TableHead>
+                  <TableHead className="h-8 px-2 text-right">Cap headroom</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dashboard.topHouseExposures.map((row) => (
+                  <TableRow key={row.issuerId} className="hover:bg-muted">
+                    <TableCell className="px-2 py-2">
+                      <Link href={`/issuers/${row.issuerId}`} className="font-semibold text-foreground hover:text-primary hover:underline">{row.issuer}</Link>
+                    </TableCell>
+                    <TableCell className="figure px-2 py-2 text-right font-semibold text-slate-800">{formatInr(row.houseExposureAmount)}</TableCell>
+                    <TableCell className="figure px-2 py-2 text-right text-slate-600">{row.schemesHolding}</TableCell>
+                    <TableCell className="px-2 py-2 text-right">
+                      {row.tightestHeadroomPercent === null
+                        ? <span className="text-xs text-slate-400">No open exposure</span>
+                        : <span className={`figure font-semibold ${row.attention === "Breach" || row.attention === "Critical" ? "text-rose-700" : row.attention === "Tight" ? "text-amber-700" : "text-slate-700"}`}>{row.tightestHeadroomPercent.toFixed(2)}%</span>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </section>
 
         <section aria-labelledby="inbound-actions">

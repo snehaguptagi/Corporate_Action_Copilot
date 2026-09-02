@@ -1570,6 +1570,238 @@ export function issuerExposuresForScheme(events: EventData[], scheme: EventData)
   }).sort((left, right) => right.postActionPercent - left.postActionPercent);
 }
 
+export function issuerIdFor(issuer: string): string {
+  return issuer.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+// Market reference first, then the security master price. Action prices (offer, subscription)
+// are last-resort fallbacks only, so a tender premium never revalues the whole house holding.
+function issuerPriceRupees(event: EventData): number {
+  const cmp = event.securityMaster?.cmp;
+  return Number(event.referencePrice
+    ?? (cmp != null ? Number(cmp) : undefined)
+    ?? event.calculationInputs?.offerPrice
+    ?? event.calculationInputs?.subscriptionPrice
+    ?? 100);
+}
+
+const positionQuantity = (position: EventData) => Number(position?.eligibleQuantity ?? position?.settledQuantity ?? 0);
+
+// A decision is needed when the event is open, elective, and not yet submitted or approved.
+export function needsDecision(event: EventData): boolean {
+  if (!isOpenEvent(event)) return false;
+  if (event.isEarlySighting) return false;
+  const elective = event.processingType === "Voluntary"
+    || (String(event.processingType ?? "").startsWith("Mandatory") && event.processingType !== "Mandatory");
+  if (!elective) return false;
+  return !["Awaiting approval", "Approved", "Awaiting settlement"].includes(event.status);
+}
+
+// Value forfeited if every open voluntary rights entitlement lapses. Reuses Stage 1 rightValue for the desk event.
+export function rightsLapseValue(event: EventData, desk: EventData): number {
+  if (event.eventType !== "Rights issue" || event.processingType !== "Voluntary") return 0;
+  if (event.id === "evt-bharat-rights") {
+    return Number(desk.totals?.totalEntitlementRights ?? 0) * calculateArkaRightsTerms().rightValue;
+  }
+  const ratioNumerator = Number(event.calculationInputs?.ratioNumerator ?? 1);
+  const ratioDenominator = Number(event.calculationInputs?.ratioDenominator ?? 1);
+  const subscriptionPrice = Number(event.calculationInputs?.subscriptionPrice ?? 0);
+  const referencePrice = Number(event.referencePrice ?? 0);
+  if (!subscriptionPrice || !referencePrice) return 0;
+  const terp = (referencePrice * ratioDenominator + subscriptionPrice * ratioNumerator) / (ratioDenominator + ratioNumerator);
+  const entitlement = (event.positions ?? []).reduce((total: number, position: EventData) =>
+    total + Math.floor(positionQuantity(position) * ratioNumerator / ratioDenominator), 0);
+  return Math.max(0, entitlement * (terp - subscriptionPrice));
+}
+
+export function closedEventOutcome(event: EventData): EventData {
+  const outcome = event.historicalOutcome ?? {};
+  const capturedAmount = Number(outcome.capturedAmount ?? (event.schemeImpacts ?? []).filter((impact: EventData) => impact.affected && impact.direction === "Receivable").reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0));
+  return {
+    capturedAmount: Number(capturedAmount.toFixed(2)),
+    forfeitedAmount: Number(Number(outcome.forfeitedAmount ?? 0).toFixed(2)),
+    lapsed: Boolean(outcome.lapsed),
+    deadlineOutcome: outcome.deadlineMet === false ? "Missed" : "Met",
+    reconciliationStatus: event.reconciliation?.classification ?? event.reconciliation?.status ?? "Closed",
+  };
+}
+
+export function buildHistory(events: EventData[]): EventData {
+  const closedEvents = events.filter((event) => ["Closed", "Reconciled"].includes(event.status)).map((event) => {
+    const outcome = closedEventOutcome(event);
+    return {
+      eventId: event.id,
+      issuer: event.issuer,
+      eventType: event.eventType,
+      capturedAmount: Number(outcome.capturedAmount),
+      forfeitedAmount: Number(outcome.forfeitedAmount),
+      lapsed: Boolean(outcome.lapsed),
+      deadlineOutcome: String(outcome.deadlineOutcome),
+      reconciliationStatus: String(outcome.reconciliationStatus),
+    };
+  });
+  return {
+    capturedAmount: Number(closedEvents.reduce((total, event) => total + event.capturedAmount, 0).toFixed(2)),
+    forfeitedAmount: Number(closedEvents.reduce((total, event) => total + event.forfeitedAmount, 0).toFixed(2)),
+    lapsedCount: closedEvents.filter((event) => event.lapsed).length,
+    deadlinesMet: closedEvents.filter((event) => event.deadlineOutcome === "Met").length,
+    deadlinesTotal: closedEvents.length,
+    closedEvents,
+  };
+}
+
+// One computation for the issuer axis: exposure values reuse the same price/AUM bases as
+// issuerExposuresForScheme, and cap headroom comes from that shared function directly.
+function computeIssuers(events: EventData[], desk: EventData): EventData[] {
+  const schemes: EventData[] = desk.schemes ?? [];
+  const totalAumRupees = ARKA_SCHEME_SEED.reduce((total, scheme) => total + Number(scheme.aumPaise) / 100, 0);
+  const exposuresByScheme = schemes.map((scheme) => ({ scheme, exposures: issuerExposuresForScheme(events, scheme) }));
+  const byIssuer = new Map<string, EventData[]>();
+  for (const event of events) {
+    const rows = byIssuer.get(event.issuer) ?? [];
+    rows.push(event);
+    byIssuer.set(event.issuer, rows);
+  }
+  return [...byIssuer.entries()].map(([issuer, issuerEvents]) => {
+    const newestFirst = [...issuerEvents].sort((left, right) => Date.parse(right.receivedAt ?? "") - Date.parse(left.receivedAt ?? ""));
+    const isin = newestFirst.find((event) => event.securityMaster?.isin)?.securityMaster.isin ?? "";
+    const perScheme = schemes.flatMap((scheme) => {
+      // The holding is one baseline per issuer and scheme; concurrent events list the same position,
+      // so take the largest eligible quantity rather than summing duplicates.
+      const held = issuerEvents.flatMap((event) => (event.positions ?? [])
+        .filter((position: EventData) => position.fund === scheme.name)
+        .map((position: EventData) => ({ event, position })));
+      if (held.length === 0) return [];
+      const best = held.reduce((left, right) => positionQuantity(right.position) > positionQuantity(left.position) ? right : left);
+      const quantity = positionQuantity(best.position);
+      const seed = ARKA_SCHEME_SEED.find((candidate) => candidate.id === scheme.id);
+      const aumRupees = seed ? Number(seed.aumPaise) / 100 : Number(scheme.aumCrore ?? 0) * 10_000_000;
+      const valueAmount = Number((quantity * issuerPriceRupees(best.event)).toFixed(2));
+      const exposureRow = exposuresByScheme.find((entry) => entry.scheme.id === scheme.id)?.exposures
+        .find((row: EventData) => row.issuer === issuer);
+      const percentOfNav = aumRupees > 0 ? Number((valueAmount / aumRupees * 100).toFixed(2)) : 0;
+      return [{
+        schemeId: scheme.id,
+        schemeName: scheme.name,
+        holdingQuantity: quantity,
+        valueAmount,
+        percentOfNav,
+        // Headroom comes only from the shared exposure function; without an open exposure row
+        // there is no cap figure to show, so it stays null rather than being recomputed here.
+        headroomPercent: exposureRow ? Number(exposureRow.distanceToCapPercent) : null,
+        sharedHeadroom: exposureRow ? Number(exposureRow.distanceToCapPercent) : null,
+        exposureStatus: exposureRow?.status ?? null,
+      }];
+    }).sort((left, right) => right.percentOfNav - left.percentOfNav);
+    const houseExposureAmount = Number(perScheme.reduce((total, row) => total + row.valueAmount, 0).toFixed(2));
+    const constrained = perScheme.filter((row) => row.sharedHeadroom != null);
+    const tightest = constrained.length > 0
+      ? constrained.reduce((left, right) => (right.sharedHeadroom as number) < (left.sharedHeadroom as number) ? right : left)
+      : null;
+    const attention = tightest && ["Tight", "Critical", "Breach"].includes(String(tightest.exposureStatus))
+      ? String(tightest.exposureStatus)
+      : null;
+    return {
+      issuerId: issuerIdFor(issuer),
+      issuer,
+      isin,
+      houseExposureAmount,
+      percentOfAum: totalAumRupees > 0 ? Number((houseExposureAmount / totalAumRupees * 100).toFixed(2)) : 0,
+      schemesHolding: perScheme.length,
+      totalSchemeCount: schemes.length,
+      openActionCount: issuerEvents.filter(isOpenEvent).length,
+      tightestHeadroomPercent: tightest ? (tightest.sharedHeadroom as number) : null,
+      tightestSchemeName: tightest?.schemeName ?? "",
+      attention,
+      perScheme,
+      events: newestFirst,
+    };
+  }).sort((left, right) => right.houseExposureAmount - left.houseExposureAmount);
+}
+
+export function buildIssuerSummaries(events: EventData[], desk: EventData): EventData[] {
+  return computeIssuers(events, desk).map((row) => ({
+    issuerId: row.issuerId,
+    issuer: row.issuer,
+    isin: row.isin,
+    houseExposureAmount: row.houseExposureAmount,
+    percentOfAum: row.percentOfAum,
+    schemesHolding: row.schemesHolding,
+    openActionCount: row.openActionCount,
+    tightestHeadroomPercent: row.tightestHeadroomPercent,
+    attention: row.attention,
+  }));
+}
+
+const QUARTER_MS = 90 * 24 * 60 * 60 * 1000;
+
+export function buildIssuerDetail(events: EventData[], desk: EventData, issuerId: string, asOf = new Date()): EventData | null {
+  const row = computeIssuers(events, desk).find((candidate) => candidate.issuerId === issuerId);
+  if (!row) return null;
+  const largest = row.perScheme[0];
+  const eventRows = row.events.map((event: EventData) => {
+    const open = isOpenEvent(event);
+    const outcome = open ? null : closedEventOutcome(event);
+    return {
+      eventId: event.id,
+      eventName: `${event.issuer} ${String(event.eventType ?? "").toLowerCase()}`,
+      eventType: event.eventType,
+      receivedAt: event.receivedAt ?? "",
+      status: event.status,
+      open,
+      capturedAmount: outcome ? outcome.capturedAmount : null,
+      forfeitedAmount: outcome ? outcome.forfeitedAmount : null,
+    };
+  });
+  const quarterFloor = asOf.getTime() - QUARTER_MS;
+  const inQuarter = row.events.filter((event: EventData) => {
+    const received = Date.parse(event.receivedAt ?? "");
+    return Number.isFinite(received) && received >= quarterFloor && received <= asOf.getTime();
+  });
+  const closedInQuarter = inQuarter.filter((event: EventData) => !isOpenEvent(event)).map(closedEventOutcome);
+  const summary = {
+    actionsLastQuarter: inQuarter.length,
+    receivedAmount: Number(closedInQuarter.reduce((total: number, outcome: EventData) => total + outcome.capturedAmount, 0).toFixed(2)),
+    forfeitedAmount: Number(closedInQuarter.reduce((total: number, outcome: EventData) => total + outcome.forfeitedAmount, 0).toFixed(2)),
+    openDecisionCount: row.events.filter(needsDecision).length,
+  };
+  const crore = (amount: number) => `₹${(amount / 10_000_000).toFixed(2)} cr`;
+  const parts = [`Arka holds ${crore(row.houseExposureAmount)} of ${row.issuer} across ${row.schemesHolding} of ${row.totalSchemeCount} schemes, ${row.percentOfAum.toFixed(2)}% of house AUM.`];
+  if (row.attention === "Breach") {
+    parts.push(`${row.tightestSchemeName} breaches the SEBI single-issuer cap if the open actions complete in full.`);
+  } else if (row.attention) {
+    parts.push(`${row.tightestSchemeName} is ${Number(row.tightestHeadroomPercent).toFixed(2)}% from the SEBI single-issuer cap.`);
+  } else if (row.openActionCount > 0) {
+    parts.push(`${row.openActionCount} corporate action${row.openActionCount === 1 ? " is" : "s are"} open; none push a scheme near the cap.`);
+  } else {
+    parts.push("Nothing from this issuer needs a decision right now.");
+  }
+  return {
+    issuerId: row.issuerId,
+    issuer: row.issuer,
+    isin: row.isin,
+    situation: parts.join(" "),
+    houseExposure: {
+      totalAmount: row.houseExposureAmount,
+      percentOfAum: row.percentOfAum,
+      schemeCount: row.schemesHolding,
+      totalSchemeCount: row.totalSchemeCount,
+      largestSchemeName: largest?.schemeName ?? "",
+      largestSchemeAmount: largest?.valueAmount ?? 0,
+    },
+    perScheme: row.perScheme.map((scheme: EventData) => ({
+      schemeId: scheme.schemeId,
+      schemeName: scheme.schemeName,
+      holdingQuantity: scheme.holdingQuantity,
+      valueAmount: scheme.valueAmount,
+      percentOfNav: scheme.percentOfNav,
+      headroomPercent: scheme.headroomPercent,
+    })),
+    events: eventRows,
+    summary,
+  };
+}
+
 export function buildSchemeSummaries(events: EventData[], desk: EventData): EventData[] {
   return desk.schemes.map((scheme: EventData) => {
     const impacts = events.flatMap((event) => (event.schemeImpacts ?? []).map((impact: EventData) => ({ event, impact })))
@@ -1645,20 +1877,7 @@ export function buildAnalysis(events: EventData[], desk: EventData, asOf = new D
       || right.aggregateNavImpactPaise - left.aggregateNavImpactPaise;
   });
 
-  const closedEvents = events.filter((event) => ["Closed", "Reconciled"].includes(event.status)).map((event) => {
-    const outcome = event.historicalOutcome ?? {};
-    const capturedAmount = Number(outcome.capturedAmount ?? (event.schemeImpacts ?? []).filter((impact: EventData) => impact.affected && impact.direction === "Receivable").reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0));
-    return {
-      eventId: event.id,
-      issuer: event.issuer,
-      eventType: event.eventType,
-      capturedAmount: Number(capturedAmount.toFixed(2)),
-      forfeitedAmount: Number(Number(outcome.forfeitedAmount ?? 0).toFixed(2)),
-      lapsed: Boolean(outcome.lapsed),
-      deadlineOutcome: outcome.deadlineMet === false ? "Missed" : "Met",
-      reconciliationStatus: event.reconciliation?.classification ?? event.reconciliation?.status ?? "Closed",
-    };
-  });
+  const history = buildHistory(events);
   const breaches = schemes.flatMap((scheme: EventData) =>
     scheme.issuerExposures.filter((exposure: EventData) => exposure.postActionPercent > exposure.capPercent)
       .map((exposure: EventData) => ({ scheme, exposure })));
@@ -1707,14 +1926,7 @@ export function buildAnalysis(events: EventData[], desk: EventData, asOf = new D
     conclusion: conclusionParts.join(" "),
     schemes,
     decisions,
-    history: {
-      capturedAmount: Number(closedEvents.reduce((total, event) => total + event.capturedAmount, 0).toFixed(2)),
-      forfeitedAmount: Number(closedEvents.reduce((total, event) => total + event.forfeitedAmount, 0).toFixed(2)),
-      lapsedCount: closedEvents.filter((event) => event.lapsed).length,
-      deadlinesMet: closedEvents.filter((event) => event.deadlineOutcome === "Met").length,
-      deadlinesTotal: closedEvents.length,
-      closedEvents,
-    },
+    history,
   };
 }
 
@@ -1738,7 +1950,48 @@ export function buildDashboard(events: EventData[], desk: EventData, asOf = new 
     return Number.isFinite(received) && received > lowerBound24h && received <= asOf.getTime()
       && event.schemeImpacts?.some((impact: EventData) => impact.affected);
   }).length;
+  const openEvents = events.filter(isOpenEvent);
+  const needsYouCount = openEvents.filter(needsDecision).length;
+  const atStakeAmount = Number(openEvents.reduce((total, event) => total + rightsLapseValue(event, desk), 0).toFixed(2));
+  const dueWithin3DaysCount = openEvents.filter((event) => {
+    const deadline = Date.parse(event.internalDeadlineAt);
+    return Number.isFinite(deadline) && deadline > asOf.getTime() && deadline <= asOf.getTime() + 3 * DAY_MS;
+  }).length;
+  const settlementBreakCount = openEvents.filter((event) =>
+    event.reconciliation?.classification && !["Matched", "Not due"].includes(event.reconciliation.classification)).length;
+  const topHouseExposures = buildIssuerSummaries(events, desk).slice(0, 5).map((row) => ({
+    issuerId: row.issuerId,
+    issuer: row.issuer,
+    houseExposureAmount: row.houseExposureAmount,
+    schemesHolding: row.schemesHolding,
+    tightestHeadroomPercent: row.tightestHeadroomPercent,
+    attention: row.attention,
+  }));
+  const sourceRecords = events.flatMap((event) => event.sourceRecords ?? [])
+    .filter((record: EventData) => Number.isFinite(Date.parse(record.receivedAt ?? "")));
+  const latestRecord = [...sourceRecords].sort((left, right) => Date.parse(right.receivedAt) - Date.parse(left.receivedAt))[0];
+  const dataTrust = {
+    conflictingSourceCount: events.filter((event) => (event.sourceDisagreements ?? []).length > 0).length,
+    lastDeliveryChannel: latestRecord?.channel ?? "",
+    lastDeliveryAt: latestRecord?.receivedAt ?? "",
+    allSynthetic: events.every((event) => event.source !== "Public web discovery"),
+  };
+  const history = buildHistory(events);
   return {
+    needsYouCount,
+    needsNothingCount: openEvents.length - needsYouCount,
+    atStakeAmount,
+    dueWithin3DaysCount,
+    settlementBreakCount,
+    topHouseExposures,
+    dataTrust,
+    lastQuarter: {
+      capturedAmount: history.capturedAmount,
+      forfeitedAmount: history.forfeitedAmount,
+      lapsedCount: history.lapsedCount,
+      deadlinesMet: history.deadlinesMet,
+      deadlinesTotal: history.deadlinesTotal,
+    },
     arrivalCount24h: countArrivalsInLast24Hours(events, asOf),
     arrivalsAffectingSchemes24h,
     portfolioEventCount: portfolioEvents.length,

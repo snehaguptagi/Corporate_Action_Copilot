@@ -42,6 +42,8 @@ import type {
   IntakeDraftInput,
   IntakeInput,
   IntakeValidationInput,
+  IssuerDetail,
+  IssuerSummary,
   ListAuditParams,
   ListEventsParams,
   LiveDiscoveryInput,
@@ -773,6 +775,160 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListIssuersUrl = () => {
+
+
+
+
+  return `/api/issuers`
+}
+
+/**
+ * @summary List every issuer the house holds, ranked by exposure
+ */
+export const listIssuers = async ( options?: Parameters<typeof customFetch>[1]): Promise<IssuerSummary[]> => {
+
+  return customFetch<IssuerSummary[]>(getListIssuersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListIssuersQueryKey = () => {
+    return [
+    `/api/issuers`
+    ] as const;
+    }
+
+
+export const getListIssuersQueryOptions = <TData = Awaited<ReturnType<typeof listIssuers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIssuers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListIssuersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIssuers>>> = ({ signal }) => listIssuers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIssuers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListIssuersQueryResult = NonNullable<Awaited<ReturnType<typeof listIssuers>>>
+export type ListIssuersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List every issuer the house holds, ranked by exposure
+ */
+
+export function useListIssuers<TData = Awaited<ReturnType<typeof listIssuers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIssuers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListIssuersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetIssuerUrl = (issuerId: string,) => {
+
+
+
+
+  return `/api/issuers/${issuerId}`
+}
+
+/**
+ * @summary Get the issuer accountability view
+ */
+export const getIssuer = async (issuerId: string, options?: Parameters<typeof customFetch>[1]): Promise<IssuerDetail> => {
+
+  return customFetch<IssuerDetail>(getGetIssuerUrl(issuerId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIssuerQueryKey = (issuerId: string,) => {
+    return [
+    `/api/issuers/${issuerId}`
+    ] as const;
+    }
+
+
+export const getGetIssuerQueryOptions = <TData = Awaited<ReturnType<typeof getIssuer>>, TError = ErrorType<ErrorEnvelope>>(issuerId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIssuer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIssuerQueryKey(issuerId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIssuer>>> = ({ signal }) => getIssuer(issuerId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: issuerId !== null && issuerId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIssuer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIssuerQueryResult = NonNullable<Awaited<ReturnType<typeof getIssuer>>>
+export type GetIssuerQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary Get the issuer accountability view
+ */
+
+export function useGetIssuer<TData = Awaited<ReturnType<typeof getIssuer>>, TError = ErrorType<ErrorEnvelope>>(
+ issuerId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIssuer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIssuerQueryOptions(issuerId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

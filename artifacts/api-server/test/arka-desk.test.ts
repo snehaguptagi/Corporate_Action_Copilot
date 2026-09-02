@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ARKA_SCHEME_SEED, calculateArkaFixtureValues } from "../src/lib/arka-desk";
+import { ARKA_SCHEME_SEED, calculateArkaFixtureValues, saveArkaDeskDecisions } from "../src/lib/arka-desk";
 
 test("calculates the Bharat Renewables rights fixture from round business inputs", () => {
   const fixture = calculateArkaFixtureValues();
@@ -18,4 +18,15 @@ test("uses round seed amounts rather than fitted values", () => {
   assert.ok(focused && smallCap?.cashBudgetPaise);
   assert.equal(fixture.focusedMaximumRights, 1_027_007);
   assert.equal(fixture.smallCapAffordableRights, Number(smallCap.cashBudgetPaise / 8_500n));
+});
+
+test("server refuses rights quantities above scheme controls", async () => {
+  await assert.rejects(
+    saveArkaDeskDecisions([{ schemeId: "arka-focused-25", rights: 1_800_000 }]),
+    /10,27,007.*SEBI 10% single-issuer limit/,
+  );
+  await assert.rejects(
+    saveArkaDeskDecisions([{ schemeId: "arka-small-cap", rights: 300_000 }]),
+    /2,11,764.*available cash covers only/,
+  );
 });

@@ -9,3 +9,4 @@
 - [Scheme accountability view](scheme-accountability-view.md) — Scheme pages decompose NAV impact, funding gaps, cap headroom, and only holdings currently in play.
 - [Early sighting precedence](early-sighting-precedence.md) — Exchange sightings are indicative and non-actionable; custodian terms and depository quantities unlock workflow actions.
 - [Rolling seed clock](rolling-seed-clock.md) — Synthetic arrivals and deadlines must be relative to read time; dashboard recency uses a rolling 24-hour window.
+- [Rights decision controls](rights-decision-controls.md) — Rights choices are scheme-level, constrained by cash and concentration maxima, and submitted as one maker package.

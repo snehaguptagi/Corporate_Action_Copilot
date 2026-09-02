@@ -1,7 +1,11 @@
 import { useState } from "react";
 import {
   getGetEventQueryKey,
+  getGetArkaDeskQueryKey,
   useGetEvent,
+  useGetArkaDesk,
+  useSaveArkaDeskDecisions,
+  useSubmitArkaDesk,
   useSaveElection,
   type EventDetail,
 } from "@workspace/api-client-react";
@@ -76,15 +80,35 @@ export default function FundManagerDesk() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: event, isLoading, isError } = useGetEvent(eventId);
+  const isRightsHero = event?.eventType === "Rights issue" && event?.issuer === "Bharat Renewables Ltd";
+  const { data: arkaDesk, isLoading: arkaLoading } = useGetArkaDesk();
 
   const [electionOptions, setElectionOptions] = useState<Record<string, string>>({});
   const [electionQuantities, setElectionQuantities] = useState<Record<string, string>>({});
+  const [rightsChoices, setRightsChoices] = useState<Record<string, string>>({});
+  const [rightsQuantities, setRightsQuantities] = useState<Record<string, string>>({});
 
   const saveElection = useSaveElection({
     mutation: { onSuccess: () => { toast({ title: "Election submitted" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
   });
+  const queryClient2 = useQueryClient();
+  const saveArka = useSaveArkaDeskDecisions({
+    mutation: {
+      onSuccess: () => queryClient2.invalidateQueries({ queryKey: getGetArkaDeskQueryKey() }),
+      onError: (error: any) => toast({ title: error?.message ?? "Decision blocked", variant: "destructive" }),
+    },
+  });
+  const submitArka = useSubmitArkaDesk({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Submitted to Compliance" });
+        queryClient2.invalidateQueries({ queryKey: getGetArkaDeskQueryKey() });
+      },
+      onError: (error: any) => toast({ title: error?.message ?? "Submission blocked", variant: "destructive" }),
+    },
+  });
 
-  if (isLoading) {
+  if (isLoading || (isRightsHero && arkaLoading)) {
     return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading event...</div>;
   }
   if (isError || !event) {
@@ -92,11 +116,31 @@ export default function FundManagerDesk() {
   }
 
   const data = event as EventDetail;
+  const arka = arkaDesk;
 
   const isMandatory = data.processingType === "Mandatory" || ["Cash dividend", "Stock split", "Bonus issue"].includes(data.eventType);
   const affectedSchemes = (data.schemeImpacts ?? []).filter((impact) => impact.affected);
 
   const constraints = affectedSchemes.filter(s => s.flag === "SEBI 10% headroom" || s.flag === "Cash short");
+  const rightsRows = arka?.schemes ?? [];
+  const rightsOption = (id: string) => rightsChoices[id] ?? "exercise";
+  const permittedRights = (row: any) => Math.min(row.entitlementRights, row.maxRightsByCap ?? row.entitlementRights, row.maxRightsByCash ?? row.entitlementRights);
+  const rightsQty = (row: any) => Number(rightsQuantities[row.id] ?? permittedRights(row));
+  const rightsValue = arka?.terms.rightValue ?? 29.1667;
+  const subscriptionPrice = arka?.terms.subscriptionPrice ?? 85;
+  const totals = rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").reduce((acc: any, row: any) => {
+    const choice = rightsOption(row.id);
+    const quantity = rightsQty(row);
+    const exercised = choice === "exercise" ? quantity : 0;
+    const sold = choice === "sell" ? quantity : 0;
+    const forfeited = Math.max(0, row.entitlementRights - exercised - sold);
+    acc.exercise += exercised;
+    acc.cash += exercised * subscriptionPrice;
+    acc.sell += sold;
+    acc.forfeited += forfeited;
+    return acc;
+  }, { exercise: 0, cash: 0, sell: 0, forfeited: 0 });
+  const blockedRights = rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible" && rightsOption(row.id) === "exercise" && rightsQty(row) > permittedRights(row));
 
   const saveAnElection = (impact: any) => {
     const optionId = electionOptions[impact.id] ?? data.options.find(o => o.default)?.id;
@@ -146,15 +190,6 @@ export default function FundManagerDesk() {
               <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
             </div>
           )}
-          {(data.sourceDisagreements ?? []).length > 0 && (
-            <div className="space-y-2 rounded-md border border-orange-200 bg-orange-50 px-5 py-4 text-sm leading-6 text-slate-800">
-              {(data.sourceDisagreements ?? []).map((item) => (
-                <p key={`${item.field}-${item.sightingValue}`}>
-                  {item.field}: {item.sightingValue} conflicts with {item.confirmedValue}; {item.winner}
-                </p>
-              ))}
-            </div>
-          )}
           <section>
             <SectionHeading index="01" eyebrow="Confirmed event" title="What it is" description="Notice terms, calendar, and security details extracted from the source document." />
             <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
@@ -183,7 +218,8 @@ export default function FundManagerDesk() {
                       <TableHead>Scheme</TableHead>
                       <TableHead className="text-right">Eligible Quantity</TableHead>
                       <TableHead className="text-right">Expected Cash</TableHead>
-                      <TableHead>Direction</TableHead>
+                       <TableHead>Direction</TableHead>
+                       <TableHead className="text-right">NAV impact / unit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -192,11 +228,12 @@ export default function FundManagerDesk() {
                         <TableCell><Link href={`/schemes/${scheme.schemeId}`} className="font-semibold text-primary hover:underline">{scheme.schemeName}</Link></TableCell>
                         <TableCell className="text-right font-mono">{integer.format(scheme.eligibleQuantity)}</TableCell>
                         <TableCell className="text-right font-mono">{scheme.cashAmount ? formatInr(scheme.cashAmount) : "No cash movement"}</TableCell>
-                        <TableCell>{scheme.direction}</TableCell>
+                         <TableCell>{scheme.direction}</TableCell>
+                         <TableCell className="text-right font-mono">{scheme.navImpactPaise == null ? "Neutral" : `${scheme.navImpactPaise.toFixed(2)} paise`}</TableCell>
                       </TableRow>
                     ))}
-                    {affectedSchemes.length === 0 && (
-                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">No affected schemes.</TableCell></TableRow>
+                     {affectedSchemes.length === 0 && (
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">No affected schemes.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -206,7 +243,18 @@ export default function FundManagerDesk() {
 
           {!isMandatory && (
             <>
-              {data.options && data.options.length > 0 && (
+              {isRightsHero ? (
+                <section>
+                  <SectionHeading index="03" eyebrow="Elections" title="Options" description="Compare the three ways to treat the rights entitlement." />
+                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                    <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
+                      <div><strong className="text-[#5b1235]">Exercise</strong><p className="mt-1 text-slate-600">Subscribe at ₹85. Costs cash and keeps your holding whole.</p><p className="mt-2 font-semibold">Pay ₹22.44 cr, receive 26,40,000 shares</p></div>
+                      <div><strong className="text-[#5b1235]">Sell entitlement</strong><p className="mt-1 text-slate-600">Sell the RE on NSE/BSE before the RE window closes.</p><p className="mt-2 font-semibold">Recover about ₹7.70 cr, no funding needed</p></div>
+                      <div><strong className="text-[#5b1235]">Let lapse</strong><p className="mt-1 text-slate-600">Do nothing and allow the entitlement to expire.</p><p className="mt-2 font-semibold">Forfeit ₹7.70 cr</p></div>
+                    </CardContent>
+                  </Card>
+                </section>
+              ) : data.options && data.options.length > 0 && (
                 <section>
                   <SectionHeading index="03" eyebrow="Elections" title="Options" description="Available choices provided by the issuer." />
                   <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
@@ -234,7 +282,22 @@ export default function FundManagerDesk() {
                 </section>
               )}
 
-              {constraints.length > 0 && (
+              {isRightsHero ? (
+                <section>
+                  <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
+                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-[#fffaf4]">
+                    <CardContent className="space-y-3 p-4 text-xs">
+                      {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
+                        <div key={row.id} className="text-slate-800">
+                          <strong>{row.name}</strong>: {row.id === "arka-focused-25"
+                            ? `Bharat Renewables is 9.39% of NAV. Exercising all ${integer.format(row.entitlementRights)} rights reaches 10.77% and breaches the 10% cap. Maximum: ${integer.format(permittedRights(row))} rights. Sell the remaining ${integer.format(row.entitlementRights - permittedRights(row))} on exchange before the RE window closes.`
+                            : `Needs ${formatInr(row.fullCashCrore * 10_000_000)}, has ${formatInr(row.cashAvailableCrore * 10_000_000)}. Short ${formatInr((row.fullCashCrore - row.cashAvailableCrore) * 10_000_000)}. Cash covers ${integer.format(permittedRights(row))} of ${integer.format(row.entitlementRights)} rights.`}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </section>
+              ) : constraints.length > 0 && (
                 <section>
                   <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
                   <Card className="rounded-md border-[#d8d1cb] shadow-none bg-[#fffaf4]">
@@ -252,7 +315,15 @@ export default function FundManagerDesk() {
               <section>
                 <SectionHeading index="05" eyebrow="Your decision" title="Decision" description="Set scheme elections and submit for checker approval." />
                 <div className="space-y-4">
-                  {affectedSchemes.map((impact: any) => (
+                  {isRightsHero ? rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => (
+                    <Card key={row.id} className={`rounded-md border shadow-none ${row.blockers.length ? "border-amber-300 bg-amber-50" : "border-[#d8d1cb] bg-white"}`}>
+                      <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr,1.2fr,1fr] items-center">
+                        <div><div className="font-semibold text-[#5b1235] text-sm">{row.name}</div><div className="text-xs text-muted-foreground">Entitlement: {integer.format(row.entitlementRights)}</div>{row.blockers.length > 0 && <div className="mt-1 text-xs font-semibold text-amber-800">Blocked above {integer.format(permittedRights(row))}</div>}</div>
+                        <div className="flex gap-2 items-center"><Select value={rightsOption(row.id)} onValueChange={(value) => setRightsChoices((prev) => ({ ...prev, [row.id]: value }))}><SelectTrigger className="w-[170px] text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="exercise">Exercise</SelectItem><SelectItem value="sell">Sell entitlement</SelectItem><SelectItem value="lapse">Let lapse</SelectItem></SelectContent></Select><Input className="w-[120px] text-xs" type="number" min={0} max={row.entitlementRights} value={rightsQty(row)} onChange={(e) => setRightsQuantities((prev) => ({ ...prev, [row.id]: e.target.value }))} /></div>
+                        <div className="text-right text-xs">{rightsOption(row.id) === "exercise" ? `Pay ${formatInr(rightsQty(row) * subscriptionPrice)}` : rightsOption(row.id) === "sell" ? `Recover about ${formatInr(rightsQty(row) * rightsValue)}` : `Forfeit ${formatInr(rightsQty(row) * rightsValue)}`}</div>
+                      </CardContent>
+                    </Card>
+                  )) : affectedSchemes.map((impact: any) => (
                     <Card key={impact.id} className="rounded-md border-[#d8d1cb] shadow-none bg-white">
                       <CardContent className="grid gap-4 p-4 md:grid-cols-[1fr,1.5fr,auto] items-center">
                         <div>
@@ -277,7 +348,7 @@ export default function FundManagerDesk() {
                         </div>
                         <div>
                           {!impact.electionDecision && (
-                            <Button className="bg-[#dc6900] hover:bg-[#b85700]" onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
+                             <Button className="bg-[#dc6900] hover:bg-[#b85700]" onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
                               Submit Election
                             </Button>
                           )}
@@ -285,6 +356,7 @@ export default function FundManagerDesk() {
                       </CardContent>
                     </Card>
                   ))}
+                  {isRightsHero && <Card className="rounded-md border-[#d8d1cb] bg-[#fffaf4] shadow-none"><CardContent className="space-y-3 p-5"><div className="grid gap-2 text-sm sm:grid-cols-4"><span>Exercise <strong>{integer.format(totals.exercise)}</strong></span><span>ASBA funding <strong>{formatInr(totals.cash)}</strong></span><span>Sell <strong>{integer.format(totals.sell)}</strong> rights</span><span>Value forfeited <strong>{formatInr(totals.forfeited * rightsValue)}</strong></span></div><Button className="bg-[#dc6900] hover:bg-[#b85700]" disabled={blockedRights.length > 0 || saveArka.isPending || submitArka.isPending} onClick={() => saveArka.mutate({ data: { decisions: rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => ({ schemeId: row.id, rights: rightsOption(row.id) === "exercise" ? rightsQty(row) : 0 })) } }, { onSuccess: () => submitArka.mutate() })}>{blockedRights.length > 0 ? `Resolve blocked schemes: ${blockedRights.map((row: any) => row.name).join(", ")}` : "Submit to Compliance"}</Button></CardContent></Card>}
                 </div>
               </section>
             </>

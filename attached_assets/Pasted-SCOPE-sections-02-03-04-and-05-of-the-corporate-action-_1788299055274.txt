@@ -1,0 +1,115 @@
+SCOPE: sections 02, 03, 04 and 05 of the corporate action page. This is the half
+where the fund manager acts, and it is the weakest part of the product. Do not
+restructure the page or touch sections 01 and 06.
+
+═══ A. GIVE THE EVENT REAL OPTIONS ═══
+Section 03 currently has ONE row: "Exercise Default / Subscribe. / Rights × ₹85".
+A rights issue has three choices and the product must model all three, because
+the comparison between them IS the decision:
+
+  Exercise           subscribe at ₹85. Costs cash, keeps your holding whole.
+  Sell entitlement   sell the Rights Entitlement on NSE/BSE during the RE
+                     window. Recovers value without funding. RE trades under
+                     its own ISIN and the window closes BEFORE the issue does.
+  Let lapse          do nothing. Costs you the full value of the entitlement.
+
+For each option show the CONSEQUENCE in rupees, not a formula:
+  Exercise         "Pay ₹22.44 cr, receive 26,40,000 shares"
+  Sell             "Recover about ₹7.70 cr, no funding needed"
+  Lapse            "Forfeit ₹7.70 cr"
+
+The economics, once, so the numbers are checkable:
+  TERP = (5 × ₹120 + ₹85) / 6 = ₹114.1667
+  value of one right = ₹114.1667 − ₹85 = ₹29.1667
+  26,40,000 rights × ₹29.1667 = ₹7.70 cr
+That ₹7.70 cr forfeit is the most important number in this event and currently
+cannot be displayed anywhere. Fix that.
+
+Also fix the rendering: "Exercise Default" is a label and a default-badge
+colliding into one string. And "Subscribe." is not a description.
+
+═══ B. QUANTIFY THE CONSTRAINTS WHERE THE DECISION HAPPENS ═══
+Section 04 says "Arka Small Cap Fund: Cash short" and "Arka Focused 25 Fund:
+SEBI 10% headroom" with no numbers — while /schemes/:id already computes and
+displays exactly the numbers needed. Bring them to the decision page:
+
+  Arka Focused 25 Fund
+    Bharat Renewables is 9.39% of NAV. Exercising all 18,00,000 rights takes it
+    to 10.77% and breaches the 10% cap. Maximum: 10,27,007 rights.
+    The remaining 7,72,993 must be sold on exchange before the RE window closes.
+
+  Arka Small Cap Fund
+    Needs ₹2.55 cr, has ₹1.80 cr. Short ₹75.00 lakh.
+    Cash covers 2,11,764 of 3,00,000 rights.
+
+A constraint the fund manager cannot act on is not a control, it is a label.
+
+═══ C. MAKE THE DECISION SECTION ENFORCE WHAT SECTION 04 SAYS ═══
+Today every scheme row is identical — "Exercise / Submit Election" — including
+the two that cannot exercise in full. Focused 25 offers the full 18,00,000 which
+breaches SEBI; Small Cap offers the full 3,00,000 when cash covers 2,11,764.
+
+Per scheme, the row must carry:
+  1. the choice: exercise / sell entitlement / let lapse
+  2. a QUANTITY the fund manager can change, defaulting to the full entitlement,
+     or to the permitted maximum where a constraint binds
+  3. the cash consequence of the current selection, live
+  4. where a constraint binds: an inline explanation naming the limit, the
+     maximum, and what to do with the remainder
+
+A blocked scheme must not look like an unblocked one. Full exercise on a blocked
+scheme must be refused with the reason, both in the UI and on the server.
+
+═══ D. ONE SUBMISSION, NOT SIX ═══
+Replace the six per-scheme "Submit Election" buttons with:
+  - a live total: rights to exercise, cash to block via ASBA, entitlements to
+    sell, value forfeited
+  - ONE "Submit to Compliance" control
+  - the control stays DISABLED while any scheme is blocked, and says how many
+    and which
+This is how the standalone Arka desk worked before it was generalised; it
+regressed in the merge.
+
+Maker-checker stands: the fund manager prepares, Compliance approves, and the
+server must refuse an approval by the person who prepared it.
+
+═══ E. ADD NAV IMPACT TO SECTION 02 AND LINK THE SCHEMES ═══
+Section 02 shows Scheme / Eligible Quantity / Expected Cash / Direction. The
+NAV impact per unit is missing — 22.00, 3.93, 1.77, 0.60, 0.51, 0.08 paise —
+even though those figures already appear on the portfolio and the archive. Add
+the column. This is the page about this event's impact; materiality belongs here
+most of all.
+
+Scheme names in this table must link to /schemes/:id. The portfolio step asked
+for links both ways and only one direction landed.
+
+═══ F. THE DISAGREEMENT RENDERS TWICE ═══
+"Rights ratio: 1 for 6 conflicts with 1 for 5; NSE filing wins..." appears as a
+banner above section 01 AND inside sentence 3 of section 01. Keep one — sentence
+3, where it has context.
+
+═══ DO NOT ═══
+- Do not add sections or tabs.
+- Do not change sections 01 or 06.
+- Do not show Options, Constraints or Decision for mandatory events that have no
+  choice — that behaviour is correct today and must stay.
+- Do not let a value-neutral event display a rupee amount.
+
+Declare new fields in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- the rights issue shows three options, each with its rupee consequence, and
+  the lapse option shows ₹7.70 cr forfeited;
+- Focused 25 cannot submit a full exercise, and the refusal names the 10% cap
+  and the 10,27,007 maximum;
+- Small Cap cannot submit more than 2,11,764 rights;
+- there is exactly one submit control, disabled while any scheme is blocked,
+  naming which;
+- selecting "sell entitlement" on a scheme changes the total and removes its
+  funding requirement;
+- section 02 shows NAV paise per unit for all six schemes and every scheme name
+  links to its scheme page;
+- the mandatory split page still shows no Options, Constraints or Decision;
+- the source disagreement appears exactly once.

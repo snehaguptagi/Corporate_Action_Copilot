@@ -375,6 +375,16 @@ export async function saveArkaDeskDecisions(decisions: Array<{ schemeId: string;
     const holding = (await db.select().from(arkaSchemeHoldingsTable).where(eq(arkaSchemeHoldingsTable.schemeId, scheme.id)))[0];
     const entitlement = rightsForQuantity(holding?.quantity ?? 0n);
     if (BigInt(decision.rights) > entitlement) throw new Error(`${scheme.schemeName} decision exceeds entitlement.`);
+    const maxByCap = scheme.id === "arka-focused-25" ? FOCUSED_MAX_RIGHTS : null;
+    const maxByCash = scheme.cashBudgetPaise === null ? null : divideBigIntFloor(scheme.cashBudgetPaise, SUBSCRIPTION_PRICE_PAISE);
+    const permitted = [maxByCap, maxByCash].filter((value): value is bigint => value !== null)
+      .reduce((min, value) => min < value ? min : value, entitlement);
+    if (BigInt(decision.rights) > permitted) {
+      if (maxByCap !== null && BigInt(decision.rights) > maxByCap) {
+        throw new Error(`${scheme.schemeName} cannot exercise more than ${FOCUSED_MAX_RIGHTS.toLocaleString("en-IN")} rights under the SEBI 10% single-issuer limit.`);
+      }
+      throw new Error(`${scheme.schemeName} cannot exercise more than ${maxByCash?.toLocaleString("en-IN")} rights because available cash covers only that quantity.`);
+    }
     await db.update(arkaMutualFundSchemesTable).set({ decisionRights: BigInt(decision.rights) }).where(eq(arkaMutualFundSchemesTable.id, scheme.id));
   }
   return getArkaDesk();

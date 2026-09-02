@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  Analysis,
   ApprovalInput,
   ArkaDesk,
   ArkaDeskApprovalInput,
@@ -847,6 +848,83 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAnalysisUrl = () => {
+
+
+
+
+  return `/api/analysis`
+}
+
+/**
+ * @summary Get aggregate portfolio and historical analysis
+ */
+export const getAnalysis = async ( options?: Parameters<typeof customFetch>[1]): Promise<Analysis> => {
+
+  return customFetch<Analysis>(getGetAnalysisUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnalysisQueryKey = () => {
+    return [
+    `/api/analysis`
+    ] as const;
+    }
+
+
+export const getGetAnalysisQueryOptions = <TData = Awaited<ReturnType<typeof getAnalysis>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysis>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnalysisQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalysis>>> = ({ signal }) => getAnalysis({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalysis>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalysisQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalysis>>>
+export type GetAnalysisQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get aggregate portfolio and historical analysis
+ */
+
+export function useGetAnalysis<TData = Awaited<ReturnType<typeof getAnalysis>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysis>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnalysisQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

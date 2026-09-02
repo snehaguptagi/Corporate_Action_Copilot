@@ -11,3 +11,4 @@
 - [Rolling seed clock](rolling-seed-clock.md) — Synthetic arrivals and deadlines must be relative to read time; dashboard recency uses a rolling 24-hour window.
 - [Rights decision controls](rights-decision-controls.md) — Rights choices are scheme-level, constrained by cash and concentration maxima, and submitted as one maker package.
 - [Warm operations palette](warm-operations-palette.md) — Use named warm tokens only; sidebar foregrounds are solid and semantic colors signal status.
+- [Cross-event issuer exposure](cross-event-issuer-exposure.md) — Group concurrent events by issuer and scheme; count the shared holding baseline once, then sum action deltas.

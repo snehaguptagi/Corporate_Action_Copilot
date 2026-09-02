@@ -13,7 +13,7 @@ import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = sharedSeedDateAnchor;
-export const SEED_VERSION = "rolling-clock-overlap-v14";
+export const SEED_VERSION = "analysis-history-v15";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -90,6 +90,20 @@ const INDIAN_EVENT_META: Record<string, { deadlineDaysAhead: number; arrivalHour
   "evt-routine-split-3": { deadlineDaysAhead: 26, arrivalHoursAgo: 84 },
   "evt-routine-dividend-4": { deadlineDaysAhead: 27, arrivalHoursAgo: 90 },
   "evt-early-sighting": { deadlineDaysAhead: 28, arrivalHoursAgo: 12, recordDaysAhead: 12 },
+  "evt-combined-bonus": { deadlineDaysAhead: 19, arrivalHoursAgo: 32 },
+  "evt-combined-rights": { deadlineDaysAhead: 23, arrivalHoursAgo: 44 },
+  "evt-history-01": { deadlineDaysAhead: -8, arrivalHoursAgo: 260 },
+  "evt-history-02": { deadlineDaysAhead: -15, arrivalHoursAgo: 430 },
+  "evt-history-03": { deadlineDaysAhead: -22, arrivalHoursAgo: 600 },
+  "evt-history-04": { deadlineDaysAhead: -29, arrivalHoursAgo: 770 },
+  "evt-history-05": { deadlineDaysAhead: -36, arrivalHoursAgo: 940 },
+  "evt-history-06": { deadlineDaysAhead: -43, arrivalHoursAgo: 1110 },
+  "evt-history-07": { deadlineDaysAhead: -50, arrivalHoursAgo: 1280 },
+  "evt-history-08": { deadlineDaysAhead: -57, arrivalHoursAgo: 1450 },
+  "evt-history-09": { deadlineDaysAhead: -64, arrivalHoursAgo: 1620 },
+  "evt-history-10": { deadlineDaysAhead: -71, arrivalHoursAgo: 1790 },
+  "evt-history-11": { deadlineDaysAhead: -78, arrivalHoursAgo: 1960 },
+  "evt-settlement-break-02": { deadlineDaysAhead: -2, arrivalHoursAgo: 220 },
 };
 
 const relativeTimestamp = (hoursAgo: number, asOf = new Date()) =>
@@ -134,6 +148,68 @@ const indianEvent = (input: EventData): EventData => eventBase({
   ...input,
 });
 
+function closedAnalysisEvent(input: {
+  id: string;
+  reference: string;
+  issuer: string;
+  ticker: string;
+  isin: string;
+  fund: string;
+  account: string;
+  quantity: number;
+  capturedAmount: number;
+  forfeitedAmount?: number;
+  lapsed?: boolean;
+}): EventData {
+  const lapsed = Boolean(input.lapsed);
+  const rate = lapsed ? 0 : Number((input.capturedAmount / input.quantity).toFixed(2));
+  return indianEvent({
+    id: input.id,
+    reference: input.reference,
+    issuer: input.issuer,
+    security: `ISIN ${input.isin} · ${input.ticker}`,
+    eventType: lapsed ? "Rights issue" : "Cash dividend",
+    processingType: lapsed ? "Voluntary" : "Mandatory",
+    status: "Closed",
+    securityMaster: indianSecurity(input.isin, input.ticker, input.issuer),
+    requiredTermKeys: lapsed ? ["rightsRatio", "subscriptionPrice", "recordDate"] : ["rate", "recordDate", "paymentDate", "currency"],
+    calculationInputs: lapsed
+      ? { ratioNumerator: 1, ratioDenominator: 10, subscriptionPrice: 75 }
+      : { rate, withholdingRate: 0 },
+    notice: notice(`${input.ticker.toLowerCase()}-closed-event.pdf`, lapsed ? "Closed rights entitlement." : `Cash dividend ₹${rate.toFixed(2)}.`, [lapsed ? "Rights entitlement closed after the instruction deadline." : `Dividend ₹${rate.toFixed(2)} per share settled.`]),
+    terms: lapsed
+      ? [term("rightsRatio", "Rights ratio", "1 for 10"), term("subscriptionPrice", "Subscription price", "₹75"), term("recordDate", "Record date", shortDate(-12))]
+      : [term("rate", "Cash rate", `₹${rate.toFixed(2)}`), term("recordDate", "Record date", shortDate(-12)), term("paymentDate", "Payment date", shortDate(-5)), term("currency", "Currency", "INR")],
+    positions: [position(`POS-${input.ticker}`, input.fund, input.account, input.isin, input.quantity, isoDate(-12))],
+    historicalOutcome: {
+      capturedAmount: input.capturedAmount,
+      forfeitedAmount: input.forfeitedAmount ?? 0,
+      lapsed,
+      deadlineMet: true,
+    },
+    reconciliation: {
+      expected: input.capturedAmount,
+      actual: input.capturedAmount,
+      difference: 0,
+      tolerance: 0.01,
+      status: "Matched",
+      classification: "Matched",
+      note: lapsed ? "The entitlement lapsed after no sale instruction was recorded." : "Expected and actual settlement matched.",
+      expectedCash: input.capturedAmount,
+      actualCash: input.capturedAmount,
+      expectedSecurityQuantity: 0,
+      actualSecurityQuantity: 0,
+      expectedCurrency: "INR",
+      actualCurrency: "INR",
+      expectedSettlementDate: isoDate(-5),
+      actualSettlementDate: isoDate(-5),
+      expectedAccount: input.account,
+      actualAccount: input.account,
+      investigationSteps: [],
+    },
+  });
+}
+
 const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-ind-dividend-review", reference: "CA-IN-DIV-001", issuer: "Aarav Industries Ltd", security: "ISIN INE0AAR01011 · AARAV", eventType: "Cash dividend", processingType: "Mandatory", status: "Under review", amount: 0, securityMaster: indianSecurity("INE0AAR01011", "AARAV", "Aarav Industries Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("aarav-dividend-notice.pdf", "Interim dividend of ₹4.25.", ["NSE CORPORATE ACTION: Interim dividend ₹4.25 per equity share."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "₹4.25 per equity share."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("paymentDate", "Payment date", shortDate(22), 1, "Payment date."), term("currency", "Payment currency", "INR", 1, "Indian rupees."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "Section 196 treatment.", "Needs review")], positions: [position("POS-AAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0AAR01011", 450000, isoDate(10))] }),
   indianEvent({ id: "evt-ind-split", reference: "CA-IN-SPLIT-001", issuer: "Deccan Grid Ltd", security: "ISIN INE0DEC01012 · DGL", eventType: "Stock split", processingType: "Mandatory", status: "Awaiting settlement", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0DEC01012", "DGL", "Deccan Grid Ltd"), requiredTermKeys: ["splitRatio", "effectiveDate", "recordDate"], calculationInputs: { splitFactor: 5 }, notice: notice("deccan-split-notice.pdf", "Stock split 1:5.", ["Face value ₹10 split into five ₹2 shares."]), terms: [term("splitRatio", "Split ratio", "5 for 1", 1, "1:5 split."), term("effectiveDate", "Effective date", shortDate(15), 1, "Effective date."), term("recordDate", "Record date", shortDate(10), 1, "Record date.")], positions: [position("POS-DEC", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0DEC01012", 80000, isoDate(10))] }),
@@ -147,11 +223,25 @@ const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-concentration-creep", reference: "CA-IN-BONUS-002", issuer: "Saffron Digital Ltd", security: "ISIN INE0SAF01023 · SAFFRON", eventType: "Bonus issue", processingType: "Mandatory", status: "Monitoring", teachingScenario: "Concentration creep", amount: 2_250_000, unit: "Shares", securityMaster: indianSecurity("INE0SAF01023", "SAFFRON", "Saffron Digital Ltd"), requiredTermKeys: ["bonusRatio", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 4 }, notice: notice("saffron-bonus.pdf", "Bonus issue 1:4.", ["One bonus share for four."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 4"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-SAF", "Arka Focused 25 Fund", "ARKA-F25-001", "INE0SAF01023", 9_000_000, isoDate(10))] }),
   indianEvent({ id: "evt-near-miss", reference: "CA-IN-TENDER-002", issuer: "Konkan Ports Ltd", security: "ISIN INE0KON01024 · KONKAN", eventType: "Tender offer", processingType: "Voluntary", status: "Election required", teachingScenario: "Near miss", amount: 7_200_000, securityMaster: indianSecurity("INE0KON01024", "KONKAN", "Konkan Ports Ltd"), requiredTermKeys: ["offerPrice", "maximumAcceptance", "marketDeadline"], calculationInputs: { offerPrice: 600, maximumPercentage: .2 }, notice: notice("konkan-tender.pdf", "Tender at ₹600.", ["Tender at ₹600, 20% maximum."]), terms: [term("offerPrice", "Offer price", "₹600"), term("maximumAcceptance", "Maximum acceptance", "20%"), term("marketDeadline", "Market deadline", istDeadline(3))], positions: [position("POS-KON", "Arka Infrastructure Fund", "ARKA-INF-001", "INE0KON01024", 60_000, isoDate(10))], options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20%.", result: "Cash proceeds.", default: false, fundingFormula: "Quantity × price" }, { id: "retain", label: "Retain", description: "Keep the holding.", result: "No cash.", default: true, fundingFormula: "No funding" }] }),
   indianEvent({ id: "evt-overlap-dividend", reference: "CA-IN-DIV-005", issuer: "Ganga Telecom Ltd", security: "ISIN INE0GAN01025 · GANGA", eventType: "Cash dividend", processingType: "Mandatory", status: "Monitoring", teachingScenario: "Overlap", amount: 0, securityMaster: indianSecurity("INE0GAN01025", "GANGA", "Ganga Telecom Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 3.5, withholdingRate: 0 }, notice: notice("ganga-dividend.pdf", "Dividend ₹3.50.", ["₹3.50 per share."]), terms: [term("rate", "Cash rate", "₹3.50"), term("recordDate", "Record date", shortDate(10)), term("paymentDate", "Payment date", shortDate(21)), term("currency", "Currency", "INR")], positions: [position("POS-GAN-LC", "Arka Large Cap Fund", "ARKA-LC-001", "INE0GAN01025", 1_200_000, isoDate(10)), position("POS-GAN-FC", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0GAN01025", 900_000, isoDate(10)), position("POS-GAN-SC", "Arka Small Cap Fund", "ARKA-SC-001", "INE0GAN01025", 500_000, isoDate(10)), position("POS-GAN-F25", "Arka Focused 25 Fund", "ARKA-F25-001", "INE0GAN01025", 350_000, isoDate(10)), position("POS-GAN-N50", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0GAN01025", 1_500_000, isoDate(10))] }),
-  indianEvent({ id: "evt-routine-split-1", reference: "CA-IN-SPLIT-002", issuer: "Malabar Foods Ltd", security: "ISIN INE0MAL01026 · MALABAR", eventType: "Stock split", processingType: "Mandatory", status: "Monitoring", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0MAL01026", "MALABAR", "Malabar Foods Ltd"), requiredTermKeys: ["splitRatio", "recordDate"], calculationInputs: { splitFactor: 2 }, notice: notice("malabar-split.pdf", "Stock split 1:2.", ["One share becomes two."]), terms: [term("splitRatio", "Split ratio", "2 for 1"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-MAL", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0MAL01026", 220_000, isoDate(10))] }),
-  indianEvent({ id: "evt-routine-dividend-2", reference: "CA-IN-DIV-006", issuer: "Cauvery Textiles Ltd", security: "ISIN INE0CAU01027 · CAUVERY", eventType: "Cash dividend", processingType: "Mandatory", status: "Monitoring", amount: 0, securityMaster: indianSecurity("INE0CAU01027", "CAUVERY", "Cauvery Textiles Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 1.25, withholdingRate: 0 }, notice: notice("cauvery-dividend.pdf", "Dividend ₹1.25.", ["₹1.25 per share."]), terms: [term("rate", "Cash rate", "₹1.25"), term("recordDate", "Record date", shortDate(10)), term("paymentDate", "Payment date", shortDate(25)), term("currency", "Currency", "INR")], positions: [position("POS-CAU", "Arka Large Cap Fund", "ARKA-LC-001", "INE0CAU01027", 700_000, isoDate(10))] }),
-  indianEvent({ id: "evt-routine-split-3", reference: "CA-IN-SPLIT-003", issuer: "Nilgiri Cements Ltd", security: "ISIN INE0NIL01028 · NILGIRI", eventType: "Stock split", processingType: "Mandatory", status: "Monitoring", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0NIL01028", "NILGIRI", "Nilgiri Cements Ltd"), requiredTermKeys: ["splitRatio", "recordDate"], calculationInputs: { splitFactor: 5 }, notice: notice("nilgiri-split.pdf", "Stock split 1:5.", ["One share becomes five."]), terms: [term("splitRatio", "Split ratio", "5 for 1"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-NIL", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0NIL01028", 130_000, isoDate(10))] }),
-  indianEvent({ id: "evt-routine-dividend-4", reference: "CA-IN-DIV-007", issuer: "Utkal Healthcare Ltd", security: "ISIN INE0UTK01029 · UTKAL", eventType: "Cash dividend", processingType: "Mandatory", status: "Monitoring", amount: 0, securityMaster: indianSecurity("INE0UTK01029", "UTKAL", "Utkal Healthcare Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 2.5, withholdingRate: 0 }, notice: notice("utkal-dividend.pdf", "Dividend ₹2.50.", ["₹2.50 per share."]), terms: [term("rate", "Cash rate", "₹2.50"), term("recordDate", "Record date", shortDate(10)), term("paymentDate", "Payment date", shortDate(27)), term("currency", "Currency", "INR")], positions: [position("POS-UTK", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0UTK01029", 300_000, isoDate(10))] }),
+  indianEvent({ id: "evt-routine-split-1", reference: "CA-IN-SPLIT-002", issuer: "Malabar Foods Ltd", security: "ISIN INE0MAL01026 · MALABAR", eventType: "Stock split", processingType: "Mandatory", status: "Closed", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0MAL01026", "MALABAR", "Malabar Foods Ltd"), requiredTermKeys: ["splitRatio", "recordDate"], calculationInputs: { splitFactor: 2 }, notice: notice("malabar-split.pdf", "Stock split 1:2.", ["One share becomes two."]), terms: [term("splitRatio", "Split ratio", "2 for 1"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-MAL", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0MAL01026", 220_000, isoDate(10))], historicalOutcome: { capturedAmount: 0, forfeitedAmount: 0, lapsed: false, deadlineMet: true } }),
+  indianEvent({ id: "evt-routine-dividend-2", reference: "CA-IN-DIV-006", issuer: "Cauvery Textiles Ltd", security: "ISIN INE0CAU01027 · CAUVERY", eventType: "Cash dividend", processingType: "Mandatory", status: "Closed", amount: 0, securityMaster: indianSecurity("INE0CAU01027", "CAUVERY", "Cauvery Textiles Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 1.25, withholdingRate: 0 }, notice: notice("cauvery-dividend.pdf", "Dividend ₹1.25.", ["₹1.25 per share."]), terms: [term("rate", "Cash rate", "₹1.25"), term("recordDate", "Record date", shortDate(10)), term("paymentDate", "Payment date", shortDate(25)), term("currency", "Currency", "INR")], positions: [position("POS-CAU", "Arka Large Cap Fund", "ARKA-LC-001", "INE0CAU01027", 700_000, isoDate(10))], historicalOutcome: { capturedAmount: 875_000, forfeitedAmount: 0, lapsed: false, deadlineMet: true } }),
+  indianEvent({ id: "evt-routine-split-3", reference: "CA-IN-SPLIT-003", issuer: "Nilgiri Cements Ltd", security: "ISIN INE0NIL01028 · NILGIRI", eventType: "Stock split", processingType: "Mandatory", status: "Closed", amount: 0, unit: "Shares", securityMaster: indianSecurity("INE0NIL01028", "NILGIRI", "Nilgiri Cements Ltd"), requiredTermKeys: ["splitRatio", "recordDate"], calculationInputs: { splitFactor: 5 }, notice: notice("nilgiri-split.pdf", "Stock split 1:5.", ["One share becomes five."]), terms: [term("splitRatio", "Split ratio", "5 for 1"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-NIL", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0NIL01028", 130_000, isoDate(10))], historicalOutcome: { capturedAmount: 0, forfeitedAmount: 0, lapsed: false, deadlineMet: true } }),
+  indianEvent({ id: "evt-routine-dividend-4", reference: "CA-IN-DIV-007", issuer: "Utkal Healthcare Ltd", security: "ISIN INE0UTK01029 · UTKAL", eventType: "Cash dividend", processingType: "Mandatory", status: "Closed", amount: 0, securityMaster: indianSecurity("INE0UTK01029", "UTKAL", "Utkal Healthcare Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 2.5, withholdingRate: 0 }, notice: notice("utkal-dividend.pdf", "Dividend ₹2.50.", ["₹2.50 per share."]), terms: [term("rate", "Cash rate", "₹2.50"), term("recordDate", "Record date", shortDate(10)), term("paymentDate", "Payment date", shortDate(27)), term("currency", "Currency", "INR")], positions: [position("POS-UTK", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0UTK01029", 300_000, isoDate(10))], historicalOutcome: { capturedAmount: 750_000, forfeitedAmount: 0, lapsed: false, deadlineMet: true } }),
   indianEvent({ id: "evt-early-sighting", reference: "SIGHTING-NSE-001", issuer: "Veda Consumer Products Ltd", security: "ISIN INE0VED01030 · VEDA", eventType: "Cash dividend", processingType: "Mandatory", status: "Early sighting", settlementStage: "Early sighting", isEarlySighting: true, impactBasis: "Indicative", decisionBlockedReason: "Awaiting custodian notification. You can review the likely impact now, but an instruction cannot be sent until SBI-SG confirms this action.", teachingScenario: "Early sighting", amount: 0, securityMaster: indianSecurity("INE0VED01030", "VEDA", "Veda Consumer Products Ltd"), requiredTermKeys: ["rate", "recordDate"], calculationInputs: { rate: 3, withholdingRate: 0 }, source: "Exchange filing · NSE", sourceRecords: [{ id: "evt-early-sighting-nse", channel: "Exchange announcement", provider: "NSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(0, "07:50:00"), assertedFields: { recordDate: isoDate(12), rate: "₹3.00" }, primary: true }], sourceAgreement: "Awaiting SBI-SG MT564 confirmation.", notice: notice("veda-nse-filing.pdf", "Indicative dividend sighting from NSE.", ["NSE filing: proposed dividend ₹3.00 per share."], "NSE"), terms: [term("rate", "Cash rate", "₹3.00"), term("recordDate", "Record date", shortDate(12))], positions: [position("POS-VED", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0VED01030", 900_000, isoDate(10))], options: [], instruction: { status: "Unavailable", destination: "SBI-SG", reference: "", generatedAt: "", content: "No MT565 can be sent until SBI-SG supplies its corporate action reference in an MT564.", simulated: false, approvalActor: "" } }),
+  indianEvent({ id: "evt-combined-bonus", reference: "CA-IN-BONUS-003", issuer: "Western Circuits Ltd", security: "ISIN INE0WES01031 · WESTERN", eventType: "Bonus issue", processingType: "Mandatory", status: "Monitoring", teachingScenario: "Combined-only concentration breach", analysisCurrentExposurePercent: 8.85, analysisExposureChangePercent: 0.65, securityMaster: indianSecurity("INE0WES01031", "WESTERN", "Western Circuits Ltd"), requiredTermKeys: ["bonusRatio", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 20 }, notice: notice("western-bonus.pdf", "Bonus issue 1:20.", ["One bonus share for every twenty shares."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 20"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-WES-BONUS", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0WES01031", 4_500_000, isoDate(10))] }),
+  indianEvent({ id: "evt-combined-rights", reference: "CA-IN-RIGHTS-004", issuer: "Western Circuits Ltd", security: "ISIN INE0WES01031 · WESTERN", eventType: "Rights issue", processingType: "Voluntary", status: "Validated", teachingScenario: "Combined-only concentration breach", analysisCurrentExposurePercent: 8.85, analysisExposureChangePercent: 0.70, securityMaster: indianSecurity("INE0WES01031", "WESTERN", "Western Circuits Ltd"), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 25, subscriptionPrice: 90 }, notice: notice("western-rights.pdf", "Rights issue 1:25 at ₹90.", ["One rights share for every twenty-five shares at ₹90."]), terms: [term("rightsRatio", "Rights ratio", "1 for 25"), term("subscriptionPrice", "Subscription price", "₹90"), term("recordDate", "Record date", shortDate(10)), term("marketDeadline", "Market deadline", istDeadline(23))], positions: [position("POS-WES-RIGHTS", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0WES01031", 4_500_000, isoDate(10))], options: [{ id: "exercise", label: "Exercise", description: "Subscribe to the rights.", result: "Cash funding is required.", default: true, fundingFormula: "Rights × ₹90" }, { id: "sell", label: "Sell entitlement", description: "Sell the rights entitlement.", result: "No funding required.", default: false, fundingFormula: "No funding" }] }),
+  closedAnalysisEvent({ id: "evt-history-01", reference: "CA-IN-HIST-001", issuer: "Ajanta Consumer Ltd", ticker: "AJANTA", isin: "INE0AJN01041", fund: "Arka Large Cap Fund", account: "ARKA-LC-001", quantity: 1_000_000, capturedAmount: 8_500_000 }),
+  closedAnalysisEvent({ id: "evt-history-02", reference: "CA-IN-HIST-002", issuer: "Godavari Banks Ltd", ticker: "GODAVARI", isin: "INE0GOD01042", fund: "Arka Nifty 50 Index Fund", account: "ARKA-N50-001", quantity: 1_200_000, capturedAmount: 7_200_000 }),
+  closedAnalysisEvent({ id: "evt-history-03", reference: "CA-IN-HIST-003", issuer: "Coromandel Pharma Ltd", ticker: "COROM", isin: "INE0COR01043", fund: "Arka Flexi Cap Fund", account: "ARKA-FC-001", quantity: 700_000, capturedAmount: 6_300_000 }),
+  closedAnalysisEvent({ id: "evt-history-04", reference: "CA-IN-HIST-004", issuer: "Himalaya Bearings Ltd", ticker: "HIMALAYA", isin: "INE0HIM01044", fund: "Arka Small Cap Fund", account: "ARKA-SC-001", quantity: 450_000, capturedAmount: 3_600_000 }),
+  closedAnalysisEvent({ id: "evt-history-05", reference: "CA-IN-HIST-005", issuer: "Saraswati Motors Ltd", ticker: "SARAS", isin: "INE0SAR01045", fund: "Arka Focused 25 Fund", account: "ARKA-F25-001", quantity: 500_000, capturedAmount: 5_000_000 }),
+  closedAnalysisEvent({ id: "evt-history-06", reference: "CA-IN-HIST-006", issuer: "Kutch Minerals Ltd", ticker: "KUTCH", isin: "INE0KUT01046", fund: "Arka Infrastructure Fund", account: "ARKA-INF-001", quantity: 240_000, capturedAmount: 2_400_000 }),
+  closedAnalysisEvent({ id: "evt-history-07", reference: "CA-IN-HIST-007", issuer: "Mysore Retail Ltd", ticker: "MYSORE", isin: "INE0MYS01047", fund: "Arka Mid Cap Fund", account: "ARKA-MC-001", quantity: 600_000, capturedAmount: 4_200_000 }),
+  closedAnalysisEvent({ id: "evt-history-08", reference: "CA-IN-HIST-008", issuer: "Rajasthan Cables Ltd", ticker: "RAJCAB", isin: "INE0RAJ01048", fund: "Arka Value Fund", account: "ARKA-VALUE-001", quantity: 300_000, capturedAmount: 2_100_000 }),
+  closedAnalysisEvent({ id: "evt-history-09", reference: "CA-IN-HIST-009", issuer: "Eastern Agri Ltd", ticker: "EASTAG", isin: "INE0EAS01049", fund: "Arka ELSS Tax Saver", account: "ARKA-ELSS-001", quantity: 250_000, capturedAmount: 1_500_000 }),
+  closedAnalysisEvent({ id: "evt-history-10", reference: "CA-IN-HIST-010", issuer: "Malwa Technologies Ltd", ticker: "MALWATECH", isin: "INE0MAW01050", fund: "Arka Flexi Cap Fund", account: "ARKA-FC-001", quantity: 80_000, capturedAmount: 0, forfeitedAmount: 1_050_000, lapsed: true }),
+  closedAnalysisEvent({ id: "evt-history-11", reference: "CA-IN-HIST-011", issuer: "Coastal Energy Ltd", ticker: "COASTAL", isin: "INE0COA01051", fund: "Arka Small Cap Fund", account: "ARKA-SC-001", quantity: 65_000, capturedAmount: 0, forfeitedAmount: 750_000, lapsed: true }),
+  indianEvent({ id: "evt-settlement-break-02", reference: "CA-IN-DIV-008", issuer: "Bundelkhand Power Ltd", security: "ISIN INE0BUN01052 · BUNDPOWER", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", securityMaster: indianSecurity("INE0BUN01052", "BUNDPOWER", "Bundelkhand Power Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 3.2, withholdingRate: 0 }, notice: notice("bundelkhand-dividend.pdf", "Dividend ₹3.20.", ["₹3.20 per share."]), terms: [term("rate", "Cash rate", "₹3.20"), term("recordDate", "Record date", shortDate(-7)), term("paymentDate", "Payment date", shortDate(-2)), term("currency", "Currency", "INR")], positions: [position("POS-BUN", "Arka Banking & Financial", "ARKA-BF-001", "INE0BUN01052", 500_000, isoDate(-7))], reconciliation: { expected: 1_600_000, actual: 1_560_000, difference: -40_000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is ₹40,000 below expected cash.", expectedCash: 1_600_000, actualCash: 1_560_000, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(-2), actualSettlementDate: isoDate(-2), expectedAccount: "ARKA-BF-001", actualAccount: "ARKA-BF-001", investigationSteps: ["Verify eligible quantity.", "Recover the ₹40,000 shortfall."] } }),
 ];
 
 const OVERLAP_SCHEMES: Record<string, string[]> = {
@@ -166,6 +256,18 @@ const OVERLAP_SCHEMES: Record<string, string[]> = {
   "evt-routine-split-3": ["arka-large-cap", "arka-small-cap", "arka-focused-25"],
   "evt-routine-dividend-4": ["arka-large-cap"],
   "evt-early-sighting": ["arka-flexi-cap"],
+  "evt-history-01": ["arka-flexi-cap", "arka-nifty-50"],
+  "evt-history-02": ["arka-large-cap"],
+  "evt-history-03": ["arka-large-cap", "arka-focused-25"],
+  "evt-history-04": ["arka-flexi-cap"],
+  "evt-history-05": ["arka-large-cap"],
+  "evt-history-06": ["arka-focused-25"],
+  "evt-history-07": ["arka-flexi-cap"],
+  "evt-history-08": ["arka-mid-cap"],
+  "evt-history-09": ["arka-nifty-50"],
+  "evt-history-10": ["arka-large-cap"],
+  "evt-history-11": ["arka-infrastructure"],
+  "evt-settlement-break-02": ["arka-value"],
 };
 
 for (const event of preloadedEvents) {
@@ -1353,6 +1455,60 @@ export function toSummary(event: EventData): EventData {
   return { ...summary, ...deriveEventSignals(event) };
 }
 
+const isOpenEvent = (event: EventData) => !["Closed", "Reconciled"].includes(event.status);
+
+function eventExposure(event: EventData, impact: EventData, scheme: EventData): EventData {
+  const seed = ARKA_SCHEME_SEED.find((candidate) => candidate.id === scheme.id);
+  const aumRupees = seed ? Number(seed.aumPaise) / 100 : Number(scheme.aumCrore ?? 0) * 10_000_000;
+  const position = (event.positions ?? []).find((candidate: EventData) => candidate.fund === scheme.name);
+  const quantity = Number(position?.eligibleQuantity ?? position?.settledQuantity ?? 0);
+  const price = Number(event.referencePrice ?? event.calculationInputs?.offerPrice ?? event.calculationInputs?.subscriptionPrice ?? 100);
+  const inferredCurrent = aumRupees > 0 ? quantity * price / aumRupees * 100 : 0;
+  let inferredChange = 0;
+  if (aumRupees > 0 && event.eventType === "Bonus issue") {
+    inferredChange = Number(impact.quantityResult ?? 0) * price / aumRupees * 100;
+  } else if (aumRupees > 0 && event.eventType === "Rights issue") {
+    inferredChange = Number(impact.quantityResult ?? 0) * price / aumRupees * 100;
+  }
+  const currentPercent = Number((event.analysisCurrentExposurePercent ?? inferredCurrent).toFixed(2));
+  const changePercent = Number((event.analysisExposureChangePercent ?? inferredChange).toFixed(2));
+  return {
+    eventId: event.id,
+    issuer: event.issuer,
+    mandatory: event.processingType.startsWith("Mandatory"),
+    currentPercent,
+    changePercent,
+    postEventPercent: Number((currentPercent + changePercent).toFixed(2)),
+  };
+}
+
+function issuerExposuresForScheme(events: EventData[], scheme: EventData): EventData[] {
+  const grouped = new Map<string, EventData[]>();
+  for (const event of events.filter(isOpenEvent)) {
+    const impact = (event.schemeImpacts ?? []).find((candidate: EventData) => candidate.schemeId === scheme.id && candidate.affected);
+    if (!impact) continue;
+    const rows = grouped.get(event.issuer) ?? [];
+    rows.push(eventExposure(event, impact, scheme));
+    grouped.set(event.issuer, rows);
+  }
+  return [...grouped.entries()].map(([issuer, rows]) => {
+    const currentPercent = Math.max(...rows.map((row) => row.currentPercent));
+    const postActionPercent = Number((currentPercent + rows.reduce((total, row) => total + row.changePercent, 0)).toFixed(2));
+    return {
+      issuer,
+      eventCount: rows.length,
+      includesMandatory: rows.some((row) => row.mandatory),
+      currentPercent,
+      postActionPercent,
+      capPercent: 10,
+      distanceToCapPercent: Number(Math.max(0, 10 - postActionPercent).toFixed(2)),
+      breach: postActionPercent > 10,
+      eventIds: rows.map((row) => row.eventId),
+      combinedOnly: rows.length > 1 && postActionPercent > 10 && rows.every((row) => row.postEventPercent <= 10),
+    };
+  }).sort((left, right) => right.postActionPercent - left.postActionPercent);
+}
+
 export function buildSchemeSummaries(events: EventData[], desk: EventData): EventData[] {
   return desk.schemes.map((scheme: EventData) => {
     const impacts = events.flatMap((event) => (event.schemeImpacts ?? []).map((impact: EventData) => ({ event, impact })))
@@ -1361,18 +1517,86 @@ export function buildSchemeSummaries(events: EventData[], desk: EventData): Even
     const fundingNeeded = open.filter(({ impact }) => impact.direction === "Funding")
       .reduce((total, { impact }) => total + Number(impact.cashAmount ?? 0), 0);
     const cashAvailable = Number(scheme.cashAvailableCrore ?? 0) * 10_000_000;
+    const exposure = issuerExposuresForScheme(events, scheme)[0];
+    const closest = [...open].sort((left, right) => Date.parse(left.event.internalDeadlineAt) - Date.parse(right.event.internalDeadlineAt))[0]?.event;
     return {
       id: scheme.id,
       name: scheme.name,
       category: scheme.category,
-      openActions: open.map(({ event }) => ({ eventId: event.id, issuer: event.issuer, eventType: event.eventType })),
+      openActions: open.map(({ event, impact }) => ({ eventId: event.id, issuer: event.issuer, eventType: event.eventType, materialityPaise: Number(impact.navImpactPaise ?? 0) }))
+        .sort((left, right) => right.materialityPaise - left.materialityPaise),
       totalNavImpactPaise: Number(open.reduce((total, { impact }) => total + Number(impact.navImpactPaise ?? 0), 0).toFixed(2)),
       fundingNeeded: Number(fundingNeeded.toFixed(2)),
       cashAvailable,
       shortfall: Math.max(0, Number((fundingNeeded - cashAvailable).toFixed(2))),
-      flag: open.find(({ impact }) => impact.flag)?.impact.flag ?? null,
+      closestDeadline: closest?.internalDeadline ?? "",
+      largestExposureIssuer: exposure?.issuer ?? "",
+      largestExposureEventId: exposure?.eventIds?.[0] ?? "",
+      largestExposureEventName: exposure ? `${exposure.issuer} ${open.find(({ event }) => event.id === exposure.eventIds[0])?.event.eventType.toLowerCase() ?? ""}` : "",
+      largestExposurePercent: exposure?.postActionPercent ?? 0,
+      distanceToLimitPercent: exposure?.distanceToCapPercent ?? 10,
+      flag: exposure?.combinedOnly ? "Combined issuer breach" : open.find(({ impact }) => impact.flag)?.impact.flag ?? null,
     };
   }).sort((left: EventData, right: EventData) => right.totalNavImpactPaise - left.totalNavImpactPaise || right.openActions.length - left.openActions.length);
+}
+
+export function buildAnalysis(events: EventData[], desk: EventData, asOf = new Date()): EventData {
+  const schemes = desk.schemes.map((scheme: EventData) => {
+    const openImpacts = events.filter(isOpenEvent).flatMap((event) => {
+      const impact = (event.schemeImpacts ?? []).find((candidate: EventData) => candidate.schemeId === scheme.id && candidate.affected);
+      return impact ? [{ event, impact }] : [];
+    });
+    const fundingRows = openImpacts.filter(({ impact }) => impact.direction === "Funding");
+    const aggregateFundingNeeded = fundingRows.reduce((total, { impact }) => total + Number(impact.cashAmount ?? 0), 0);
+    const largestSingleEventFunding = Math.max(0, ...fundingRows.map(({ impact }) => Number(impact.cashAmount ?? 0)));
+    const cashAvailable = Number(scheme.cashAvailableCrore ?? 0) * 10_000_000;
+    const issuerExposures = issuerExposuresForScheme(events, scheme);
+    return {
+      schemeId: scheme.id,
+      schemeName: scheme.name,
+      openEventCount: openImpacts.length,
+      aggregateFundingNeeded: Number(aggregateFundingNeeded.toFixed(2)),
+      largestSingleEventFunding: Number(largestSingleEventFunding.toFixed(2)),
+      cashAvailable,
+      shortfall: Number(Math.max(0, aggregateFundingNeeded - cashAvailable).toFixed(2)),
+      fundingStatus: aggregateFundingNeeded > cashAvailable ? "Short" : "Covered",
+      issuerExposures: issuerExposures.map(({ eventIds: _eventIds, combinedOnly: _combinedOnly, ...exposure }) => exposure),
+      combinedOnlyBreaches: issuerExposures.filter((exposure) => exposure.combinedOnly).map((exposure) => ({
+        issuer: exposure.issuer,
+        eventIds: exposure.eventIds,
+        postActionPercent: exposure.postActionPercent,
+        capPercent: exposure.capPercent,
+        excessPercent: Number((exposure.postActionPercent - exposure.capPercent).toFixed(2)),
+      })),
+    };
+  }).sort((left: EventData, right: EventData) => right.shortfall - left.shortfall || right.aggregateFundingNeeded - left.aggregateFundingNeeded || right.openEventCount - left.openEventCount);
+
+  const closedEvents = events.filter((event) => ["Closed", "Reconciled"].includes(event.status)).map((event) => {
+    const outcome = event.historicalOutcome ?? {};
+    const capturedAmount = Number(outcome.capturedAmount ?? (event.schemeImpacts ?? []).filter((impact: EventData) => impact.affected && impact.direction === "Receivable").reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0));
+    return {
+      eventId: event.id,
+      issuer: event.issuer,
+      eventType: event.eventType,
+      capturedAmount: Number(capturedAmount.toFixed(2)),
+      forfeitedAmount: Number(Number(outcome.forfeitedAmount ?? 0).toFixed(2)),
+      lapsed: Boolean(outcome.lapsed),
+      deadlineOutcome: outcome.deadlineMet === false ? "Missed" : "Met",
+      reconciliationStatus: event.reconciliation?.classification ?? event.reconciliation?.status ?? "Closed",
+    };
+  });
+  return {
+    generatedAt: asOf.toISOString(),
+    schemes,
+    history: {
+      capturedAmount: Number(closedEvents.reduce((total, event) => total + event.capturedAmount, 0).toFixed(2)),
+      forfeitedAmount: Number(closedEvents.reduce((total, event) => total + event.forfeitedAmount, 0).toFixed(2)),
+      lapsedCount: closedEvents.filter((event) => event.lapsed).length,
+      deadlinesMet: closedEvents.filter((event) => event.deadlineOutcome === "Met").length,
+      deadlinesTotal: closedEvents.length,
+      closedEvents,
+    },
+  };
 }
 
 export function buildDashboard(events: EventData[], desk: EventData, asOf = new Date()): EventData {

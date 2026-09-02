@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './analysis';
+export * from './analysisHistory';
+export * from './analysisScheme';
 export * from './approvalInput';
 export * from './arkaDecisionTotals';
 export * from './arkaDesk';
@@ -29,6 +32,8 @@ export * from './authUserEnvelope';
 export * from './beginBrowserLoginParams';
 export * from './calculateInput';
 export * from './calculation';
+export * from './closedEventHistory';
+export * from './combinedCapBreach';
 export * from './dashboard';
 export * from './dashboardSchemeImpact';
 export * from './dashboardSchemeImpactDirection';
@@ -55,6 +60,7 @@ export * from './intakeInput';
 export * from './intakeInputSampleId';
 export * from './intakeSource';
 export * from './intakeValidationInput';
+export * from './issuerExposure';
 export * from './listAuditParams';
 export * from './listEventsParams';
 export * from './logoutBrowserSessionParams';

@@ -236,14 +236,73 @@ export const GetDashboardResponse = zod.object({
   "openActions": zod.array(zod.object({
   "eventId": zod.string(),
   "issuer": zod.string(),
-  "eventType": zod.string()
+  "eventType": zod.string(),
+  "materialityPaise": zod.number()
 })),
   "totalNavImpactPaise": zod.number(),
   "fundingNeeded": zod.number(),
   "cashAvailable": zod.number(),
   "shortfall": zod.number(),
+  "closestDeadline": zod.string(),
+  "largestExposureIssuer": zod.string(),
+  "largestExposureEventId": zod.string(),
+  "largestExposureEventName": zod.string(),
+  "largestExposurePercent": zod.number(),
+  "distanceToLimitPercent": zod.number(),
   "flag": zod.string().nullable()
 }))
+})
+
+
+/**
+ * @summary Get aggregate portfolio and historical analysis
+ */
+export const GetAnalysisResponse = zod.object({
+  "generatedAt": zod.coerce.date(),
+  "schemes": zod.array(zod.object({
+  "schemeId": zod.string(),
+  "schemeName": zod.string(),
+  "openEventCount": zod.number(),
+  "aggregateFundingNeeded": zod.number(),
+  "largestSingleEventFunding": zod.number(),
+  "cashAvailable": zod.number(),
+  "shortfall": zod.number(),
+  "fundingStatus": zod.string(),
+  "issuerExposures": zod.array(zod.object({
+  "issuer": zod.string(),
+  "eventCount": zod.number(),
+  "includesMandatory": zod.boolean(),
+  "currentPercent": zod.number(),
+  "postActionPercent": zod.number(),
+  "capPercent": zod.number(),
+  "distanceToCapPercent": zod.number(),
+  "breach": zod.boolean()
+})),
+  "combinedOnlyBreaches": zod.array(zod.object({
+  "issuer": zod.string(),
+  "eventIds": zod.array(zod.string()),
+  "postActionPercent": zod.number(),
+  "capPercent": zod.number(),
+  "excessPercent": zod.number()
+}))
+})),
+  "history": zod.object({
+  "capturedAmount": zod.number(),
+  "forfeitedAmount": zod.number(),
+  "lapsedCount": zod.number(),
+  "deadlinesMet": zod.number(),
+  "deadlinesTotal": zod.number(),
+  "closedEvents": zod.array(zod.object({
+  "eventId": zod.string(),
+  "issuer": zod.string(),
+  "eventType": zod.string(),
+  "capturedAmount": zod.number(),
+  "forfeitedAmount": zod.number(),
+  "lapsed": zod.boolean(),
+  "deadlineOutcome": zod.string(),
+  "reconciliationStatus": zod.string()
+}))
+})
 })
 
 
@@ -257,12 +316,19 @@ export const ListSchemesResponseItem = zod.object({
   "openActions": zod.array(zod.object({
   "eventId": zod.string(),
   "issuer": zod.string(),
-  "eventType": zod.string()
+  "eventType": zod.string(),
+  "materialityPaise": zod.number()
 })),
   "totalNavImpactPaise": zod.number(),
   "fundingNeeded": zod.number(),
   "cashAvailable": zod.number(),
   "shortfall": zod.number(),
+  "closestDeadline": zod.string(),
+  "largestExposureIssuer": zod.string(),
+  "largestExposureEventId": zod.string(),
+  "largestExposureEventName": zod.string(),
+  "largestExposurePercent": zod.number(),
+  "distanceToLimitPercent": zod.number(),
   "flag": zod.string().nullable()
 })
 export const ListSchemesResponse = zod.array(ListSchemesResponseItem)

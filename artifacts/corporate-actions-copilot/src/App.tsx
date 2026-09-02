@@ -20,6 +20,7 @@ import NoticeIntake from '@/pages/NoticeIntake';
 import FundManagerDesk from '@/pages/FundManagerDesk';
 import SchemeDetail from '@/pages/SchemeDetail';
 import Portfolio from '@/pages/Portfolio';
+import Analysis from '@/pages/Analysis';
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/events" component={EventsList} />
           <Route path="/portfolio" component={Portfolio} />
+          <Route path="/analysis" component={Analysis} />
           <Route path="/intake" component={NoticeIntake} />
           <Route path="/events/:eventId" component={FundManagerDesk} />
           <Route path="/schemes/:schemeId" component={SchemeDetail} />

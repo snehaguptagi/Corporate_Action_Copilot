@@ -132,8 +132,8 @@
   --input: 30 14% 87%;
   --ring: 21 100% 41%;
   
-  --app-font-sans: 'Plus Jakarta Sans', sans-serif;
-  --app-font-mono: 'Spline Sans Mono', monospace;
+  --app-font-sans: 'IBM Plex Sans', sans-serif;
+  --app-font-mono: 'IBM Plex Mono', monospace;
   --app-font-serif: Georgia, serif;
   
   --radius: 0.25rem;

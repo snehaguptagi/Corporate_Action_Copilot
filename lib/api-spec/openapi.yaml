@@ -195,6 +195,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Dashboard"
+  /analysis:
+    get:
+      operationId: getAnalysis
+      tags: [copilot]
+      summary: Get aggregate portfolio and historical analysis
+      responses:
+        "200":
+          description: Server-derived aggregate analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analysis"
   /schemes:
     get:
       operationId: listSchemes
@@ -788,9 +800,88 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SchemeSummary"
+    Analysis:
+      type: object
+      required: [generatedAt, schemes, history]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        schemes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisScheme"
+        history:
+          $ref: "#/components/schemas/AnalysisHistory"
+    AnalysisScheme:
+      type: object
+      required: [schemeId, schemeName, openEventCount, aggregateFundingNeeded, largestSingleEventFunding, cashAvailable, shortfall, fundingStatus, issuerExposures, combinedOnlyBreaches]
+      properties:
+        schemeId: { type: string }
+        schemeName: { type: string }
+        openEventCount: { type: number }
+        aggregateFundingNeeded: { type: number }
+        largestSingleEventFunding: { type: number }
+        cashAvailable: { type: number }
+        shortfall: { type: number }
+        fundingStatus: { type: string }
+        issuerExposures:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssuerExposure"
+        combinedOnlyBreaches:
+          type: array
+          items:
+            $ref: "#/components/schemas/CombinedCapBreach"
+    IssuerExposure:
+      type: object
+      required: [issuer, eventCount, includesMandatory, currentPercent, postActionPercent, capPercent, distanceToCapPercent, breach]
+      properties:
+        issuer: { type: string }
+        eventCount: { type: number }
+        includesMandatory: { type: boolean }
+        currentPercent: { type: number }
+        postActionPercent: { type: number }
+        capPercent: { type: number }
+        distanceToCapPercent: { type: number }
+        breach: { type: boolean }
+    CombinedCapBreach:
+      type: object
+      required: [issuer, eventIds, postActionPercent, capPercent, excessPercent]
+      properties:
+        issuer: { type: string }
+        eventIds:
+          type: array
+          items: { type: string }
+        postActionPercent: { type: number }
+        capPercent: { type: number }
+        excessPercent: { type: number }
+    AnalysisHistory:
+      type: object
+      required: [capturedAmount, forfeitedAmount, lapsedCount, deadlinesMet, deadlinesTotal, closedEvents]
+      properties:
+        capturedAmount: { type: number }
+        forfeitedAmount: { type: number }
+        lapsedCount: { type: number }
+        deadlinesMet: { type: number }
+        deadlinesTotal: { type: number }
+        closedEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClosedEventHistory"
+    ClosedEventHistory:
+      type: object
+      required: [eventId, issuer, eventType, capturedAmount, forfeitedAmount, lapsed, deadlineOutcome, reconciliationStatus]
+      properties:
+        eventId: { type: string }
+        issuer: { type: string }
+        eventType: { type: string }
+        capturedAmount: { type: number }
+        forfeitedAmount: { type: number }
+        lapsed: { type: boolean }
+        deadlineOutcome: { type: string }
+        reconciliationStatus: { type: string }
     SchemeSummary:
       type: object
-      required: [id, name, category, openActions, totalNavImpactPaise, fundingNeeded, cashAvailable, shortfall, flag]
+      required: [id, name, category, openActions, totalNavImpactPaise, fundingNeeded, cashAvailable, shortfall, closestDeadline, largestExposureIssuer, largestExposureEventId, largestExposureEventName, largestExposurePercent, distanceToLimitPercent, flag]
       properties:
         id: { type: string }
         name: { type: string }
@@ -803,14 +894,21 @@ components:
         fundingNeeded: { type: number }
         cashAvailable: { type: number }
         shortfall: { type: number }
+        closestDeadline: { type: string }
+        largestExposureIssuer: { type: string }
+        largestExposureEventId: { type: string }
+        largestExposureEventName: { type: string }
+        largestExposurePercent: { type: number }
+        distanceToLimitPercent: { type: number }
         flag: { type: ["string", "null"] }
     SchemeOpenAction:
       type: object
-      required: [eventId, issuer, eventType]
+      required: [eventId, issuer, eventType, materialityPaise]
       properties:
         eventId: { type: string }
         issuer: { type: string }
         eventType: { type: string }
+        materialityPaise: { type: number }
     SchemeDetail:
       type: object
       required: [id, name, category, situation, totalHoldings, contributions, funding, headroom, holdings]

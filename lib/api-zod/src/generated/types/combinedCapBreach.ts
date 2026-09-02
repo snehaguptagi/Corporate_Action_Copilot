@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SchemeOpenAction {
-  eventId: string;
+export interface CombinedCapBreach {
   issuer: string;
-  eventType: string;
-  materialityPaise: number;
+  eventIds: string[];
+  postActionPercent: number;
+  capPercent: number;
+  excessPercent: number;
 }

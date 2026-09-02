@@ -1,0 +1,109 @@
+Four things. The market-data API integration is NOT in this prompt — that comes
+next once the provider is chosen.
+
+═══ 1. REPLACE THE TYPEFACES ═══
+Currently Plus Jakarta Sans + Spline Sans Mono. Plus Jakarta Sans is a
+geometric sans designed for consumer web products and reads wrong for an
+institutional fund-management tool.
+
+Switch to IBM Plex Sans (body and headings) + IBM Plex Mono (all figures).
+Load only the weights used: Plex Sans 400/500/600, Plex Mono 400/500.
+Remove the Plus Jakarta Sans and Spline Sans Mono links so nothing unused is
+downloaded, and update the CSS font tokens so no component names a family
+directly.
+
+Keep the existing five-step type scale (28/20/16/14/12) and the warm palette.
+Plex has a slightly smaller x-height, so check the 12px label size still reads
+and bump to 12.5-13px if it does not.
+
+═══ 2. REMOVE "LOG AN EARLY SIGHTING" FROM THE NAV ═══
+Take it out of the navigation. Nav becomes: Dashboard, Portfolio, Corporate
+actions, Analysis, Audit.
+
+Keep the early-sighting CONCEPT — it is what makes the custodian control
+visible, and the seeded sighting must still exist and still refuse to allow an
+instruction until the custodian MT564 confirms. Just stop giving manual entry
+top-level billing. Move it to a small "Add manually" action on the Corporate
+actions page.
+
+═══ 3. BUILD THE ANALYSIS VIEW ═══
+Everything the product computes today is per event, or per scheme within one
+event. Two questions have no home, and they are the analysis:
+
+A. THE AGGREGATE, ACROSS EVENTS
+   Arka Focused 25 is touched by SEVEN open corporate actions. Its funding line
+   says "Needs ₹15.30 cr" — the Bharat rights issue alone. Nothing shows the
+   combined draw across all seven, and nothing checks whether two events on the
+   SAME issuer together breach the 10% cap. Each event passes its own check;
+   the sum is unchecked.
+
+   Build, per scheme:
+     - total cash required across ALL open events, against available cash,
+       with the shortfall if any
+     - total issuer exposure per issuer, counting every open event on that
+       issuer, including MANDATORY ones you cannot decline (a bonus issue
+       raises your holding whether you like it or not)
+     - a flag when the COMBINED effect breaches a limit that no single event
+       breaches on its own
+   That last case is the reason this view exists. Seed one scheme where it
+   happens.
+
+B. WHAT IT HAS COST, OVER TIME
+   Across closed events: value captured versus value forfeited, and whether
+   anything lapsed that could have been sold. Simple figures, no charts:
+     "Last quarter: ₹4.2 cr captured, ₹18 lakh forfeited on 2 lapsed
+      entitlements. 14 of 14 deadlines met."
+   This is how the product shows it earns its keep. Use the closed seeded
+   events for it.
+
+No charts on this page. Same discipline as everywhere else: sentences and
+tables, every figure derived server-side, one figure per thing that matters.
+
+═══ 4. MAKE THE PORTFOLIO BETTER ═══
+The portfolio page currently lists ten schemes with the events touching each,
+NAV impact, funding gap and a flag. It is correct but thin. Add only what
+changes a decision:
+   - the AGGREGATE cash requirement from section 3A, not the single-event figure
+   - the closest deadline across that scheme's events, so you know which fund
+     is against the clock
+   - the largest single-issuer exposure and its distance to 10%
+Remove the "Open corporate actions touching it" column's full list of issuer
+names — with seven events it is unreadable. Show a count and the most material
+one: "7 open · largest: Bharat Renewables rights".
+
+Every scheme name and event name stays clickable both ways.
+
+═══ 5. DEMO DATA — MAKE IT COMPLETE ═══
+17 events is better but still thin, and the archive has little history. Bring
+it to roughly 30:
+   - ~10 open and needing attention (including the combined-breach scheme)
+   - ~16 closed across the last quarter, so section 3B has real history —
+     including 2 that lapsed and could have been sold, which is the point
+   - 2-3 settlement breaks
+   - keep every existing teaching case intact: the rights issue with its SEBI
+     cap and cash shortfall, the looks-small/looks-big dividend pair, the
+     fractional 5,00,002 holding, both source disagreements, the early sighting
+Holdings stay believable relative to AUM. No figure chosen to make a column
+populate or a test pass.
+
+═══ DO NOT ═══
+- Do not add charts anywhere.
+- Do not touch the corporate action page's six sections — they are correct.
+- Do not change the decision logic or any existing figure.
+- Do not add a market-data API in this change.
+
+Declare new endpoints and fields in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- no Plus Jakarta Sans or Spline Sans Mono reference remains anywhere;
+- Analysis shows, per scheme, aggregate cash across all its open events, and
+  that figure is greater than any single event's requirement where a scheme has
+  more than one funding event;
+- one seeded scheme breaches a limit only in combination, and the analysis view
+  flags it while each individual event page does not;
+- the historical section reports captured, forfeited and deadlines met from the
+  closed events, and the lapsed ones are identified;
+- the portfolio shows a count plus the most material event, not a full list;
+- roughly 30 events with about 16 closed.

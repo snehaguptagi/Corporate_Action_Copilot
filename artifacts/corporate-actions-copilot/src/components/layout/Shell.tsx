@@ -1,6 +1,6 @@
 import { ReactNode } from "react"
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, History, ShieldAlert, Upload, LogIn, LogOut, BriefcaseBusiness } from "lucide-react"
+import { LayoutDashboard, FileText, History, ShieldAlert, LogIn, LogOut, BriefcaseBusiness, ChartNoAxesCombined } from "lucide-react"
 import { useAuth } from "@workspace/replit-auth-web"
 import {
   getGetSessionQueryKey,
@@ -30,8 +30,8 @@ export function Shell({ children }: { children: ReactNode }) {
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/portfolio", label: "Portfolio", icon: BriefcaseBusiness },
     { href: "/events", label: "Corporate actions", icon: FileText },
-    { href: "/intake", label: "Log an early sighting", icon: Upload },
-    { href: "/audit", label: "Audit trail", icon: History },
+    { href: "/analysis", label: "Analysis", icon: ChartNoAxesCombined },
+    { href: "/audit", label: "Audit", icon: History },
   ]
 
   const isActive = (href: string) => {

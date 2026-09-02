@@ -175,6 +175,7 @@ export interface SchemeOpenAction {
   eventId: string;
   issuer: string;
   eventType: string;
+  materialityPaise: number;
 }
 
 export interface SchemeSummary {
@@ -186,6 +187,12 @@ export interface SchemeSummary {
   fundingNeeded: number;
   cashAvailable: number;
   shortfall: number;
+  closestDeadline: string;
+  largestExposureIssuer: string;
+  largestExposureEventId: string;
+  largestExposureEventName: string;
+  largestExposurePercent: number;
+  distanceToLimitPercent: number;
   /** @nullable */
   flag: string | null;
 }
@@ -200,6 +207,64 @@ export interface Dashboard {
   nearestFundingIssuer: string;
   inboundEvents: EventSummary[];
   schemes: SchemeSummary[];
+}
+
+export interface IssuerExposure {
+  issuer: string;
+  eventCount: number;
+  includesMandatory: boolean;
+  currentPercent: number;
+  postActionPercent: number;
+  capPercent: number;
+  distanceToCapPercent: number;
+  breach: boolean;
+}
+
+export interface CombinedCapBreach {
+  issuer: string;
+  eventIds: string[];
+  postActionPercent: number;
+  capPercent: number;
+  excessPercent: number;
+}
+
+export interface AnalysisScheme {
+  schemeId: string;
+  schemeName: string;
+  openEventCount: number;
+  aggregateFundingNeeded: number;
+  largestSingleEventFunding: number;
+  cashAvailable: number;
+  shortfall: number;
+  fundingStatus: string;
+  issuerExposures: IssuerExposure[];
+  combinedOnlyBreaches: CombinedCapBreach[];
+}
+
+export interface ClosedEventHistory {
+  eventId: string;
+  issuer: string;
+  eventType: string;
+  capturedAmount: number;
+  forfeitedAmount: number;
+  lapsed: boolean;
+  deadlineOutcome: string;
+  reconciliationStatus: string;
+}
+
+export interface AnalysisHistory {
+  capturedAmount: number;
+  forfeitedAmount: number;
+  lapsedCount: number;
+  deadlinesMet: number;
+  deadlinesTotal: number;
+  closedEvents: ClosedEventHistory[];
+}
+
+export interface Analysis {
+  generatedAt: string;
+  schemes: AnalysisScheme[];
+  history: AnalysisHistory;
 }
 
 export interface SchemeContribution {

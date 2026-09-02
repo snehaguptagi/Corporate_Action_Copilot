@@ -53,7 +53,7 @@ export default function EventsList() {
             </div>
             <p className="mt-1 text-sm text-slate-500">Decision deadlines first, then constraints and settlement breaks, followed by computed materiality.</p>
           </div>
-          <Link href="/intake"><Button>Log an early sighting</Button></Link>
+          <Link href="/intake"><Button variant="outline" size="sm">Add manually</Button></Link>
         </div>
       </div>
       <div className="p-8">

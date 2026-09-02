@@ -16,6 +16,12 @@ export interface SchemeSummary {
   fundingNeeded: number;
   cashAvailable: number;
   shortfall: number;
+  closestDeadline: string;
+  largestExposureIssuer: string;
+  largestExposureEventId: string;
+  largestExposureEventName: string;
+  largestExposurePercent: number;
+  distanceToLimitPercent: number;
   /** @nullable */
   flag: string | null;
 }

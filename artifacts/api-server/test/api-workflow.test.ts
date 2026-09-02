@@ -153,6 +153,21 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     assert.ok(dashboard.body.arrivalCount24h >= 3);
   });
 
+  test("serves aggregate funding, combined-only breaches, and closed-event outcomes", async () => {
+    const analysis = await request("/analysis", {}, analystSession);
+    assert.equal(analysis.status, 200);
+    assert.equal(analysis.body.schemes.length, 10);
+    const flexi = analysis.body.schemes.find((scheme: EventData) => scheme.schemeId === "arka-flexi-cap");
+    assert.ok(flexi);
+    assert.ok(flexi.aggregateFundingNeeded > flexi.largestSingleEventFunding);
+    assert.ok(flexi.combinedOnlyBreaches.some((breach: EventData) => breach.issuer === "Western Circuits Ltd"));
+    assert.ok(analysis.body.history.closedEvents.length >= 14);
+    assert.equal(analysis.body.history.lapsedCount, 2);
+    assert.ok(analysis.body.history.capturedAmount > 0);
+    assert.ok(analysis.body.history.forfeitedAmount > 0);
+    assert.equal(analysis.body.history.deadlinesMet, analysis.body.history.deadlinesTotal);
+  });
+
   test("blocks an early sighting until a matching custodian MT564 merges into it", async () => {
     const original = getSeededEventSnapshot().find((event) => event.id === "evt-early-sighting");
     assert.ok(original);

@@ -17,13 +17,22 @@ const previousTradingDay = (date: Date) => {
 
 test("active India seed deadlines are future and audit history is past", () => {
   const now = Date.now();
-  for (const event of getSeededEventSnapshot()) {
+  for (const event of getSeededEventSnapshot().filter((candidate) => !["Closed", "Reconciled", "Break identified"].includes(candidate.status))) {
     for (const deadline of [event.internalDeadlineAt, event.marketDeadlineAt]) {
       const timestamp = new Date(deadline);
       assert.ok(timestamp.getTime() - now >= 24 * 60 * 60 * 1000, `${event.id} deadline must be at least 24 hours away`);
     }
     for (const entry of event.audit) assert.ok(new Date(entry.timestamp).getTime() < now, `${event.id} audit must be past`);
   }
+});
+
+test("analysis seed has a full quarter of closed events and a combined-only concentration case", () => {
+  const events = getSeededEventSnapshot();
+  assert.ok(events.length >= 28 && events.length <= 34);
+  assert.ok(events.filter((event) => ["Closed", "Reconciled"].includes(event.status)).length >= 14);
+  const combined = events.filter((event) => event.teachingScenario === "Combined-only concentration breach");
+  assert.equal(combined.length, 2);
+  assert.ok(combined.every((event) => !event.schemeImpacts.some((impact: EventData) => impact.affected && impact.flag)));
 });
 
 test("seed source contains no hardcoded calendar date or timestamp literal", () => {

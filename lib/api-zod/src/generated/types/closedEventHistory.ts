@@ -6,9 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SchemeOpenAction {
+export interface ClosedEventHistory {
   eventId: string;
   issuer: string;
   eventType: string;
-  materialityPaise: number;
+  capturedAmount: number;
+  forfeitedAmount: number;
+  lapsed: boolean;
+  deadlineOutcome: string;
+  reconciliationStatus: string;
 }

@@ -1,5 +1,5 @@
 import { useGetDashboard, type EventSummary } from "@workspace/api-client-react";
-import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, FileInput } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -116,9 +116,6 @@ export default function Dashboard() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
              <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Portfolio corporate actions</h1>
           </div>
-          <Link href="/intake" className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 gap-2">
-             <FileInput className="h-4 w-4" /> Log an early sighting
-          </Link>
         </div>
       </header>
 

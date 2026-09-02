@@ -143,6 +143,14 @@ export default function FundManagerDesk() {
   const affectedSchemes = (data.schemeImpacts ?? []).filter((impact) => impact.affected);
 
   const constraints = affectedSchemes.filter(s => s.flag === "SEBI 10% headroom" || s.flag === "Cash short");
+  const showOptions = !isMandatory && (isRightsHero || (data.options ?? []).length > 0);
+  const showConstraints = !isMandatory && (isRightsHero || constraints.length > 0);
+  let sectionNumber = 2;
+  const nextSection = () => String(++sectionNumber).padStart(2, "0");
+  const optionsIndex = showOptions ? nextSection() : "";
+  const constraintsIndex = showConstraints ? nextSection() : "";
+  const decisionIndex = isMandatory ? "" : nextSection();
+  const historyIndex = nextSection();
   const rightsRows = arka?.schemes ?? [];
   const rightsOption = (id: string) => rightsChoices[id] ?? "exercise";
   const permittedRights = (row: any) => Math.min(row.entitlementRights, row.maxRightsByCap ?? row.entitlementRights, row.maxRightsByCash ?? row.entitlementRights);
@@ -284,7 +292,7 @@ export default function FundManagerDesk() {
             <>
               {isRightsHero ? (
                 <section>
-                  <SectionHeading index="03" eyebrow="Elections" title="Options" description="Compare the three ways to treat the rights entitlement." />
+                  <SectionHeading index={optionsIndex} eyebrow="Elections" title="Options" description="Compare the three ways to treat the rights entitlement." />
                   <Card className="rounded border-border bg-card shadow-none">
                     <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
                       <div><strong className="text-foreground">Exercise</strong><p className="mt-1 text-muted-foreground">Subscribe at {formatInr(subscriptionPrice)}. Costs cash and keeps your holding whole.</p><p className="figure mt-2 text-left font-semibold">Pay {formatInr(totalEntitlementRights * subscriptionPrice)}, receive {integer.format(totalEntitlementRights)} shares</p></div>
@@ -295,7 +303,7 @@ export default function FundManagerDesk() {
                 </section>
               ) : data.options && data.options.length > 0 && (
                 <section>
-                  <SectionHeading index="03" eyebrow="Elections" title="Options" description="Available choices provided by the issuer." />
+                  <SectionHeading index={optionsIndex} eyebrow="Elections" title="Options" description="Available choices provided by the issuer." />
                   <Card className="rounded border-border bg-card shadow-none">
                     <CardContent className="p-0">
                       <Table>
@@ -303,6 +311,7 @@ export default function FundManagerDesk() {
                           <TableRow className="bg-muted hover:bg-muted">
                             <TableHead>Label</TableHead>
                             <TableHead>Description</TableHead>
+                            <TableHead>Expected result</TableHead>
                             <TableHead>Funding Formula</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -311,6 +320,7 @@ export default function FundManagerDesk() {
                             <TableRow key={opt.id} className="text-xs">
                               <TableCell className="font-semibold text-foreground">{opt.label} {opt.default && <Badge variant="secondary" className="ml-2">Default</Badge>}</TableCell>
                               <TableCell>{opt.description}</TableCell>
+                              <TableCell>{opt.result || "-"}</TableCell>
                               <TableCell className="font-mono">{opt.fundingFormula || "-"}</TableCell>
                             </TableRow>
                           ))}
@@ -323,7 +333,7 @@ export default function FundManagerDesk() {
 
               {isRightsHero ? (
                 <section>
-                  <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
+                  <SectionHeading index={constraintsIndex} eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
                   <Card className="rounded border-border bg-warning/5 shadow-none">
                     <CardContent className="space-y-3 p-4 text-xs">
                       {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
@@ -338,7 +348,7 @@ export default function FundManagerDesk() {
                 </section>
               ) : constraints.length > 0 && (
                 <section>
-                  <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
+                  <SectionHeading index={constraintsIndex} eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
                   <Card className="rounded border-border bg-warning/5 shadow-none">
                     <CardContent className="p-4 space-y-2">
                       {constraints.map(c => (
@@ -352,7 +362,7 @@ export default function FundManagerDesk() {
               )}
 
               <section>
-                <SectionHeading index="05" eyebrow="Your decision" title="Decision" description="Set scheme elections and submit for checker approval." />
+                <SectionHeading index={decisionIndex} eyebrow="Your decision" title="Decision" description="Set scheme elections and submit for checker approval." />
                 <div className="space-y-4">
                   {isRightsHero ? rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => (
                     <Card key={row.id} className={`rounded border shadow-none ${row.blockers.length ? "border-warning/50 bg-warning/5" : "border-border bg-card"}`}>
@@ -424,7 +434,7 @@ export default function FundManagerDesk() {
           )}
 
           <section>
-            <SectionHeading index={isMandatory ? "03" : "06"} eyebrow="History" title="History" description="A short record of what has happened." />
+            <SectionHeading index={historyIndex} eyebrow="History" title="History" description="A short record of what has happened." />
             <Card className="rounded border-border bg-card shadow-none">
               <CardContent className="p-0">
                 <Table>

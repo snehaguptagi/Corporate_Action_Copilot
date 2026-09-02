@@ -1,0 +1,119 @@
+Two parts: three functional gaps in the decision surface, then a design pass.
+The design pass is mostly REMOVING inconsistency, not adding decoration.
+
+═══ PART 1 — FINISH THE DECISION ═══
+
+1. THE PAGE TELLS YOU TO SELL, THEN DEFAULTS TO FORFEITING.
+   Both constraint messages say "sell the remaining 7,72,993 on exchange before
+   the RE window closes". But the live totals read:
+       Sell 0 rights
+       Value forfeited ₹2.51 cr
+   So the default decision throws away ₹2.51 cr that the page's own guidance
+   says to recover. For a constrained scheme, the remainder above the permitted
+   maximum must DEFAULT to "sell entitlement", not lapse. Forfeiting should
+   never be a default — it is the one choice that destroys value.
+
+2. PER-SCHEME CHOICE IS MISSING.
+   Section 03 describes three options at event level (exercise / sell
+   entitlement / let lapse), but each scheme row in section 05 only offers
+   "Exercise" plus a quantity. There are no select controls in the DOM. A fund
+   manager must be able to choose per scheme — exercise some, sell the rest,
+   lapse a small odd lot — because that is exactly what the constraints force.
+   Add the choice per scheme row, and let a single scheme split across exercise
+   and sell.
+
+3. THE INPUT max IS THE WRONG NUMBER.
+   Small Cap renders value="211764" max="300000".
+   Focused 25 renders value="1027007" max="1800000".
+   The server correctly refuses anything above the permitted maximum, so
+   nothing breaks — but the browser lets you type past the cap and only tells
+   you after submitting. Set max to the permitted maximum, and keep the server
+   check. Belt and braces, not braces only.
+
+═══ PART 2 — MAKE IT CONSISTENT ═══
+These are measured from the running app, not opinions.
+
+4. ONE COLOUR SPACE, ONE PALETTE. Right now raw rgb() and raw oklch()/oklab()
+   literals are both used in components, so two colour systems coexist:
+     rgb(42, 34, 29)                    warm near-black ink
+     oklch(0.985 0.001 106.423)         warm off-white ground
+     oklch(0.554 0.046 257.417)         COOL blue-grey  <- clashes
+     rgb(75, 27, 47)                    maroon (old sidebar)
+     rgb(209, 73, 0)                    orange (primary)
+   Warm and cool neutrals sitting next to each other is most of why it reads
+   inconsistent, and three accent directions is the rest.
+
+   Do this:
+   - Commit to the WARM neutral family already dominant: the warm ink on the
+     warm off-white ground. Remove every cool blue-grey.
+   - Keep ONE accent. The orange is used 41 times, the maroon twice — keep the
+     orange, and retire the maroon or restate it as the darkest warm neutral.
+   - Reserve green / amber / red for STATUS ONLY (comfortable, attention,
+     breach). Semantic colour is not the accent and must never be used for
+     decoration.
+   - Every colour comes from a token. No raw rgb() or oklch() literal anywhere
+     in a component. 36 tokens are already defined and being bypassed.
+
+5. FIGURES NEED A MONOSPACE AND TABULAR NUMERALS. Measured: no monospace face
+   is used anywhere and font-variant-numeric: tabular-nums is not set on a
+   single table cell. This product is columns of money and share quantities —
+   ₹15.30 cr, 22.00 paise, 26,40,000, 10,27,007 — and they currently do not
+   align vertically.
+   - Load one monospace face (IBM Plex Mono or JetBrains Mono) and apply it to
+     EVERY figure: money, quantities, paise, percentages, dates in tables.
+   - Set font-variant-numeric: tabular-nums on all of them.
+   - Right-align every numeric column. Left-align text columns.
+   This one change will do more for legibility than anything else on the list.
+
+6. GIVE IT A REAL TYPE SCALE. Measured distribution: 14px × 96, 12px × 29,
+   16px × 22, 24px × 1. One 24px element on the entire page, so there is no
+   hierarchy and nothing directs the eye.
+   Define five steps and use them consistently, letting weight do work too:
+     28  page title
+     20  section heading
+     16  the sentence statements in "What it is", and key figures
+     14  table body and prose
+     12  labels, units, secondary metadata (uppercase, letter-spaced)
+   The three sentences in section 01 are the most important text in the product
+   and are currently the same size as a table cell. Raise them.
+
+7. ONE BORDER RADIUS. Measured: 3px and 4px both in use, plus pills. Pick 4px
+   for cards, inputs and badges; keep full-round only for genuine pills.
+
+8. CONSISTENCY SWEEP across every page — Dashboard, Portfolio, scheme detail,
+   corporate action, archive, audit:
+   - one money format (the shared format.ts exists; make sure nothing bypasses
+     it — the archive was showing "₹55,27,125" raw while other pages showed
+     "₹15.30 cr");
+   - one date format everywhere, "15 Sep 2026 · 15:00 IST";
+   - one table style: same header treatment, row height, border colour,
+     alignment rules;
+   - one card style;
+   - section headings: ONE heading per section, not an eyebrow plus a title
+     plus a subtitle;
+   - "Internal deadline" as a column header is internal phrasing — it is the
+     fund manager's own deadline. Rename it.
+
+9. STATE AND FOCUS. Every interactive element needs a visible focus ring that
+   meets 3:1 contrast, a hover state, and a disabled state that reads as
+   disabled rather than just pale. "Submit to Compliance" must look clearly
+   unavailable when a scheme is blocked.
+
+═══ DO NOT ═══
+- Do not add charts, sparklines, gradients, or icons-as-decoration.
+- Do not restructure any page or rename any route.
+- Do not add a dark mode in this pass; make the light theme correct first.
+- Do not introduce a second font for headings. One sans plus one mono.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- selecting "sell entitlement" on a constrained scheme moves its remainder out
+  of "forfeited" and into "sell", and the totals update;
+- forfeited value is 0 by default on every scheme;
+- input max equals the permitted maximum, and the server still refuses an
+  over-limit submission;
+- a DOM scan finds no raw rgb()/oklch() colour literal in any component;
+- every numeric cell uses the mono face with tabular-nums and is right-aligned;
+- at least four distinct font sizes are in use with the page title largest;
+- one money format and one date format across all six pages;
+- every control has a visible focus state.

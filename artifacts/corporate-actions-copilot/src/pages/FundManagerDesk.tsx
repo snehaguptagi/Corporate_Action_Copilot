@@ -32,8 +32,8 @@ function SectionHeading({ index, eyebrow, title, description }: { index: string;
   void description;
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#dc6900] text-xs font-bold text-white">{index}</div>
-      <h2 className="text-lg font-semibold tracking-tight text-[#5b1235]">{title}</h2>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">{index}</div>
+      <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
     </div>
   );
 }
@@ -87,6 +87,7 @@ export default function FundManagerDesk() {
   const [electionQuantities, setElectionQuantities] = useState<Record<string, string>>({});
   const [rightsChoices, setRightsChoices] = useState<Record<string, string>>({});
   const [rightsQuantities, setRightsQuantities] = useState<Record<string, string>>({});
+  const [rightsRemainders, setRightsRemainders] = useState<Record<string, string>>({});
 
   const saveElection = useSaveElection({
     mutation: { onSuccess: () => { toast({ title: "Election submitted" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
@@ -126,14 +127,27 @@ export default function FundManagerDesk() {
   const rightsOption = (id: string) => rightsChoices[id] ?? "exercise";
   const permittedRights = (row: any) => Math.min(row.entitlementRights, row.maxRightsByCap ?? row.entitlementRights, row.maxRightsByCash ?? row.entitlementRights);
   const rightsQty = (row: any) => Number(rightsQuantities[row.id] ?? permittedRights(row));
+  const remainderOption = (row: any) => rightsRemainders[row.id] ?? (permittedRights(row) < row.entitlementRights ? "sell" : "lapse");
   const rightsValue = arka?.terms.rightValue ?? 29.1667;
   const subscriptionPrice = arka?.terms.subscriptionPrice ?? 85;
+  const totalEntitlementRights = rightsRows
+    .filter((row: any) => row.eligibilityStatus === "Eligible")
+    .reduce((total: number, row: any) => total + row.entitlementRights, 0);
   const totals = rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").reduce((acc: any, row: any) => {
     const choice = rightsOption(row.id);
-    const quantity = rightsQty(row);
+    const quantity = Math.max(0, rightsQty(row));
     const exercised = choice === "exercise" ? quantity : 0;
-    const sold = choice === "sell" ? quantity : 0;
-    const forfeited = Math.max(0, row.entitlementRights - exercised - sold);
+    const remainder = Math.max(0, row.entitlementRights - exercised);
+    const sold = choice === "sell"
+      ? row.entitlementRights
+      : choice === "exercise" && remainderOption(row) === "sell"
+        ? remainder
+        : 0;
+    const forfeited = choice === "lapse"
+      ? row.entitlementRights
+      : choice === "exercise" && remainderOption(row) === "lapse"
+        ? remainder
+        : 0;
     acc.exercise += exercised;
     acc.cash += exercised * subscriptionPrice;
     acc.sell += sold;
@@ -163,22 +177,22 @@ export default function FundManagerDesk() {
   const statusCopy = fundManagerStatus(data.status, data.isEarlySighting);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#f7f5f2]">
+    <div className="flex-1 overflow-y-auto bg-background">
       <div className="mx-auto w-full max-w-[1560px] px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-5 border-b border-[#d8d1cb] pb-5">
+        <header className="mb-5 border-b border-border pb-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#dc6900]">
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 <Landmark className="h-3.5 w-3.5" />
                 Arka Mutual Fund
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[#5b1235] sm:text-3xl">{data.issuer} {data.eventType.toLowerCase()}</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5b1235] font-medium">
+              <h1 className="text-[28px] font-semibold tracking-tight text-foreground">{data.issuer} {data.eventType.toLowerCase()}</h1>
+              <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-foreground">
                 {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}{data.isEarlySighting ? " · Indicative impact" : ""}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="border-[#e5a15f] bg-[#fff8ef] text-[#9d4d00]">India · {data.currency} only</Badge>
+              <Badge variant="outline" className="border-primary/35 bg-primary/5 text-primary">India · {data.currency} only</Badge>
               <Badge variant="outline">{data.reference}</Badge>
             </div>
           </div>
@@ -192,14 +206,14 @@ export default function FundManagerDesk() {
           )}
           <section>
             <SectionHeading index="01" eyebrow="Confirmed event" title="What it is" description="Notice terms, calendar, and security details extracted from the source document." />
-            <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+            <Card className="rounded border-border bg-card shadow-none">
               <CardContent className="p-6">
-                <div className="space-y-3 text-sm text-[#322823] leading-relaxed">
+                <div className="space-y-3 text-base leading-7 text-foreground">
                   <p>{statement1}</p>
                   <p>{statement2}</p>
                   <p>{statement3}</p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-[#d8d1cb]/50 text-xs font-mono text-muted-foreground flex gap-4">
+                <div className="mt-6 flex gap-4 border-t border-border/50 pt-4 text-xs font-mono text-muted-foreground">
                   <span>ISIN: {data.securityMaster?.isin ?? "N/A"}</span>
                   <span>Ticker: {data.securityMaster?.ticker ?? "N/A"}</span>
                   <span>Ref: {data.reference}</span>
@@ -210,11 +224,11 @@ export default function FundManagerDesk() {
 
           <section>
             <SectionHeading index="02" eyebrow="Scheme impact" title="What it touches" description="Affected schemes and expected financial impacts." />
-            <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+            <Card className="rounded border-border bg-card shadow-none">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
+                    <TableRow className="bg-muted hover:bg-muted">
                       <TableHead>Scheme</TableHead>
                       <TableHead className="text-right">Eligible Quantity</TableHead>
                       <TableHead className="text-right">Expected Cash</TableHead>
@@ -246,22 +260,22 @@ export default function FundManagerDesk() {
               {isRightsHero ? (
                 <section>
                   <SectionHeading index="03" eyebrow="Elections" title="Options" description="Compare the three ways to treat the rights entitlement." />
-                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                  <Card className="rounded border-border bg-card shadow-none">
                     <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
-                      <div><strong className="text-[#5b1235]">Exercise</strong><p className="mt-1 text-slate-600">Subscribe at ₹85. Costs cash and keeps your holding whole.</p><p className="mt-2 font-semibold">Pay ₹22.44 cr, receive 26,40,000 shares</p></div>
-                      <div><strong className="text-[#5b1235]">Sell entitlement</strong><p className="mt-1 text-slate-600">Sell the RE on NSE/BSE before the RE window closes.</p><p className="mt-2 font-semibold">Recover about ₹7.70 cr, no funding needed</p></div>
-                      <div><strong className="text-[#5b1235]">Let lapse</strong><p className="mt-1 text-slate-600">Do nothing and allow the entitlement to expire.</p><p className="mt-2 font-semibold">Forfeit ₹7.70 cr</p></div>
+                      <div><strong className="text-foreground">Exercise</strong><p className="mt-1 text-muted-foreground">Subscribe at {formatInr(subscriptionPrice)}. Costs cash and keeps your holding whole.</p><p className="figure mt-2 text-left font-semibold">Pay {formatInr(totalEntitlementRights * subscriptionPrice)}, receive {integer.format(totalEntitlementRights)} shares</p></div>
+                      <div><strong className="text-foreground">Sell entitlement</strong><p className="mt-1 text-muted-foreground">Sell the RE on NSE/BSE before the RE window closes.</p><p className="figure mt-2 text-left font-semibold">Recover about {formatInr(totalEntitlementRights * rightsValue)}, no funding needed</p></div>
+                      <div><strong className="text-foreground">Let lapse</strong><p className="mt-1 text-muted-foreground">Do nothing and allow the entitlement to expire.</p><p className="figure mt-2 text-left font-semibold">Forfeit {formatInr(totalEntitlementRights * rightsValue)}</p></div>
                     </CardContent>
                   </Card>
                 </section>
               ) : data.options && data.options.length > 0 && (
                 <section>
                   <SectionHeading index="03" eyebrow="Elections" title="Options" description="Available choices provided by the issuer." />
-                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                  <Card className="rounded border-border bg-card shadow-none">
                     <CardContent className="p-0">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
+                          <TableRow className="bg-muted hover:bg-muted">
                             <TableHead>Label</TableHead>
                             <TableHead>Description</TableHead>
                             <TableHead>Funding Formula</TableHead>
@@ -270,7 +284,7 @@ export default function FundManagerDesk() {
                         <TableBody>
                           {data.options.map((opt) => (
                             <TableRow key={opt.id} className="text-xs">
-                              <TableCell className="font-semibold text-[#5b1235]">{opt.label} {opt.default && <Badge variant="secondary" className="ml-2">Default</Badge>}</TableCell>
+                              <TableCell className="font-semibold text-foreground">{opt.label} {opt.default && <Badge variant="secondary" className="ml-2">Default</Badge>}</TableCell>
                               <TableCell>{opt.description}</TableCell>
                               <TableCell className="font-mono">{opt.fundingFormula || "-"}</TableCell>
                             </TableRow>
@@ -285,10 +299,10 @@ export default function FundManagerDesk() {
               {isRightsHero ? (
                 <section>
                   <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
-                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-[#fffaf4]">
+                  <Card className="rounded border-border bg-warning/5 shadow-none">
                     <CardContent className="space-y-3 p-4 text-xs">
                       {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
-                        <div key={row.id} className="text-slate-800">
+                        <div key={row.id} className="text-foreground">
                           <strong>{row.name}</strong>: {row.id === "arka-focused-25"
                             ? `Bharat Renewables is 9.39% of NAV. Exercising all ${integer.format(row.entitlementRights)} rights reaches 10.77% and breaches the 10% cap. Maximum: ${integer.format(permittedRights(row))} rights. Sell the remaining ${integer.format(row.entitlementRights - permittedRights(row))} on exchange before the RE window closes.`
                             : `Needs ${formatInr(row.fullCashCrore * 10_000_000)}, has ${formatInr(row.cashAvailableCrore * 10_000_000)}. Short ${formatInr((row.fullCashCrore - row.cashAvailableCrore) * 10_000_000)}. Cash covers ${integer.format(permittedRights(row))} of ${integer.format(row.entitlementRights)} rights.`}
@@ -300,7 +314,7 @@ export default function FundManagerDesk() {
               ) : constraints.length > 0 && (
                 <section>
                   <SectionHeading index="04" eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
-                  <Card className="rounded-md border-[#d8d1cb] shadow-none bg-[#fffaf4]">
+                  <Card className="rounded border-border bg-warning/5 shadow-none">
                     <CardContent className="p-4 space-y-2">
                       {constraints.map(c => (
                         <div key={c.id} className="flex items-center gap-2 text-xs text-destructive font-medium">
@@ -316,18 +330,40 @@ export default function FundManagerDesk() {
                 <SectionHeading index="05" eyebrow="Your decision" title="Decision" description="Set scheme elections and submit for checker approval." />
                 <div className="space-y-4">
                   {isRightsHero ? rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => (
-                    <Card key={row.id} className={`rounded-md border shadow-none ${row.blockers.length ? "border-amber-300 bg-amber-50" : "border-[#d8d1cb] bg-white"}`}>
-                      <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr,1.2fr,1fr] items-center">
-                        <div><div className="font-semibold text-[#5b1235] text-sm">{row.name}</div><div className="text-xs text-muted-foreground">Entitlement: {integer.format(row.entitlementRights)}</div>{row.blockers.length > 0 && <div className="mt-1 text-xs font-semibold text-amber-800">Blocked above {integer.format(permittedRights(row))}</div>}</div>
-                        <div className="flex gap-2 items-center"><Select value={rightsOption(row.id)} onValueChange={(value) => setRightsChoices((prev) => ({ ...prev, [row.id]: value }))}><SelectTrigger className="w-[170px] text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="exercise">Exercise</SelectItem><SelectItem value="sell">Sell entitlement</SelectItem><SelectItem value="lapse">Let lapse</SelectItem></SelectContent></Select><Input className="w-[120px] text-xs" type="number" min={0} max={row.entitlementRights} value={rightsQty(row)} onChange={(e) => setRightsQuantities((prev) => ({ ...prev, [row.id]: e.target.value }))} /></div>
-                        <div className="text-right text-xs">{rightsOption(row.id) === "exercise" ? `Pay ${formatInr(rightsQty(row) * subscriptionPrice)}` : rightsOption(row.id) === "sell" ? `Recover about ${formatInr(rightsQty(row) * rightsValue)}` : `Forfeit ${formatInr(rightsQty(row) * rightsValue)}`}</div>
+                    <Card key={row.id} className={`rounded border shadow-none ${row.blockers.length ? "border-warning/50 bg-warning/5" : "border-border bg-card"}`}>
+                      <CardContent className="grid items-center gap-3 p-4 md:grid-cols-[1fr,1.6fr,1fr]">
+                        <div><div className="text-sm font-semibold text-foreground">{row.name}</div><div className="figure text-left text-xs text-muted-foreground">Entitlement: {integer.format(row.entitlementRights)}</div>{row.blockers.length > 0 && <div className="figure mt-1 text-left text-xs font-semibold text-warning">Exercise capped at {integer.format(permittedRights(row))}</div>}</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Select value={rightsOption(row.id)} onValueChange={(value) => setRightsChoices((prev) => ({ ...prev, [row.id]: value }))}>
+                            <SelectTrigger className="w-[170px] text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="exercise">Exercise</SelectItem><SelectItem value="sell">Sell entitlement</SelectItem><SelectItem value="lapse">Let lapse</SelectItem></SelectContent>
+                          </Select>
+                          {rightsOption(row.id) === "exercise" && (
+                            <>
+                              <Input aria-label={`${row.name} exercise quantity`} className="figure w-[120px] text-xs" type="number" min={0} max={permittedRights(row)} value={rightsQty(row)} onChange={(e) => setRightsQuantities((prev) => ({ ...prev, [row.id]: e.target.value }))} />
+                              {rightsQty(row) < row.entitlementRights && (
+                                <Select value={remainderOption(row)} onValueChange={(value) => setRightsRemainders((prev) => ({ ...prev, [row.id]: value }))}>
+                                  <SelectTrigger aria-label={`${row.name} remainder treatment`} className="w-[170px] text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent><SelectItem value="sell">Sell remainder</SelectItem><SelectItem value="lapse">Let remainder lapse</SelectItem></SelectContent>
+                                </Select>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <div className="figure text-xs">
+                          {rightsOption(row.id) === "exercise"
+                            ? <>Pay {formatInr(rightsQty(row) * subscriptionPrice)}{rightsQty(row) < row.entitlementRights && remainderOption(row) === "sell" ? ` · Sell ${integer.format(row.entitlementRights - rightsQty(row))}` : rightsQty(row) < row.entitlementRights ? ` · Forfeit ${integer.format(row.entitlementRights - rightsQty(row))}` : ""}</>
+                            : rightsOption(row.id) === "sell"
+                              ? `Recover about ${formatInr(row.entitlementRights * rightsValue)}`
+                              : `Forfeit ${formatInr(row.entitlementRights * rightsValue)}`}
+                        </div>
                       </CardContent>
                     </Card>
                   )) : affectedSchemes.map((impact: any) => (
-                    <Card key={impact.id} className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+                    <Card key={impact.id} className="rounded border-border bg-card shadow-none">
                       <CardContent className="grid gap-4 p-4 md:grid-cols-[1fr,1.5fr,auto] items-center">
                         <div>
-                          <div className="font-semibold text-[#5b1235] text-sm">{impact.schemeName}</div>
+                          <div className="text-sm font-semibold text-foreground">{impact.schemeName}</div>
                           <div className="text-xs text-muted-foreground mt-0.5">Entitlement: {integer.format(impact.quantityResult ?? impact.eligibleQuantity)}</div>
                           {impact.electionDecision && <Badge className="mt-2" variant="outline">{impact.electionDecision.optionLabel} · {impact.electionDecision.quantityElected} · {impact.approval}</Badge>}
                         </div>
@@ -348,7 +384,7 @@ export default function FundManagerDesk() {
                         </div>
                         <div>
                           {!impact.electionDecision && (
-                             <Button className="bg-[#dc6900] hover:bg-[#b85700]" onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
+                             <Button onClick={() => saveAnElection(impact)} disabled={saveElection.isPending}>
                               Submit Election
                             </Button>
                           )}
@@ -356,7 +392,7 @@ export default function FundManagerDesk() {
                       </CardContent>
                     </Card>
                   ))}
-                  {isRightsHero && <Card className="rounded-md border-[#d8d1cb] bg-[#fffaf4] shadow-none"><CardContent className="space-y-3 p-5"><div className="grid gap-2 text-sm sm:grid-cols-4"><span>Exercise <strong>{integer.format(totals.exercise)}</strong></span><span>ASBA funding <strong>{formatInr(totals.cash)}</strong></span><span>Sell <strong>{integer.format(totals.sell)}</strong> rights</span><span>Value forfeited <strong>{formatInr(totals.forfeited * rightsValue)}</strong></span></div><Button className="bg-[#dc6900] hover:bg-[#b85700]" disabled={blockedRights.length > 0 || saveArka.isPending || submitArka.isPending} onClick={() => saveArka.mutate({ data: { decisions: rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => ({ schemeId: row.id, rights: rightsOption(row.id) === "exercise" ? rightsQty(row) : 0 })) } }, { onSuccess: () => submitArka.mutate() })}>{blockedRights.length > 0 ? `Resolve blocked schemes: ${blockedRights.map((row: any) => row.name).join(", ")}` : "Submit to Compliance"}</Button></CardContent></Card>}
+                  {isRightsHero && <Card className="rounded border-border bg-warning/5 shadow-none"><CardContent className="space-y-3 p-5"><div className="grid gap-2 text-sm sm:grid-cols-4"><span className="figure text-left">Exercise <strong>{integer.format(totals.exercise)}</strong></span><span className="figure text-left">ASBA funding <strong>{formatInr(totals.cash)}</strong></span><span className="figure text-left">Sell <strong>{integer.format(totals.sell)}</strong> rights</span><span className="figure text-left">Value forfeited <strong>{formatInr(totals.forfeited * rightsValue)}</strong></span></div><Button disabled={blockedRights.length > 0 || saveArka.isPending || submitArka.isPending} onClick={() => saveArka.mutate({ data: { decisions: rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => ({ schemeId: row.id, rights: rightsOption(row.id) === "exercise" ? rightsQty(row) : 0 })) } }, { onSuccess: () => submitArka.mutate() })}>{blockedRights.length > 0 ? `Resolve blocked schemes: ${blockedRights.map((row: any) => row.name).join(", ")}` : "Submit to Compliance"}</Button></CardContent></Card>}
                 </div>
               </section>
             </>
@@ -364,11 +400,11 @@ export default function FundManagerDesk() {
 
           <section>
             <SectionHeading index={isMandatory ? "03" : "06"} eyebrow="History" title="History" description="A short record of what has happened." />
-            <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+            <Card className="rounded border-border bg-card shadow-none">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#f1eeea] hover:bg-[#f1eeea]">
+                    <TableRow className="bg-muted hover:bg-muted">
                       <TableHead>Time</TableHead>
                       <TableHead>Actor</TableHead>
                       <TableHead>Action</TableHead>

@@ -114,7 +114,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Portfolio corporate actions</h1>
+             <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Portfolio corporate actions</h1>
           </div>
           <Link href="/intake" className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 gap-2">
              <FileInput className="h-4 w-4" /> Log an early sighting
@@ -124,15 +124,15 @@ export default function Dashboard() {
 
       <main className="flex-1 space-y-6 p-5 sm:p-8">
         <section aria-labelledby="morning-status">
-          <div className="overflow-hidden rounded-lg border border-orange-200 bg-white shadow-sm">
-            <div className="h-1 bg-gradient-to-r from-[#dc6900] via-[#eb8c00] to-[#ffb600]" />
+           <div className="overflow-hidden rounded border border-primary/30 bg-card shadow-sm">
+             <div className="h-1 bg-primary" />
             <div className="flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#a32020]">
+                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
                   <CalendarClock className="h-4 w-4" />
                   Last 24 hours
                 </div>
-                <p id="morning-status" className="max-w-5xl text-xl font-semibold leading-8 text-slate-950 sm:text-2xl">
+                 <p id="morning-status" className="max-w-5xl text-base font-semibold leading-7 text-foreground">
                    {dashboard.arrivalCount24h} notices in the last 24 hours. {dashboard.portfolioEventCount} affect your schemes.{" "}
                    {dashboard.impactedSchemeCount} of {dashboard.totalSchemeCount} schemes impacted.{" "}
                    {dashboard.totalFunding > 0 ? `${formatInr(dashboard.totalFunding)} to fund` : "No funding required"}
@@ -167,7 +167,7 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[#f7f3f0] hover:bg-[#f7f3f0]">
+                   <TableRow className="bg-muted hover:bg-muted">
                     <TableHead>Issuer + ISIN</TableHead>
                     <TableHead>Action</TableHead>
                     <TableHead>Arrived</TableHead>
@@ -200,9 +200,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell>
                           <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{impact.label}</div>
-                          <div className={`mt-1 font-semibold ${impact.tone}`}>{impact.value}</div>
+                           <div className={`figure mt-1 font-semibold ${impact.tone}`}>{impact.value}</div>
                         </TableCell>
-                        <TableCell className="font-medium text-slate-700">{navImpactCopy(event)}</TableCell>
+                         <TableCell className="figure font-medium text-foreground">{navImpactCopy(event)}</TableCell>
                         <TableCell>
                           {event.attention
                             ? <span className="inline-flex rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{event.attention}</span>
@@ -231,7 +231,7 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[#f7f3f0] hover:bg-[#f7f3f0]">
+                   <TableRow className="bg-muted hover:bg-muted">
                     <TableHead>Scheme</TableHead>
                     <TableHead>Open corporate actions touching it</TableHead>
                     <TableHead>Total NAV impact</TableHead>
@@ -256,7 +256,7 @@ export default function Dashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {navImpact > 0 ? <span className="font-semibold text-[#a32020]">{navImpact.toFixed(2)} paise</span> : <span className="text-slate-500">Neutral</span>}
+                         {navImpact > 0 ? <span className="figure font-semibold">{navImpact.toFixed(2)} paise</span> : <span className="text-muted-foreground">Neutral</span>}
                       </TableCell>
                       <TableCell>
                         {funding > 0 ? (

@@ -12,7 +12,7 @@ export default function AuditLog() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50/50">
       <div className="border-b bg-white px-8 py-6 shrink-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Audit trail</h1>
+        <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Audit trail</h1>
         <p className="text-sm text-slate-500 mt-1">Immutable record of all operational decisions and actions.</p>
       </div>
 
@@ -24,7 +24,7 @@ export default function AuditLog() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead>Timestamp</TableHead>
+                <TableHead className="text-right">Timestamp</TableHead>
                 <TableHead>Actor</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Event Reference</TableHead>
@@ -41,7 +41,7 @@ export default function AuditLog() {
               ) : (
                 audits?.map(entry => (
                   <TableRow key={entry.id}>
-                    <TableCell className="text-sm font-mono text-slate-600">
+                     <TableCell className="figure text-sm text-muted-foreground">
                       {formatIstDate(entry.timestamp)}
                     </TableCell>
                     <TableCell>

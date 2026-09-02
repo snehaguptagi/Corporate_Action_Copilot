@@ -7,7 +7,7 @@ import { formatInr } from "@/lib/format";
 import { formatIstDate } from "@/lib/date";
 
 function SectionTitle({ number, children }: { number: string; children: string }) {
-  return <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#a32020]">{number}. {children}</h2>;
+  return <h2 className="mb-3 text-xl font-semibold tracking-tight text-foreground">{number}. {children}</h2>;
 }
 
 export default function SchemeDetail() {
@@ -25,8 +25,8 @@ export default function SchemeDetail() {
             <ArrowLeft className="h-3.5 w-3.5" /> Portfolio
           </Link>
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund · {scheme.category}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{scheme.name}</h1>
-          <p className="mt-4 max-w-4xl text-lg leading-8 text-slate-700">{scheme.situation}</p>
+           <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">{scheme.name}</h1>
+           <p className="mt-4 max-w-4xl text-base leading-7 text-foreground">{scheme.situation}</p>
         </div>
       </header>
 
@@ -38,11 +38,11 @@ export default function SchemeDetail() {
               {scheme.contributions.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#f7f3f0] hover:bg-[#f7f3f0]">
+                    <TableRow className="bg-muted hover:bg-muted">
                       <TableHead>Corporate action</TableHead>
-                      <TableHead>NAV contribution</TableHead>
-                      <TableHead>Cash</TableHead>
-                      <TableHead>Deadline</TableHead>
+                       <TableHead className="text-right">NAV contribution</TableHead>
+                       <TableHead className="text-right">Cash</TableHead>
+                       <TableHead className="text-right">Deadline</TableHead>
                       <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
@@ -52,13 +52,13 @@ export default function SchemeDetail() {
                         <TableCell>
                           <Link href={`/events/${contribution.eventId}`} className="font-semibold text-primary hover:underline">{contribution.eventName}</Link>
                         </TableCell>
-                        <TableCell className="font-semibold text-[#a32020]">
+                        <TableCell className="figure font-semibold">
                           {contribution.navImpactPaise > 0 ? `${contribution.navImpactPaise.toFixed(2)} paise` : "Neutral"}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="figure">
                           {contribution.cashAmount > 0 ? `${formatInr(contribution.cashAmount)} ${contribution.cashDirection.toLowerCase()}` : "No cash movement"}
                         </TableCell>
-                        <TableCell>{contribution.deadline}</TableCell>
+                        <TableCell className="figure">{contribution.deadline}</TableCell>
                         <TableCell><Link href={`/events/${contribution.eventId}`}><ArrowRight className="h-4 w-4 text-primary" /></Link></TableCell>
                       </TableRow>
                     ))}
@@ -72,9 +72,9 @@ export default function SchemeDetail() {
         <section>
           <SectionTitle number="2">The funding gap</SectionTitle>
           <Card className="shadow-sm">
-            <CardContent className="p-5 text-lg font-semibold text-slate-900">
+             <CardContent className="figure p-5 text-left text-base font-semibold text-foreground">
               Needs {formatInr(scheme.funding.needed)}. Has {formatInr(scheme.funding.available)}.{" "}
-              <span className={scheme.funding.shortfall > 0 ? "text-rose-700" : "text-emerald-700"}>
+               <span className={scheme.funding.shortfall > 0 ? "text-destructive" : "text-success"}>
                 {scheme.funding.shortfall > 0 ? `Short ${formatInr(scheme.funding.shortfall)}.` : "Comfortable."}
               </span>
             </CardContent>
@@ -108,11 +108,11 @@ export default function SchemeDetail() {
               {scheme.holdings.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#f7f3f0] hover:bg-[#f7f3f0]">
+                    <TableRow className="bg-muted hover:bg-muted">
                       <TableHead>Security in play</TableHead>
                       <TableHead>ISIN</TableHead>
                       <TableHead className="text-right">Holding</TableHead>
-                      <TableHead>Position date</TableHead>
+                       <TableHead className="text-right">Position date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -121,7 +121,7 @@ export default function SchemeDetail() {
                         <TableCell><Link href={`/events/${holding.eventId}`} className="font-semibold text-primary hover:underline">{holding.issuer}</Link></TableCell>
                         <TableCell className="font-mono text-xs">{holding.isin}</TableCell>
                         <TableCell className="text-right font-mono">{holding.quantity.toLocaleString("en-IN")} shares</TableCell>
-                        <TableCell>{formatIstDate(`${holding.asOfDate}T00:00:00+05:30`)}</TableCell>
+                        <TableCell className="figure">{formatIstDate(`${holding.asOfDate}T00:00:00+05:30`)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

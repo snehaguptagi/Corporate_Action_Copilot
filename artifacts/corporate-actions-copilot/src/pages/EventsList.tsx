@@ -44,12 +44,12 @@ export default function EventsList() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50/50">
-      <div className="border-b bg-white px-8 py-6">
+      <div className="border-b bg-card px-8 py-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <Inbox className="h-5 w-5 text-primary" />
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Corporate actions</h1>
+              <h1 className="text-[28px] font-semibold tracking-tight text-foreground">Corporate actions</h1>
             </div>
             <p className="mt-1 text-sm text-slate-500">Decision deadlines first, then constraints and settlement breaks, followed by computed materiality.</p>
           </div>
@@ -64,11 +64,11 @@ export default function EventsList() {
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <Input className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reference, issuer, security, or event type" />
               </div>
-              <select className="h-9 rounded-md border bg-white px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}>
+              <select className="h-9 rounded border bg-card px-3 text-sm outline-none transition-colors hover:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" value={status} onChange={(event) => setStatus(event.target.value)}>
                 <option>All</option>
                 {statusOptions.map((value) => <option key={value}>{value}</option>)}
               </select>
-              <select className="h-9 rounded-md border bg-white px-3 text-sm" value={processingType} onChange={(event) => setProcessingType(event.target.value)}>
+              <select className="h-9 rounded border bg-card px-3 text-sm outline-none transition-colors hover:border-primary/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" value={processingType} onChange={(event) => setProcessingType(event.target.value)}>
                 <option>All</option>
                 {[...new Set((events ?? []).map((event) => event.processingType))].map((value) => <option key={value}>{value}</option>)}
               </select>
@@ -78,7 +78,7 @@ export default function EventsList() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader><TableRow className="bg-slate-50">
-                  <TableHead>Event</TableHead><TableHead>Schemes impacted</TableHead><TableHead>Classification</TableHead><TableHead>Materiality</TableHead><TableHead>Cash impact</TableHead><TableHead>Attention</TableHead><TableHead>Internal deadline</TableHead><TableHead>Status</TableHead><TableHead />
+                  <TableHead>Event</TableHead><TableHead className="text-right">Schemes impacted</TableHead><TableHead>Classification</TableHead><TableHead className="text-right">Materiality</TableHead><TableHead className="text-right">Cash impact</TableHead><TableHead>Attention</TableHead><TableHead className="text-right">Decision deadline</TableHead><TableHead>Status</TableHead><TableHead />
                 </TableRow></TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? <TableRow><TableCell colSpan={9} className="h-32 text-center text-slate-500">No events match these filters.</TableCell></TableRow> : filtered.map((event) => {
@@ -87,15 +87,15 @@ export default function EventsList() {
                     return (
                     <TableRow key={event.id} className="group">
                       <TableCell><div className="font-medium">{event.issuer}</div><div className="text-xs text-slate-500">{event.reference} · {event.eventType} · {event.security}</div>{event.isEarlySighting && <div className="mt-1 text-xs font-semibold text-amber-700">Indicative impact</div>}</TableCell>
-                      <TableCell><strong>{impacted}</strong> of 10</TableCell>
+                      <TableCell className="figure"><strong>{impacted}</strong> of 10</TableCell>
                       <TableCell>
                         <Badge variant="outline">{event.processingType}</Badge>
                         {cashDirectionLabel(event.cashDirection) && <div className="mt-1 text-xs font-medium text-slate-600">{cashDirectionLabel(event.cashDirection)}</div>}
                       </TableCell>
-                      <TableCell className="font-semibold text-slate-800">{event.materialityPaise === null ? "Neutral" : `${event.materialityPaise.toFixed(2)} paise`}</TableCell>
-                      <TableCell className="font-medium text-slate-700">{cashTotal > 0 ? formatInr(cashTotal) : "No cash movement"}</TableCell>
+                      <TableCell className="figure font-semibold">{event.materialityPaise === null ? "Neutral" : `${event.materialityPaise.toFixed(2)} paise`}</TableCell>
+                      <TableCell className="figure font-medium">{cashTotal > 0 ? formatInr(cashTotal) : "No cash movement"}</TableCell>
                       <TableCell>{event.attention && <Badge variant="warning">{event.attention}</Badge>}</TableCell>
-                      <TableCell className="text-sm text-slate-600">{event.internalDeadline}</TableCell>
+                      <TableCell className="figure text-sm text-muted-foreground">{event.internalDeadline}</TableCell>
                       <TableCell><Badge variant="secondary">{fundManagerStatus(event.status, event.isEarlySighting)}</Badge></TableCell>
                       <TableCell><Link href={`/events/${event.id}`}><Button variant="outline" size="sm" aria-label={`View ${event.reference}`}>View <ArrowRight className="ml-2 h-3.5 w-3.5" /></Button></Link></TableCell>
                     </TableRow>

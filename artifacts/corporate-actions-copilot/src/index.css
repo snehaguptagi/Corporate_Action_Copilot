@@ -48,14 +48,37 @@
   --color-sidebar-accent: hsl(var(--sidebar-accent));
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
 
+  /* Warm aliases for legacy utility names still used by product pages. */
+  --color-slate-50: hsl(var(--background));
+  --color-slate-400: hsl(var(--muted-foreground) / 0.72);
+  --color-slate-500: hsl(var(--muted-foreground));
+  --color-slate-600: hsl(var(--muted-foreground));
+  --color-slate-700: hsl(var(--foreground) / 0.82);
+  --color-slate-800: hsl(var(--foreground) / 0.92);
+  --color-slate-900: hsl(var(--foreground));
+  --color-slate-950: hsl(var(--foreground));
+  --color-stone-50: hsl(var(--background));
+  --color-stone-200: hsl(var(--border));
+  --color-orange-200: hsl(var(--primary) / 0.28);
+  --color-orange-300: hsl(var(--primary) / 0.45);
+  --color-amber-50: hsl(var(--warning) / 0.08);
+  --color-amber-300: hsl(var(--warning) / 0.42);
+  --color-amber-700: hsl(var(--warning));
+  --color-amber-800: hsl(var(--warning));
+  --color-amber-950: hsl(var(--foreground));
+  --color-rose-200: hsl(var(--destructive) / 0.3);
+  --color-rose-600: hsl(var(--destructive));
+  --color-rose-700: hsl(var(--destructive));
+  --color-emerald-700: hsl(var(--success));
+
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
 
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: calc(var(--radius) - 1px);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 2px);
+  --radius-xl: var(--radius);
 }
 
 :root {
@@ -94,12 +117,12 @@
   --warning: 30 100% 42%;
   --warning-foreground: 0 0% 100%;
 
-  --sidebar: 335 48% 20%;
+  --sidebar: 24 18% 14%;
   --sidebar-foreground: 30 30% 96%;
-  --sidebar-border: 335 32% 31%;
+  --sidebar-border: 24 12% 26%;
   --sidebar-primary: 21 100% 57%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 335 38% 28%;
+  --sidebar-accent: 24 12% 23%;
   --sidebar-accent-foreground: 30 30% 98%;
 
   --input: 30 14% 87%;
@@ -164,5 +187,36 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary;
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  table th {
+    @apply bg-muted text-xs uppercase tracking-wide text-muted-foreground;
+  }
+  table td {
+    @apply text-sm;
+  }
+  table :is(th, td).text-right {
+    font-family: var(--app-font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  input[type="number"] {
+    font-family: var(--app-font-mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  button:disabled,
+  [data-disabled] {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .figure {
+    font-family: var(--app-font-mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
   }
 }

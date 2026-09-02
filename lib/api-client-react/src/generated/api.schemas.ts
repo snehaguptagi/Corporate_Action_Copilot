@@ -51,30 +51,155 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface AuditEntry {
+export type EventSourceRecordAssertedFields = {[key: string]: string};
+
+export interface EventSourceRecord {
   id: string;
+  channel: string;
+  provider: string;
+  messageType: string;
+  receivedAt: string;
+  assertedFields: EventSourceRecordAssertedFields;
+  primary: boolean;
+}
+
+export type DashboardSchemeImpactDirection = typeof DashboardSchemeImpactDirection[keyof typeof DashboardSchemeImpactDirection];
+
+
+export const DashboardSchemeImpactDirection = {
+  Receivable: 'Receivable',
+  Funding: 'Funding',
+  Neutral: 'Neutral',
+} as const;
+
+export type DashboardSchemeImpactElectionDecision = { [key: string]: unknown } | null;
+
+export interface DashboardSchemeImpact {
+  id: string;
+  schemeId: string;
+  schemeName: string;
+  affected: boolean;
+  eligibleQuantity: number;
+  direction: DashboardSchemeImpactDirection;
+  cashDirection?: string;
+  cashAmount: number;
+  /** @nullable */
+  quantityResult: number | null;
+  /** @nullable */
+  navImpactPaise: number | null;
+  navImpactTreatment: string;
+  /** @nullable */
+  flag: string | null;
+  account?: string;
+  formula?: string;
+  expected?: number;
+  expectedCash?: number;
+  grossCash?: number;
+  withholdingRate?: number;
+  withholdingAmount?: number;
+  netCash?: number;
+  expectedSecurityQuantity?: number;
+  securityMovement?: string;
+  positionDate?: string;
+  securityId?: string;
+  eligibilityStatus?: string;
+  dataQualityWarning?: string;
+  status?: string;
+  /** @nullable */
+  election?: string | null;
+  approval?: string;
+  entitlement?: number;
+  electionDecision?: DashboardSchemeImpactElectionDecision;
+}
+
+export type EventSummaryCashDirection = typeof EventSummaryCashDirection[keyof typeof EventSummaryCashDirection];
+
+
+export const EventSummaryCashDirection = {
+  Receivable: 'Receivable',
+  Payable: 'Payable',
+} as const;
+
+export type EventSummarySourceDisagreementsItem = {
+  field: string;
+  sightingValue: string;
+  confirmedValue: string;
+  winner: string;
+};
+
+export interface EventSummary {
+  id: string;
+  reference: string;
+  issuer: string;
+  security: string;
+  eventType: string;
+  processingType: string;
+  status: string;
+  marketDeadline: string;
+  internalDeadline: string;
+  marketDeadlineAt: string;
+  internalDeadlineAt: string;
+  affectedAccounts: number;
+  amount: number;
+  currency: string;
+  receivedAt: string;
+  source: string;
+  sourceRecords: EventSourceRecord[];
+  sourceAgreement: string;
+  schemeImpacts: DashboardSchemeImpact[];
+  /** @nullable */
+  materialityPaise: number | null;
+  /** @nullable */
+  cashImpactAmount: number | null;
+  /** @nullable */
+  attention: string | null;
+  cashDirection?: EventSummaryCashDirection;
+  referencePrice?: number;
+  discountPercentage?: number;
+  isHero?: boolean;
+  noticeReference?: string;
+  settlementStage?: string;
+  cashAmount?: number;
+  cashCurrency?: string;
+  shareAmount?: number;
+  shareLabel?: string;
+  isEarlySighting?: boolean;
+  impactBasis?: string;
+  decisionBlockedReason?: string;
+  mergedFromSightingId?: string;
+  sourceDisagreements?: EventSummarySourceDisagreementsItem[];
+  teachingScenario?: string;
+}
+
+export interface SchemeOpenAction {
   eventId: string;
-  action: string;
-  actor: string;
-  actorId?: string;
-  actorRole?: string;
-  timestamp: string;
-  detail: string;
-  actorType?: string;
-  previousValue?: string;
-  newValue?: string;
-  reason?: string;
-  evidenceId?: string;
-  workflowStatus?: string;
+  issuer: string;
+  eventType: string;
+}
+
+export interface SchemeSummary {
+  id: string;
+  name: string;
+  category: string;
+  openActions: SchemeOpenAction[];
+  totalNavImpactPaise: number;
+  fundingNeeded: number;
+  cashAvailable: number;
+  shortfall: number;
+  /** @nullable */
+  flag: string | null;
 }
 
 export interface Dashboard {
-  totalEvents: number;
-  needsReview: number;
-  dueToday: number;
-  openTasks: number;
-  breaks: number;
-  recentActivity: AuditEntry[];
+  arrivalCount24h: number;
+  portfolioEventCount: number;
+  impactedSchemeCount: number;
+  totalSchemeCount: number;
+  totalFunding: number;
+  nearestDeadline: string;
+  nearestFundingIssuer: string;
+  inboundEvents: EventSummary[];
+  schemes: SchemeSummary[];
 }
 
 export interface SchemeContribution {
@@ -289,126 +414,6 @@ export interface ArkaDeskApprovalInput {
   status: ArkaDeskApprovalInputStatus;
 }
 
-export type DashboardSchemeImpactDirection = typeof DashboardSchemeImpactDirection[keyof typeof DashboardSchemeImpactDirection];
-
-
-export const DashboardSchemeImpactDirection = {
-  Receivable: 'Receivable',
-  Funding: 'Funding',
-  Neutral: 'Neutral',
-} as const;
-
-export type DashboardSchemeImpactElectionDecision = { [key: string]: unknown } | null;
-
-export interface DashboardSchemeImpact {
-  id: string;
-  schemeId: string;
-  schemeName: string;
-  affected: boolean;
-  eligibleQuantity: number;
-  direction: DashboardSchemeImpactDirection;
-  cashDirection?: string;
-  cashAmount: number;
-  /** @nullable */
-  quantityResult: number | null;
-  /** @nullable */
-  navImpactPaise: number | null;
-  navImpactTreatment: string;
-  /** @nullable */
-  flag: string | null;
-  account?: string;
-  formula?: string;
-  expected?: number;
-  expectedCash?: number;
-  grossCash?: number;
-  withholdingRate?: number;
-  withholdingAmount?: number;
-  netCash?: number;
-  expectedSecurityQuantity?: number;
-  securityMovement?: string;
-  positionDate?: string;
-  securityId?: string;
-  eligibilityStatus?: string;
-  dataQualityWarning?: string;
-  status?: string;
-  /** @nullable */
-  election?: string | null;
-  approval?: string;
-  entitlement?: number;
-  electionDecision?: DashboardSchemeImpactElectionDecision;
-}
-
-export type EventSummaryCashDirection = typeof EventSummaryCashDirection[keyof typeof EventSummaryCashDirection];
-
-
-export const EventSummaryCashDirection = {
-  Receivable: 'Receivable',
-  Payable: 'Payable',
-} as const;
-
-export type EventSummarySourceDisagreementsItem = {
-  field: string;
-  sightingValue: string;
-  confirmedValue: string;
-  winner: string;
-};
-
-export type EventSourceRecordAssertedFields = {[key: string]: string};
-
-export interface EventSourceRecord {
-  id: string;
-  channel: string;
-  provider: string;
-  messageType: string;
-  receivedAt: string;
-  assertedFields: EventSourceRecordAssertedFields;
-  primary: boolean;
-}
-
-export interface EventSummary {
-  id: string;
-  reference: string;
-  issuer: string;
-  security: string;
-  eventType: string;
-  processingType: string;
-  status: string;
-  marketDeadline: string;
-  internalDeadline: string;
-  marketDeadlineAt: string;
-  internalDeadlineAt: string;
-  affectedAccounts: number;
-  amount: number;
-  currency: string;
-  receivedAt: string;
-  source: string;
-  sourceRecords: EventSourceRecord[];
-  sourceAgreement: string;
-  schemeImpacts: DashboardSchemeImpact[];
-  /** @nullable */
-  materialityPaise: number | null;
-  /** @nullable */
-  cashImpactAmount: number | null;
-  /** @nullable */
-  attention: string | null;
-  cashDirection?: EventSummaryCashDirection;
-  referencePrice?: number;
-  discountPercentage?: number;
-  isHero?: boolean;
-  noticeReference?: string;
-  settlementStage?: string;
-  cashAmount?: number;
-  cashCurrency?: string;
-  shareAmount?: number;
-  shareLabel?: string;
-  isEarlySighting?: boolean;
-  impactBasis?: string;
-  decisionBlockedReason?: string;
-  mergedFromSightingId?: string;
-  sourceDisagreements?: EventSummarySourceDisagreementsItem[];
-  teachingScenario?: string;
-}
-
 export interface NoticePage {
   page: number;
   text: string;
@@ -516,6 +521,23 @@ export interface Task {
   sourceRule?: string;
   escalationPath?: string;
   eventReference?: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  eventId: string;
+  action: string;
+  actor: string;
+  actorId?: string;
+  actorRole?: string;
+  timestamp: string;
+  detail: string;
+  actorType?: string;
+  previousValue?: string;
+  newValue?: string;
+  reason?: string;
+  evidenceId?: string;
+  workflowStatus?: string;
 }
 
 export interface Validation {

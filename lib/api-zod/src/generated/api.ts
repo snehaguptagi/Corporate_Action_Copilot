@@ -137,28 +137,135 @@ export const HealthCheckResponse = zod.object({
  * @summary Get operations dashboard summary
  */
 export const GetDashboardResponse = zod.object({
-  "totalEvents": zod.number(),
-  "needsReview": zod.number(),
-  "dueToday": zod.number(),
-  "openTasks": zod.number(),
-  "breaks": zod.number(),
-  "recentActivity": zod.array(zod.object({
+  "arrivalCount24h": zod.number(),
+  "portfolioEventCount": zod.number(),
+  "impactedSchemeCount": zod.number(),
+  "totalSchemeCount": zod.number(),
+  "totalFunding": zod.number(),
+  "nearestDeadline": zod.string(),
+  "nearestFundingIssuer": zod.string(),
+  "inboundEvents": zod.array(zod.object({
   "id": zod.string(),
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "security": zod.string(),
+  "eventType": zod.string(),
+  "processingType": zod.string(),
+  "status": zod.string(),
+  "marketDeadline": zod.string(),
+  "internalDeadline": zod.string(),
+  "marketDeadlineAt": zod.coerce.date(),
+  "internalDeadlineAt": zod.coerce.date(),
+  "affectedAccounts": zod.number(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "receivedAt": zod.string(),
+  "source": zod.string(),
+  "sourceRecords": zod.array(zod.object({
+  "id": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "messageType": zod.string(),
+  "receivedAt": zod.coerce.date(),
+  "assertedFields": zod.record(zod.string(), zod.string()),
+  "primary": zod.boolean()
+})),
+  "sourceAgreement": zod.string(),
+  "schemeImpacts": zod.array(zod.object({
+  "id": zod.string(),
+  "schemeId": zod.string(),
+  "schemeName": zod.string(),
+  "affected": zod.boolean(),
+  "eligibleQuantity": zod.number(),
+  "direction": zod.enum(['Receivable', 'Funding', 'Neutral']),
+  "cashDirection": zod.string().optional(),
+  "cashAmount": zod.number(),
+  "quantityResult": zod.number().nullable(),
+  "navImpactPaise": zod.number().nullable(),
+  "navImpactTreatment": zod.string(),
+  "flag": zod.string().nullable(),
+  "account": zod.string().optional(),
+  "formula": zod.string().optional(),
+  "expected": zod.number().optional(),
+  "expectedCash": zod.number().optional(),
+  "grossCash": zod.number().optional(),
+  "withholdingRate": zod.number().optional(),
+  "withholdingAmount": zod.number().optional(),
+  "netCash": zod.number().optional(),
+  "expectedSecurityQuantity": zod.number().optional(),
+  "securityMovement": zod.string().optional(),
+  "positionDate": zod.string().optional(),
+  "securityId": zod.string().optional(),
+  "eligibilityStatus": zod.string().optional(),
+  "dataQualityWarning": zod.string().optional(),
+  "status": zod.string().optional(),
+  "election": zod.string().nullish(),
+  "approval": zod.string().optional(),
+  "entitlement": zod.number().optional(),
+  "electionDecision": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional()
+})),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
+  "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
+  "referencePrice": zod.number().optional(),
+  "discountPercentage": zod.number().optional(),
+  "isHero": zod.boolean().optional(),
+  "noticeReference": zod.string().optional(),
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
+})),
+  "schemes": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "openActions": zod.array(zod.object({
   "eventId": zod.string(),
-  "action": zod.string(),
-  "actor": zod.string(),
-  "actorId": zod.string().optional(),
-  "actorRole": zod.string().optional(),
-  "timestamp": zod.string(),
-  "detail": zod.string(),
-  "actorType": zod.string().optional(),
-  "previousValue": zod.string().optional(),
-  "newValue": zod.string().optional(),
-  "reason": zod.string().optional(),
-  "evidenceId": zod.string().optional(),
-  "workflowStatus": zod.string().optional()
+  "issuer": zod.string(),
+  "eventType": zod.string()
+})),
+  "totalNavImpactPaise": zod.number(),
+  "fundingNeeded": zod.number(),
+  "cashAvailable": zod.number(),
+  "shortfall": zod.number(),
+  "flag": zod.string().nullable()
 }))
 })
+
+
+/**
+ * @summary List all fund manager scheme summaries
+ */
+export const ListSchemesResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "openActions": zod.array(zod.object({
+  "eventId": zod.string(),
+  "issuer": zod.string(),
+  "eventType": zod.string()
+})),
+  "totalNavImpactPaise": zod.number(),
+  "fundingNeeded": zod.number(),
+  "cashAvailable": zod.number(),
+  "shortfall": zod.number(),
+  "flag": zod.string().nullable()
+})
+export const ListSchemesResponse = zod.array(ListSchemesResponseItem)
 
 
 /**

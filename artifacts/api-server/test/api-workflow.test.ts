@@ -138,6 +138,21 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     assert.deepEqual(response.body, { error: "API route not found." });
   });
 
+  test("serves every dashboard figure and all ten server-ranked schemes", async () => {
+    const [dashboard, schemes] = await Promise.all([
+      request("/dashboard", {}, analystSession),
+      request("/schemes", {}, analystSession),
+    ]);
+    assert.equal(dashboard.status, 200);
+    assert.equal(schemes.status, 200);
+    assert.equal(schemes.body.length, 10);
+    for (const field of ["arrivalCount24h", "portfolioEventCount", "impactedSchemeCount", "totalSchemeCount", "totalFunding", "nearestDeadline", "inboundEvents", "schemes"]) {
+      assert.ok(field in dashboard.body, `Dashboard is missing ${field}`);
+    }
+    assert.equal(dashboard.body.schemes.length, 10);
+    assert.ok(dashboard.body.arrivalCount24h >= 3);
+  });
+
   test("blocks an early sighting until a matching custodian MT564 merges into it", async () => {
     const original = getSeededEventSnapshot().find((event) => event.id === "evt-early-sighting");
     assert.ok(original);

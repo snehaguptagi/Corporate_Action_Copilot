@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { formatIstDate } from "@/lib/date";
 import { formatInr } from "@/lib/format";
+import { fundManagerStatus } from "@/lib/status";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 function SectionHeading({ index, eyebrow, title, description }: { index: string; eyebrow: string; title: string; description: string; }) {
@@ -115,15 +116,7 @@ export default function FundManagerDesk() {
   const statement3 = primarySource
     ? `Received ${formatIstDate(primarySource.receivedAt)} from ${data.isEarlySighting ? "the exchange" : "your custodian"} (${primarySource.provider}, ${primarySource.messageType}). ${data.sourceAgreement}`
     : `Received ${formatIstDate(data.receivedAt)} from ${data.source}. ${data.sourceAgreement}`;
-  const statusCopy = data.status === "Awaiting approval"
-    ? "With Compliance"
-    : !isMandatory && ["Validated", "Election required"].includes(data.status)
-      ? "Awaiting your decision"
-      : data.status === "Under review"
-        ? "Terms being confirmed"
-        : data.status === "Break identified"
-          ? "Settlement difference found"
-          : data.status;
+  const statusCopy = fundManagerStatus(data.status, data.isEarlySighting);
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#f7f5f2]">
@@ -151,6 +144,15 @@ export default function FundManagerDesk() {
           {data.isEarlySighting && (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950">
               <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
+            </div>
+          )}
+          {(data.sourceDisagreements ?? []).length > 0 && (
+            <div className="space-y-2 rounded-md border border-orange-200 bg-orange-50 px-5 py-4 text-sm leading-6 text-slate-800">
+              {(data.sourceDisagreements ?? []).map((item) => (
+                <p key={`${item.field}-${item.sightingValue}`}>
+                  {item.field}: {item.sightingValue} conflicts with {item.confirmedValue}; {item.winner}
+                </p>
+              ))}
             </div>
           )}
           <section>

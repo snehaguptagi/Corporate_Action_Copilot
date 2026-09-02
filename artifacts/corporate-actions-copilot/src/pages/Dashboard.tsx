@@ -1,25 +1,11 @@
-import { useGetArkaDesk, useListEvents, type EventSummary } from "@workspace/api-client-react";
+import { useGetDashboard, type EventSummary } from "@workspace/api-client-react";
 import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, FileInput } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatInr } from "@/lib/format";
-
-const IST_TIME_ZONE = "Asia/Kolkata";
-const MONTHS: Record<string, number> = {
-  Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-  Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-};
-
-function istDateKey(value: Date) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: IST_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(value);
-}
+import { fundManagerStatus, isComplete, isDecisionNeeded } from "@/lib/status";
 
 function relativeArrival(timestamp: string) {
   const arrival = new Date(timestamp);
@@ -42,7 +28,7 @@ function actionName(eventType: string) {
 }
 
 function needsDecision(event: EventSummary) {
-  return event.status === "Election required";
+  return isDecisionNeeded(event.status);
 }
 
 function impactCopy(event: EventSummary) {
@@ -63,11 +49,11 @@ function navImpactCopy(event: EventSummary) {
 }
 
 function needsFromYou(event: EventSummary) {
-  if (["Closed", "Reconciled"].includes(event.status)) return "Settled";
-  if (event.status === "Awaiting approval") return "With Compliance";
-  if (needsDecision(event) || event.status === "Under review") return `Decide by ${event.internalDeadline}`;
+  if (isComplete(event.status)) return "Settled";
+  if (fundManagerStatus(event.status) === "With Compliance") return "With Compliance";
+  if (needsDecision(event) || fundManagerStatus(event.status) === "Terms being confirmed") return `Decide by ${event.internalDeadline}`;
   if (event.processingType === "Mandatory") return "Nothing, mandatory";
-  if (event.status === "Break identified") return "Exception under review";
+  if (fundManagerStatus(event.status) === "Settlement break") return "Exception under review";
   return "Nothing required";
 }
 
@@ -76,20 +62,9 @@ function isinFromSecurity(security: string) {
 }
 
 export default function Dashboard() {
-  const {
-    data: events,
-    isLoading: eventsLoading,
-    isError: eventsError,
-    refetch: refetchEvents,
-  } = useListEvents();
-  const {
-    data: desk,
-    isLoading: deskLoading,
-    isError: deskError,
-    refetch: refetchDesk,
-  } = useGetArkaDesk();
+  const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
 
-  if (eventsLoading || deskLoading) {
+  if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-stone-50 p-8">
         <div className="flex items-center gap-3 text-sm text-slate-600">
@@ -100,7 +75,7 @@ export default function Dashboard() {
     );
   }
 
-  if (eventsError || deskError || !desk) {
+  if (isError || !dashboard) {
     return (
       <div className="flex flex-1 items-center justify-center bg-stone-50 p-6">
         <Card className="max-w-md border-rose-200">
@@ -110,50 +85,24 @@ export default function Dashboard() {
               <h1 className="font-semibold text-slate-900">Portfolio impact is unavailable</h1>
               <p className="mt-1 text-sm text-slate-500">The dashboard will not replace missing corporate-action or scheme data with zeroes.</p>
             </div>
-            <Button onClick={() => { void refetchEvents(); void refetchDesk(); }}>Retry</Button>
+            <Button onClick={() => void refetch()}>Retry</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const eventList = events ?? [];
-  const todayKey = istDateKey(new Date());
-  const arrivedToday = eventList.filter((event) => istDateKey(new Date(event.receivedAt)) === todayKey);
-  const eventsAffectingSchemes = eventList.filter((event) => event.schemeImpacts.some((impact) => impact.affected));
-  const impactedSchemeIds = new Set(
-    eventList.flatMap((event) => event.schemeImpacts.filter((impact) => impact.affected).map((impact) => impact.schemeId)),
-  );
-  const fundingEvents = eventList
-    .filter((event) => event.schemeImpacts.some((impact) => impact.direction === "Funding" && impact.cashAmount > 0))
-    .sort((a, b) => {
-      const da = a.internalDeadlineAt ? new Date(a.internalDeadlineAt).getTime() : Number.POSITIVE_INFINITY;
-      const db = b.internalDeadlineAt ? new Date(b.internalDeadlineAt).getTime() : Number.POSITIVE_INFINITY;
-      return da - db;
-    });
-  const nearestFunding = fundingEvents[0];
-  const totalFunding = eventList.flatMap((event) => event.schemeImpacts)
-    .filter((impact) => impact.direction === "Funding")
-    .reduce((total, impact) => total + impact.cashAmount, 0);
-  const sortedEvents = eventList;
-
-  const schemeRows = desk.schemes.map((scheme) => {
-    const impacts = eventList
-      .flatMap((event) => event.schemeImpacts.map((impact) => ({ event, impact })))
-      .filter(({ impact }) => impact.schemeId === scheme.id && impact.affected);
-    const openActions = impacts.filter(({ event }) => !["Closed", "Reconciled"].includes(event.status));
-    const funding = impacts
-      .filter(({ impact }) => impact.direction === "Funding")
-      .reduce((total, { impact }) => total + impact.cashAmount, 0);
-    const navImpact = impacts.reduce((total, { impact }) => total + (impact.navImpactPaise ?? 0), 0);
-    const flag = impacts.find(({ impact }) => impact.flag)?.impact.flag ?? null;
-    const cashAvailable = scheme.cashAvailableCrore * 10_000_000;
-    const shortfall = Math.max(0, funding - cashAvailable);
-    return { scheme, openActions, funding, cashAvailable, shortfall, navImpact, flag };
-  });
-  const affectedSchemeRows = schemeRows
-    .filter(({ openActions }) => openActions.length > 0)
-    .sort((left, right) => right.navImpact - left.navImpact);
+  const sortedEvents = dashboard.inboundEvents;
+  const schemeRows = dashboard.schemes.map((row) => ({
+    scheme: { id: row.id, name: row.name, category: row.category },
+    openActions: row.openActions.map((action) => ({ event: { id: action.eventId, issuer: action.issuer, eventType: action.eventType } })),
+    funding: row.fundingNeeded,
+    cashAvailable: row.cashAvailable,
+    shortfall: row.shortfall,
+    navImpact: row.totalNavImpactPaise,
+    flag: row.flag,
+  }));
+  const affectedSchemeRows = schemeRows.filter(({ openActions }) => openActions.length > 0);
   const unaffectedSchemeRows = schemeRows.filter(({ openActions }) => openActions.length === 0);
   const unaffectedLabels = unaffectedSchemeRows.map(({ scheme }) => (
     scheme.category === "Banking" ? "Banking & Financial" : scheme.category
@@ -181,23 +130,23 @@ export default function Dashboard() {
               <div>
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#a32020]">
                   <CalendarClock className="h-4 w-4" />
-                  Today
+                  Last 24 hours
                 </div>
                 <p id="morning-status" className="max-w-5xl text-xl font-semibold leading-8 text-slate-950 sm:text-2xl">
-                  {arrivedToday.length} notices arrived today. {eventsAffectingSchemes.length} affect your schemes.{" "}
-                  {impactedSchemeIds.size} of {desk.schemes.length} schemes impacted.{" "}
-                  {totalFunding > 0 ? `${formatInr(totalFunding)} to fund` : "No funding required"}
-                  {nearestFunding ? ` by ${nearestFunding.internalDeadline} for ${nearestFunding.issuer}.` : "."}
+                   {dashboard.arrivalCount24h} notices in the last 24 hours. {dashboard.portfolioEventCount} affect your schemes.{" "}
+                   {dashboard.impactedSchemeCount} of {dashboard.totalSchemeCount} schemes impacted.{" "}
+                   {dashboard.totalFunding > 0 ? `${formatInr(dashboard.totalFunding)} to fund` : "No funding required"}
+                   {dashboard.nearestDeadline ? ` by ${dashboard.nearestDeadline} for ${dashboard.nearestFundingIssuer}.` : "."}
                 </p>
               </div>
               <div className="grid shrink-0 grid-cols-2 gap-3 text-sm sm:grid-cols-4 lg:grid-cols-2">
                 <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                  <span className="block text-xs text-slate-500">Arrived today</span>
-                  <strong className="text-lg text-slate-950">{arrivedToday.length}</strong>
+                  <span className="block text-xs text-slate-500">Last 24 hours</span>
+                  <strong className="text-lg text-slate-950">{dashboard.arrivalCount24h}</strong>
                 </div>
                 <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
                   <span className="block text-xs text-slate-500">Affect Arka</span>
-                  <strong className="text-lg text-slate-950">{eventsAffectingSchemes.length}</strong>
+                  <strong className="text-lg text-slate-950">{dashboard.portfolioEventCount}</strong>
                 </div>
               </div>
             </div>
@@ -246,7 +195,7 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell>
                           <Link href={`/events/${event.id}`} className="font-semibold text-primary hover:underline">
-                            {impacted} of {desk.schemes.length}
+                             {impacted} of {dashboard.totalSchemeCount}
                           </Link>
                         </TableCell>
                         <TableCell>

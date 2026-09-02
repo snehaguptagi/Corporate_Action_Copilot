@@ -13,7 +13,7 @@ import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = sharedSeedDateAnchor;
-export const SEED_VERSION = "coherent-portfolio-sightings-v13";
+export const SEED_VERSION = "rolling-clock-overlap-v14";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -72,52 +72,55 @@ const indianSecurity = (isin: string, ticker: string, issuer: string) => ({
   securityId: `SEC-${ticker}`, isin, ticker, securityName: issuer, currency: "INR", market: "India", status: "Active",
 });
 const istDeadline = (offset: number, time = "15:30") => `${shortDate(offset)} · ${time} IST`;
-const INDIAN_EVENT_META: Record<string, { deadlineOffset: number; receivedOffset: number; receivedTime: string }> = {
-  "evt-ind-dividend-review": { deadlineOffset: 12, receivedOffset: 0, receivedTime: "08:45:00" },
-  "evt-ind-split": { deadlineOffset: 14, receivedOffset: 0, receivedTime: "10:20:00" },
-  "evt-ind-bonus": { deadlineOffset: 6, receivedOffset: -1, receivedTime: "11:10:00" },
-  "evt-ind-buyback": { deadlineOffset: 16, receivedOffset: 0, receivedTime: "13:05:00" },
-  "evt-ind-scheme": { deadlineOffset: 17, receivedOffset: -2, receivedTime: "15:40:00" },
-  "evt-ind-dividend-break": { deadlineOffset: 3, receivedOffset: -1, receivedTime: "09:30:00" },
-  "evt-bharat-rights": { deadlineOffset: 15, receivedOffset: -1, receivedTime: "14:15:00" },
-  "evt-looks-small": { deadlineOffset: 18, receivedOffset: -2, receivedTime: "09:10:00" },
-  "evt-looks-big": { deadlineOffset: 18, receivedOffset: -2, receivedTime: "09:15:00" },
-  "evt-concentration-creep": { deadlineOffset: 20, receivedOffset: -3, receivedTime: "10:00:00" },
-  "evt-near-miss": { deadlineOffset: 3, receivedOffset: -1, receivedTime: "11:30:00" },
-  "evt-overlap-dividend": { deadlineOffset: 21, receivedOffset: -3, receivedTime: "12:00:00" },
-  "evt-routine-split-1": { deadlineOffset: 24, receivedOffset: -4, receivedTime: "09:00:00" },
-  "evt-routine-dividend-2": { deadlineOffset: 25, receivedOffset: -4, receivedTime: "09:15:00" },
-  "evt-routine-split-3": { deadlineOffset: 26, receivedOffset: -5, receivedTime: "09:30:00" },
-  "evt-routine-dividend-4": { deadlineOffset: 27, receivedOffset: -5, receivedTime: "09:45:00" },
-  "evt-early-sighting": { deadlineOffset: 28, receivedOffset: 0, receivedTime: "07:50:00" },
+const INDIAN_EVENT_META: Record<string, { deadlineDaysAhead: number; arrivalHoursAgo: number; recordDaysAhead?: number }> = {
+  "evt-ind-dividend-review": { deadlineDaysAhead: 12, arrivalHoursAgo: 3 },
+  "evt-ind-split": { deadlineDaysAhead: 14, arrivalHoursAgo: 8 },
+  "evt-ind-bonus": { deadlineDaysAhead: 6, arrivalHoursAgo: 20 },
+  "evt-ind-buyback": { deadlineDaysAhead: 16, arrivalHoursAgo: 26 },
+  "evt-ind-scheme": { deadlineDaysAhead: 17, arrivalHoursAgo: 31 },
+  "evt-ind-dividend-break": { deadlineDaysAhead: 3, arrivalHoursAgo: 35 },
+  "evt-bharat-rights": { deadlineDaysAhead: 15, arrivalHoursAgo: 40 },
+  "evt-looks-small": { deadlineDaysAhead: 18, arrivalHoursAgo: 46 },
+  "evt-looks-big": { deadlineDaysAhead: 18, arrivalHoursAgo: 50 },
+  "evt-concentration-creep": { deadlineDaysAhead: 20, arrivalHoursAgo: 55 },
+  "evt-near-miss": { deadlineDaysAhead: 3, arrivalHoursAgo: 60 },
+  "evt-overlap-dividend": { deadlineDaysAhead: 21, arrivalHoursAgo: 66 },
+  "evt-routine-split-1": { deadlineDaysAhead: 24, arrivalHoursAgo: 72 },
+  "evt-routine-dividend-2": { deadlineDaysAhead: 25, arrivalHoursAgo: 78 },
+  "evt-routine-split-3": { deadlineDaysAhead: 26, arrivalHoursAgo: 84 },
+  "evt-routine-dividend-4": { deadlineDaysAhead: 27, arrivalHoursAgo: 90 },
+  "evt-early-sighting": { deadlineDaysAhead: 28, arrivalHoursAgo: 12, recordDaysAhead: 12 },
 };
 
+const relativeTimestamp = (hoursAgo: number, asOf = new Date()) =>
+  new Date(asOf.getTime() - hoursAgo * 60 * 60 * 1000).toISOString();
+
 function sourceRecordsFor(input: EventData): EventData[] {
-  const meta = INDIAN_EVENT_META[input.id] ?? { deadlineOffset: 15, receivedOffset: -1, receivedTime: "09:00:00" };
+  const meta = INDIAN_EVENT_META[input.id] ?? { deadlineDaysAhead: 15, arrivalHoursAgo: 26 };
   const canonicalRecordDate = input.calculationInputs?.recordDate ?? isoDate(input.recordOffset ?? 10);
   const vendorRecordDate = input.id === "evt-ind-dividend-review"
     ? new Date(`${canonicalRecordDate}T00:00:00.000Z`).toISOString().slice(0, 10).replace(/(\d{4}-\d{2}-)(\d{2})/, (_, prefix, day) => `${prefix}${String(Number(day) + 1).padStart(2, "0")}`)
     : canonicalRecordDate;
-  const receivedAt = seedTimestamp(meta.receivedOffset, meta.receivedTime);
+  const receivedAt = relativeTimestamp(meta.arrivalHoursAgo);
   const asserted = (recordDate: string) => ({ recordDate });
   return [
     { id: `${input.id}-sbi`, channel: "Custodian", provider: "SBI-SG", messageType: "MT564", receivedAt, assertedFields: asserted(canonicalRecordDate), primary: true },
-    { id: `${input.id}-nsdl`, channel: "Depository file", provider: "NSDL", messageType: "Corporate action file", receivedAt: seedTimestamp(meta.receivedOffset, "18:00:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
-    { id: `${input.id}-nse`, channel: "Exchange announcement", provider: "NSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:00:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
-    { id: `${input.id}-bse`, channel: "Exchange announcement", provider: "BSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:05:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
-    { id: `${input.id}-refinitiv`, channel: "Market data", provider: "Refinitiv", messageType: "Live vendor feed", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:10:00"), assertedFields: asserted(vendorRecordDate), primary: false },
-    { id: `${input.id}-kfin`, channel: "RTA notice", provider: "KFin", messageType: "Email", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:20:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-nsdl`, channel: "Depository file", provider: "NSDL", messageType: "Corporate action file", receivedAt: relativeTimestamp(meta.arrivalHoursAgo + 1), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-nse`, channel: "Exchange announcement", provider: "NSE", messageType: "SEBI LODR filing", receivedAt: relativeTimestamp(meta.arrivalHoursAgo + 8), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-bse`, channel: "Exchange announcement", provider: "BSE", messageType: "SEBI LODR filing", receivedAt: relativeTimestamp(meta.arrivalHoursAgo + 8.1), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-refinitiv`, channel: "Market data", provider: "Refinitiv", messageType: "Live vendor feed", receivedAt: relativeTimestamp(meta.arrivalHoursAgo + 8.2), assertedFields: asserted(vendorRecordDate), primary: false },
+    { id: `${input.id}-kfin`, channel: "RTA notice", provider: "KFin", messageType: "Email", receivedAt: relativeTimestamp(meta.arrivalHoursAgo + 8.3), assertedFields: asserted(canonicalRecordDate), primary: false },
   ];
 }
 
 const indianEvent = (input: EventData): EventData => eventBase({
   currency: "INR",
-  marketDeadline: istDeadline(INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15),
-  internalDeadline: istDeadline((INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15) - 1, "15:00"),
-  marketDeadlineAt: istTimestamp(INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15, "15:30"),
-  internalDeadlineAt: istTimestamp((INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15) - 1, "15:00"),
+  marketDeadline: istDeadline(INDIAN_EVENT_META[input.id]?.deadlineDaysAhead ?? 15),
+  internalDeadline: istDeadline((INDIAN_EVENT_META[input.id]?.deadlineDaysAhead ?? 15) - 1, "15:00"),
+  marketDeadlineAt: istTimestamp(INDIAN_EVENT_META[input.id]?.deadlineDaysAhead ?? 15, "15:30"),
+  internalDeadlineAt: istTimestamp((INDIAN_EVENT_META[input.id]?.deadlineDaysAhead ?? 15) - 1, "15:00"),
   affectedAccounts: input.positions?.length ?? 1,
-  receivedAt: seedTimestamp(INDIAN_EVENT_META[input.id]?.receivedOffset ?? -1, INDIAN_EVENT_META[input.id]?.receivedTime ?? "09:00:00"),
+  receivedAt: relativeTimestamp(INDIAN_EVENT_META[input.id]?.arrivalHoursAgo ?? 26),
   source: "Custodian · SBI-SG",
   sourceRecords: sourceRecordsFor(input),
   sourceAgreement: input.id === "evt-ind-dividend-review"
@@ -127,7 +130,7 @@ const indianEvent = (input: EventData): EventData => eventBase({
   reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement pending.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate((input.deadlineOffset ?? 15) + 7), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
   instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
   options: [], tasks: [],
-  audit: [{ id: `audit-${input.id}`, eventId: input.id, action: "Notice received", actor: "System", actorType: "system", timestamp: seedTimestamp(-1, "09:00:00"), detail: "Synthetic NSE notice captured.", previousValue: "", newValue: input.status, reason: "", evidenceId: `EVD-${input.id}`, workflowStatus: input.status }],
+  audit: [{ id: `audit-${input.id}`, eventId: input.id, action: "Notice received", actor: "System", actorType: "system", timestamp: relativeTimestamp((INDIAN_EVENT_META[input.id]?.arrivalHoursAgo ?? 26) - 0.1), detail: "Synthetic NSE notice captured.", previousValue: "", newValue: input.status, reason: "", evidenceId: `EVD-${input.id}`, workflowStatus: input.status }],
   ...input,
 });
 
@@ -150,6 +153,58 @@ const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-routine-dividend-4", reference: "CA-IN-DIV-007", issuer: "Utkal Healthcare Ltd", security: "ISIN INE0UTK01029 · UTKAL", eventType: "Cash dividend", processingType: "Mandatory", status: "Monitoring", amount: 0, securityMaster: indianSecurity("INE0UTK01029", "UTKAL", "Utkal Healthcare Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 2.5, withholdingRate: 0 }, notice: notice("utkal-dividend.pdf", "Dividend ₹2.50.", ["₹2.50 per share."]), terms: [term("rate", "Cash rate", "₹2.50"), term("recordDate", "Record date", shortDate(10)), term("paymentDate", "Payment date", shortDate(27)), term("currency", "Currency", "INR")], positions: [position("POS-UTK", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0UTK01029", 300_000, isoDate(10))] }),
   indianEvent({ id: "evt-early-sighting", reference: "SIGHTING-NSE-001", issuer: "Veda Consumer Products Ltd", security: "ISIN INE0VED01030 · VEDA", eventType: "Cash dividend", processingType: "Mandatory", status: "Early sighting", settlementStage: "Early sighting", isEarlySighting: true, impactBasis: "Indicative", decisionBlockedReason: "Awaiting custodian notification. You can review the likely impact now, but an instruction cannot be sent until SBI-SG confirms this action.", teachingScenario: "Early sighting", amount: 0, securityMaster: indianSecurity("INE0VED01030", "VEDA", "Veda Consumer Products Ltd"), requiredTermKeys: ["rate", "recordDate"], calculationInputs: { rate: 3, withholdingRate: 0 }, source: "Exchange filing · NSE", sourceRecords: [{ id: "evt-early-sighting-nse", channel: "Exchange announcement", provider: "NSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(0, "07:50:00"), assertedFields: { recordDate: isoDate(12), rate: "₹3.00" }, primary: true }], sourceAgreement: "Awaiting SBI-SG MT564 confirmation.", notice: notice("veda-nse-filing.pdf", "Indicative dividend sighting from NSE.", ["NSE filing: proposed dividend ₹3.00 per share."], "NSE"), terms: [term("rate", "Cash rate", "₹3.00"), term("recordDate", "Record date", shortDate(12))], positions: [position("POS-VED", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0VED01030", 900_000, isoDate(10))], options: [], instruction: { status: "Unavailable", destination: "SBI-SG", reference: "", generatedAt: "", content: "No MT565 can be sent until SBI-SG supplies its corporate action reference in an MT564.", simulated: false, approvalActor: "" } }),
 ];
+
+const OVERLAP_SCHEMES: Record<string, string[]> = {
+  "evt-ind-dividend-review": ["arka-flexi-cap", "arka-nifty-50"],
+  "evt-ind-split": ["arka-large-cap"],
+  "evt-ind-bonus": ["arka-flexi-cap"],
+  "evt-ind-buyback": ["arka-infrastructure", "arka-large-cap"],
+  "evt-looks-small": ["arka-focused-25"],
+  "evt-looks-big": ["arka-flexi-cap", "arka-nifty-50"],
+  "evt-routine-split-1": ["arka-large-cap", "arka-focused-25", "arka-nifty-50"],
+  "evt-routine-dividend-2": ["arka-flexi-cap", "arka-nifty-50"],
+  "evt-routine-split-3": ["arka-large-cap", "arka-small-cap", "arka-focused-25"],
+  "evt-routine-dividend-4": ["arka-large-cap"],
+  "evt-early-sighting": ["arka-flexi-cap"],
+};
+
+for (const event of preloadedEvents) {
+  const basePosition = event.positions?.[0];
+  for (const [index, schemeId] of (OVERLAP_SCHEMES[event.id] ?? []).entries()) {
+    const scheme = ARKA_SCHEME_SEED.find((candidate) => candidate.id === schemeId);
+    if (!scheme || !basePosition || event.positions.some((candidate: EventData) => candidate.fund === scheme.schemeName)) continue;
+    event.positions.push(position(
+      `${basePosition.id}-${schemeId}`,
+      scheme.schemeName,
+      scheme.schemeCode,
+      event.securityMaster.isin,
+      Math.max(1, Math.floor(Number(basePosition.eligibleQuantity) * (0.7 - index * 0.1))),
+      basePosition.positionDate,
+    ));
+  }
+}
+
+const recordDateDisagreement = {
+  field: "Record date",
+  sightingValue: shortDate(11),
+  confirmedValue: shortDate(10),
+  winner: "NSE filing wins because dates are controlled by the exchange filing.",
+};
+const ratioDisagreement = {
+  field: "Rights ratio",
+  sightingValue: "1 for 6",
+  confirmedValue: "1 for 5",
+  winner: "NSE filing wins because ratios are controlled by the exchange filing.",
+};
+const reviewEvent = preloadedEvents.find((event) => event.id === "evt-ind-dividend-review");
+if (reviewEvent) reviewEvent.sourceDisagreements = [recordDateDisagreement];
+const rightsEvent = preloadedEvents.find((event) => event.id === "evt-bharat-rights");
+if (rightsEvent) {
+  rightsEvent.sourceDisagreements = [ratioDisagreement];
+  rightsEvent.sourceAgreement = "3 of 4 sources agree. The early NSE announcement showed 1 for 6; the replacement filing and SBI-SG MT564 show 1 for 5, and the exchange filing wins.";
+  const nse = rightsEvent.sourceRecords.find((record: EventData) => record.provider === "NSE");
+  if (nse) Object.assign(nse, { messageType: "SEBI LODR filing · REPL", assertedFields: { ...nse.assertedFields, rightsRatio: "1 for 5", previousRightsRatio: "1 for 6" } });
+}
 
 function buildSchemeImpacts(event: EventData): EventData[] {
   const positions = event.positions ?? [];
@@ -302,26 +357,39 @@ for (const event of preloadedEvents) {
 }
 
 /** Read-only deterministic fixture snapshot for coherence/control regression tests. */
-export function getSeededEventSnapshot(): EventData[] {
-  return JSON.parse(JSON.stringify(preloadedEvents)) as EventData[];
+export function getSeededEventSnapshot(asOf = new Date()): EventData[] {
+  return preloadedEvents.map((event) => resolveSeedEvent(event, asOf));
 }
 
-export function countArrivalsOnDate(events: EventData[], date: Date): number {
-  const dateKey = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
+function resolveSeedEvent(source: EventData, asOf = new Date()): EventData {
+  const event = clone(source);
+  const meta = INDIAN_EVENT_META[event.id];
+  if (!meta) return event;
+  event.receivedAt = relativeTimestamp(meta.arrivalHoursAgo, asOf);
+  event.marketDeadlineAt = new Date(asOf.getTime() + meta.deadlineDaysAhead * DAY_MS).toISOString();
+  event.internalDeadlineAt = new Date(asOf.getTime() + (meta.deadlineDaysAhead - 1) * DAY_MS).toISOString();
+  const deadlineDate = new Date(event.marketDeadlineAt);
+  const internalDate = new Date(event.internalDeadlineAt);
+  const display = (value: Date, time: string) => `${value.getUTCDate()} ${SHORT_MONTHS[value.getUTCMonth()]} ${value.getUTCFullYear()} · ${time} IST`;
+  event.marketDeadline = display(deadlineDate, "15:30");
+  event.internalDeadline = display(internalDate, "15:00");
+  event.sourceRecords = (event.sourceRecords ?? []).map((record: EventData, index: number) => ({
+    ...record,
+    receivedAt: relativeTimestamp(meta.arrivalHoursAgo + index, asOf),
+  }));
+  event.audit = (event.audit ?? []).map((entry: EventData, index: number) => ({
+    ...entry,
+    timestamp: relativeTimestamp(meta.arrivalHoursAgo + index + 0.1, asOf),
+  }));
+  if (event.notice) event.notice.receivedAt = event.receivedAt;
+  return event;
+}
+
+export function countArrivalsInLast24Hours(events: EventData[], asOf = new Date()): number {
+  const lowerBound = asOf.getTime() - DAY_MS;
   return events.filter((event) => {
-    const received = new Date(event.receivedAt);
-    return !Number.isNaN(received.getTime())
-      && new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(received) === dateKey;
+    const received = Date.parse(event.receivedAt);
+    return Number.isFinite(received) && received > lowerBound && received <= asOf.getTime();
   }).length;
 }
 
@@ -332,7 +400,7 @@ function operationalDeadline(value: string): number {
   return month < 0 ? Number.POSITIVE_INFINITY : Date.UTC(Number(match[3]), month, Number(match[1]));
 }
 
-export function deriveEventSignals(event: EventData, asOf: Date = SEED_DATE_ANCHOR): {
+export function deriveEventSignals(event: EventData, asOf: Date = new Date()): {
   materialityPaise: number | null;
   cashImpactAmount: number | null;
   attention: string | null;
@@ -1198,7 +1266,8 @@ export async function getCorporateActionEvents(): Promise<EventData[]> {
   const { corporateActionEventsTable, db } = await import("@workspace/db");
   const rows = await db.select().from(corporateActionEventsTable).orderBy(desc(corporateActionEventsTable.updatedAt));
   return rows.map((row) => {
-    const event = clone(row.data as EventData);
+    const stored = row.data as EventData;
+    const event = INDIAN_EVENT_META[stored.id] ? resolveSeedEvent(stored) : clone(stored);
     refreshValidation(event);
     return event;
   });
@@ -1209,7 +1278,8 @@ export async function getCorporateActionEvent(id: string): Promise<EventData | n
   const { corporateActionEventsTable, db } = await import("@workspace/db");
   const [row] = await db.select().from(corporateActionEventsTable).where(eq(corporateActionEventsTable.id, id));
   if (!row) return null;
-  const event = clone(row.data as EventData);
+  const stored = row.data as EventData;
+  const event = INDIAN_EVENT_META[stored.id] ? resolveSeedEvent(stored) : clone(stored);
   refreshValidation(event);
   return event;
 }
@@ -1283,15 +1353,47 @@ export function toSummary(event: EventData): EventData {
   return { ...summary, ...deriveEventSignals(event) };
 }
 
-export function buildDashboard(events: EventData[]): EventData {
-  const allTasks = events.flatMap((event) => event.tasks ?? []);
-  const activity = events.flatMap((event) => event.audit ?? []).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 6);
+export function buildSchemeSummaries(events: EventData[], desk: EventData): EventData[] {
+  return desk.schemes.map((scheme: EventData) => {
+    const impacts = events.flatMap((event) => (event.schemeImpacts ?? []).map((impact: EventData) => ({ event, impact })))
+      .filter(({ impact }) => impact.schemeId === scheme.id && impact.affected);
+    const open = impacts.filter(({ event }) => !["Closed", "Reconciled"].includes(event.status));
+    const fundingNeeded = open.filter(({ impact }) => impact.direction === "Funding")
+      .reduce((total, { impact }) => total + Number(impact.cashAmount ?? 0), 0);
+    const cashAvailable = Number(scheme.cashAvailableCrore ?? 0) * 10_000_000;
+    return {
+      id: scheme.id,
+      name: scheme.name,
+      category: scheme.category,
+      openActions: open.map(({ event }) => ({ eventId: event.id, issuer: event.issuer, eventType: event.eventType })),
+      totalNavImpactPaise: Number(open.reduce((total, { impact }) => total + Number(impact.navImpactPaise ?? 0), 0).toFixed(2)),
+      fundingNeeded: Number(fundingNeeded.toFixed(2)),
+      cashAvailable,
+      shortfall: Math.max(0, Number((fundingNeeded - cashAvailable).toFixed(2))),
+      flag: open.find(({ impact }) => impact.flag)?.impact.flag ?? null,
+    };
+  }).sort((left: EventData, right: EventData) => right.totalNavImpactPaise - left.totalNavImpactPaise || right.openActions.length - left.openActions.length);
+}
+
+export function buildDashboard(events: EventData[], desk: EventData, asOf = new Date()): EventData {
+  const schemes = buildSchemeSummaries(events, desk);
+  const inboundEvents = sortCorporateActionEvents(events, asOf).map(toSummary);
+  const portfolioEvents = events.filter((event) => event.schemeImpacts?.some((impact: EventData) => impact.affected));
+  const totalFunding = events.flatMap((event) => event.schemeImpacts ?? [])
+    .filter((impact: EventData) => impact.affected && impact.direction === "Funding")
+    .reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0);
+  const nearestFunding = events
+    .filter((event) => event.schemeImpacts?.some((impact: EventData) => impact.affected && impact.direction === "Funding" && impact.cashAmount > 0))
+    .sort((left, right) => Date.parse(left.internalDeadlineAt) - Date.parse(right.internalDeadlineAt))[0];
   return {
-    totalEvents: events.length,
-    needsReview: events.filter((event) => ["Received", "Under review"].includes(event.status)).length,
-    dueToday: allTasks.filter((current) => current.status === "Open" && current.due.startsWith("Today")).length,
-    openTasks: allTasks.filter((current) => current.status === "Open").length,
-    breaks: events.filter((event) => event.reconciliation?.classification && event.reconciliation.classification !== "Matched" && event.reconciliation.classification !== "Not due").length,
-    recentActivity: activity,
+    arrivalCount24h: countArrivalsInLast24Hours(events, asOf),
+    portfolioEventCount: portfolioEvents.length,
+    impactedSchemeCount: schemes.filter((scheme) => scheme.openActions.length > 0).length,
+    totalSchemeCount: schemes.length,
+    totalFunding: Number(totalFunding.toFixed(2)),
+    nearestDeadline: nearestFunding?.internalDeadline ?? "",
+    nearestFundingIssuer: nearestFunding?.issuer ?? "",
+    inboundEvents,
+    schemes,
   };
 }

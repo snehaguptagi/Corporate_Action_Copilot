@@ -76,6 +76,8 @@ export * from './schemeDetail';
 export * from './schemeFunding';
 export * from './schemeHeadroom';
 export * from './schemeHolding';
+export * from './schemeOpenAction';
+export * from './schemeSummary';
 export * from './securityMaster';
 export * from './signInInput';
 export * from './task';

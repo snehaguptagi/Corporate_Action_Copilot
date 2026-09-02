@@ -5,13 +5,17 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { AuditEntry } from './auditEntry';
+import type { EventSummary } from './eventSummary';
+import type { SchemeSummary } from './schemeSummary';
 
 export interface Dashboard {
-  totalEvents: number;
-  needsReview: number;
-  dueToday: number;
-  openTasks: number;
-  breaks: number;
-  recentActivity: AuditEntry[];
+  arrivalCount24h: number;
+  portfolioEventCount: number;
+  impactedSchemeCount: number;
+  totalSchemeCount: number;
+  totalFunding: number;
+  nearestDeadline: string;
+  nearestFundingIssuer: string;
+  inboundEvents: EventSummary[];
+  schemes: SchemeSummary[];
 }

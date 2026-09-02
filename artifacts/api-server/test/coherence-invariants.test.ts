@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { ARKA_EVENT, ARKA_SCHEME_SEED, calculateArkaFixtureValues } from "../src/lib/arka-desk";
-import { countArrivalsOnDate, deriveEventSignals, getSeededEventSnapshot, SEED_DATE_ANCHOR, sortCorporateActionEvents, syncCalculationInput } from "../src/lib/corporate-actions-v2";
+import { countArrivalsInLast24Hours, deriveEventSignals, getSeededEventSnapshot, SEED_DATE_ANCHOR, sortCorporateActionEvents, syncCalculationInput } from "../src/lib/corporate-actions-v2";
 
 const parseDisplayDate = (value: string) => {
   const [day, month, year] = value.split(" ");
@@ -23,6 +24,12 @@ test("active India seed deadlines are future and audit history is past", () => {
     }
     for (const entry of event.audit) assert.ok(new Date(entry.timestamp).getTime() < now, `${event.id} audit must be past`);
   }
+});
+
+test("seed source contains no hardcoded calendar date or timestamp literal", () => {
+  const source = readFileSync(new URL("../src/lib/corporate-actions-v2.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /\b20\d{2}-\d{2}-\d{2}(?:T\d{2}:\d{2})?/);
+  assert.doesNotMatch(source, /\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+20\d{2}\b/);
 });
 
 test("seeded events include six source channels and one explicit disagreement", () => {
@@ -101,12 +108,13 @@ test("every active event has arrival metadata and ten scheme impacts", () => {
   }
 });
 
-test("today arrival count is derived from receivedAt", () => {
-  const events = getSeededEventSnapshot();
-  const before = countArrivalsOnDate(events, SEED_DATE_ANCHOR);
-  assert.ok(before >= 3);
-  events[0].receivedAt = "2026-08-20T08:45:00.000Z";
-  assert.equal(countArrivalsOnDate(events, SEED_DATE_ANCHOR), before - 1);
+test("rolling 24-hour arrivals stay non-zero at every hour of day", () => {
+  for (const hour of [2, 9, 23]) {
+    const clock = new Date();
+    clock.setHours(hour, 0, 0, 0);
+    const events = getSeededEventSnapshot(clock);
+    assert.ok(countArrivalsInLast24Hours(events, clock) >= 3);
+  }
 });
 
 test("event attention is shown only for a concrete decision, constraint, or break", () => {
@@ -158,9 +166,17 @@ test("a smaller rupee dividend can have higher NAV materiality than a larger one
 });
 
 test("seeded events vary meaningfully in schemes impacted", () => {
-  const counts = getSeededEventSnapshot().map((event) => event.schemeImpacts.filter((impact: EventData) => impact.affected).length);
-  assert.ok(counts.includes(1));
-  assert.ok(counts.some((count) => count >= 5));
+  const counts = getSeededEventSnapshot().map((event) => event.schemeImpacts.filter((impact: EventData) => impact.affected).length).sort((a, b) => a - b);
+  assert.ok(counts[Math.floor(counts.length / 2)] >= 2);
+});
+
+test("at least two seeded events explain a source disagreement and its winner", () => {
+  const conflicted = getSeededEventSnapshot().filter((event) => event.sourceDisagreements?.length);
+  assert.ok(conflicted.length >= 2);
+  for (const event of conflicted) {
+    assert.ok(event.sourceDisagreements.every((item: EventData) => item.winner.includes("wins because")));
+    assert.match(event.sourceAgreement, /wins/);
+  }
 });
 
 test("IST deadline and IST-midnight record date validate without changing calendar date", () => {

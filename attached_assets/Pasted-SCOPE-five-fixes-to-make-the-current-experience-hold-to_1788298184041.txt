@@ -1,0 +1,142 @@
+SCOPE: five fixes to make the current experience hold together. Do not touch
+the Options or Decision sections — the analysis surface is the next step.
+
+═══ A. STOP THE CLOCK BREAKING. THIRD TIME. ═══
+This has now failed three ways:
+  1. every seeded date was in the past          -> fixed with a seed anchor
+  2. deadlineOffset 1 put an internal deadline
+     at today 15:00 IST, past after 3pm         -> fixed with a minimum offset
+  3. "arrived today" is now empty because the
+     clock passed midnight (it is 02:49 on
+     2 Sep) and the test asserting >= 3
+     arrivals today fails                        -> currently failing
+
+The pattern is that ANY absolute timestamp stamped into the seed goes stale as
+real time walks past it. Patching each instance does not fix the class.
+
+Structural fix, two parts:
+
+1. NO ABSOLUTE TIMESTAMPS IN THE SEED. Store offsets only, and resolve them at
+   read time against the current instant:
+     arrivals   negative hour offsets   "now - 3h", "now - 26h", "now - 52h"
+     deadlines  positive day offsets    "now + 13d"
+     audit      negative hour offsets
+   A date is never written into a fixture; it is computed when read. That way
+   nothing can expire, at any hour, ever.
+
+2. REPLACE CALENDAR-DAY "TODAY" WITH A ROLLING 24-HOUR WINDOW. "Arrived today"
+   is a broken concept at 02:49 — a calendar day that has barely started can
+   contain no arrivals no matter how the data is seeded. Use "in the last 24
+   hours" for the dashboard headline and for the count. It is more robust and
+   more honest for someone looking at 2am.
+   Update the headline sentence wording to match: "3 notices in the last 24
+   hours" rather than "3 notices arrived today".
+
+Add a test that fails if ANY fixture contains a hardcoded date or timestamp
+literal. That is the invariant that actually prevents recurrence.
+
+═══ B. GIVE THE EVENTS REAL OVERLAP ═══
+The overlap landed in HOLDINGS but not in EVENTS. The portfolio page correctly
+shows Ganga Telecom across five schemes, but 14 of 17 corporate actions still
+affect exactly ONE scheme. Only Bharat Renewables (6 of 10) and one dividend
+(5 of 10) vary.
+
+The test "seeded events vary meaningfully in schemes impacted" passes because
+two events vary, which is a technicality. Most of the archive still reads
+"1 of 10", so the column carries no information and the whole "which of my funds"
+question stays trivial.
+
+Fix: MOST events must touch 2 or more schemes. Distribute the securities that
+already have corporate actions across multiple scheme holdings, the way Ganga
+Telecom already is. Target roughly:
+  1 scheme   ~4 events   (small or single-mandate holdings)
+  2-3        ~8 events
+4-6        ~4 events
+  6+         ~1-2 events (the widely held names)
+
+Replace the existing test with one asserting the MEDIAN schemes-impacted is at
+least 2, so it cannot pass on two outliers again.
+
+═══ C. SEED THE SOURCE DISAGREEMENT ═══
+eventSummarySourceDisagreementsItem was generated and the field exists, but
+sourceDisagreements is EMPTY on all 17 events. The plumbing shipped without the
+data, so the insight is unreachable.
+
+Seed at least two genuine conflicts:
+  1. the Refinitiv feed carries a record date one day later than the NSE filing;
+  2. an early NSE announcement carried a ratio that a later custodian MT564
+     corrected (send the MT564 as a REPL replacement so the correction appears
+     as a second version, not an overwrite).
+
+Show each as ONE sentence on that corporate action, not a comparison table:
+  "3 of 4 sources agree. Refinitiv shows a record date of 11 Sep; the NSE
+   filing says 10 Sep and wins."
+Authority stays per field: quantity -> depository, dates and ratio -> exchange
+filing, cash -> custodian, price -> vendor (advisory only).
+
+═══ D. ONE VOCABULARY, IN THE FUND MANAGER'S WORDS ═══
+Six internal workflow states are surfacing as user-facing status, and a new one
+appeared this round: "Monitoring" on seven events, alongside "Election
+required", "Validated", "Under review", "Awaiting settlement", "Break
+identified", "Closed", "Awaiting approval".
+
+A status must tell the fund manager what to DO, not name an internal state. Map
+them:
+  Election required   -> "Your decision needed"
+  Validated           -> "Ready to decide"
+  Under review        -> "Terms being confirmed"
+  Monitoring          -> "No action needed"
+  Awaiting approval   -> "With Compliance"
+  Awaiting settlement -> "Settling"
+  Break identified    -> "Settlement break"
+  Closed              -> "Complete"
+  Early sighting      -> "Awaiting custodian"   (already correct)
+
+Apply the mapping everywhere status appears: the corporate action header (which
+still reads "Status: Validated"), the archive's Status column, and the archive
+FILTERS — which currently offer the seven raw internal states as filter options.
+
+Also on the archive: it still has TWO status columns, "Status" and "Open". Keep
+one.
+
+═══ E. MOVE THE FIGURES SERVER-SIDE ═══
+GET /api/dashboard STILL returns the old shape:
+  totalEvents, needsReview, dueToday, openTasks, breaks, recentActivity
+None of what the dashboard displays comes from it. The headline funnel, the
+ranked scheme list, the funding gaps and the ordering are all computed in the
+BROWSER from /api/events. And GET /api/schemes is a 404 — only
+/api/schemes/:schemeId exists — so the portfolio list has no server-side source
+either.
+
+This contradicts the project's own principle that calculations run on the
+server, and it means two clients can disagree about the same book.
+
+1. Add GET /api/schemes returning all ten schemes with their four facts.
+2. Rewrite GET /api/dashboard to return exactly what the page renders: the
+   rolling-24h arrival count, how many affect the portfolio, schemes impacted,
+   total funding, nearest deadline, the ranked inbound list and the ranked
+   scheme list. Delete the old unused fields.
+3. Delete the client-side derivation.
+
+Declare everything in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ DO NOT ═══
+- Do not touch section 03 Options or section 05 Decision.
+- Do not add charts or new pages.
+- Do not add fields to any table without removing one.
+
+═══ VERIFY ═══
+typecheck and all tests pass, plus:
+- no fixture contains a hardcoded date or timestamp literal;
+- the arrival count is a rolling 24-hour window and is non-zero at any hour —
+  add a test that runs the count with a simulated clock at 02:00, 09:00 and
+  23:00 and expects arrivals at all three;
+- the median schemes-impacted across seeded events is at least 2;
+- at least two events carry a source disagreement and each states which source
+  wins and why;
+- no internal workflow state string appears in any rendered page or filter;
+- the archive has exactly one status column;
+- /api/dashboard returns every figure the dashboard renders, /api/schemes
+  returns ten schemes, and grep finds no dashboard figure computed in the
+  browser.

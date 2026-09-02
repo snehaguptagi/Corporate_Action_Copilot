@@ -17,6 +17,7 @@ import {
   GetDashboardResponse,
   GetSchemeParams,
   GetSchemeResponse,
+  ListSchemesResponse,
   GetEventParams,
   GetEventResponse,
   GetIntakeDraftParams,
@@ -50,6 +51,7 @@ import {
   applyTermUpdates,
   approveControlledEvent,
   buildDashboard,
+  buildSchemeSummaries,
   calculateEventImpacts,
   createIntakeEvent,
   getCorporateActionEvent,
@@ -121,8 +123,13 @@ const workflowError = (res: any, error: unknown) => {
 };
 
 router.get("/dashboard", async (_req, res): Promise<void> => {
-  const events = await getCorporateActionEvents();
-  res.json(GetDashboardResponse.parse(buildDashboard(events)));
+  const [events, desk] = await Promise.all([getCorporateActionEvents(), getArkaDesk()]);
+  res.json(GetDashboardResponse.parse(buildDashboard(events, desk)));
+});
+
+router.get("/schemes", async (_req, res): Promise<void> => {
+  const [events, desk] = await Promise.all([getCorporateActionEvents(), getArkaDesk()]);
+  res.json(ListSchemesResponse.parse(buildSchemeSummaries(events, desk)));
 });
 
 router.get("/schemes/:schemeId", async (req, res): Promise<void> => {

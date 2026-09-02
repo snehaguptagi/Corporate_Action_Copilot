@@ -52,6 +52,7 @@ import type {
   RequestUploadUrlInput,
   RequestUploadUrlResult,
   SchemeDetail,
+  SchemeSummary,
   SignInInput,
   Task
 } from './api.schemas';
@@ -846,6 +847,83 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSchemesUrl = () => {
+
+
+
+
+  return `/api/schemes`
+}
+
+/**
+ * @summary List all fund manager scheme summaries
+ */
+export const listSchemes = async ( options?: Parameters<typeof customFetch>[1]): Promise<SchemeSummary[]> => {
+
+  return customFetch<SchemeSummary[]>(getListSchemesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSchemesQueryKey = () => {
+    return [
+    `/api/schemes`
+    ] as const;
+    }
+
+
+export const getListSchemesQueryOptions = <TData = Awaited<ReturnType<typeof listSchemes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSchemes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSchemesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSchemes>>> = ({ signal }) => listSchemes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSchemes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSchemesQueryResult = NonNullable<Awaited<ReturnType<typeof listSchemes>>>
+export type ListSchemesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all fund manager scheme summaries
+ */
+
+export function useListSchemes<TData = Awaited<ReturnType<typeof listSchemes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSchemes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSchemesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

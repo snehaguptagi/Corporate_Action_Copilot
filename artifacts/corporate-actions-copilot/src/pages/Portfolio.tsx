@@ -1,4 +1,4 @@
-import { useGetArkaDesk, useListEvents } from "@workspace/api-client-react";
+import { useListSchemes } from "@workspace/api-client-react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,22 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatInr } from "@/lib/format";
 
 export default function Portfolio() {
-  const { data: desk, isLoading: deskLoading, isError: deskError } = useGetArkaDesk();
-  const { data: events, isLoading: eventsLoading, isError: eventsError } = useListEvents();
+  const { data: schemes, isLoading, isError } = useListSchemes();
 
-  if (deskLoading || eventsLoading) return <div className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading portfolio...</div>;
-  if (deskError || eventsError || !desk) return <div className="flex flex-1 items-center justify-center text-sm text-rose-700">The portfolio could not be loaded.</div>;
+  if (isLoading) return <div className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading portfolio...</div>;
+  if (isError || !schemes) return <div className="flex flex-1 items-center justify-center text-sm text-rose-700">The portfolio could not be loaded.</div>;
 
-  const rows = desk.schemes.map((scheme) => {
-    const impacts = (events ?? []).flatMap((event) => event.schemeImpacts.map((impact) => ({ event, impact })))
-      .filter(({ impact }) => impact.schemeId === scheme.id && impact.affected);
-    const openActions = impacts.filter(({ event }) => !["Closed", "Reconciled"].includes(event.status));
-    const funding = openActions.filter(({ impact }) => impact.direction === "Funding").reduce((total, { impact }) => total + impact.cashAmount, 0);
-    const available = scheme.cashAvailableCrore * 10_000_000;
-    const navImpact = openActions.reduce((total, { impact }) => total + (impact.navImpactPaise ?? 0), 0);
-    const flag = openActions.find(({ impact }) => impact.flag)?.impact.flag ?? null;
-    return { scheme, openActions, funding, available, shortfall: Math.max(0, funding - available), navImpact, flag };
-  }).sort((left, right) => right.navImpact - left.navImpact || right.openActions.length - left.openActions.length);
+  const rows = schemes;
 
   return (
     <div className="flex-1 overflow-y-auto bg-stone-50">
@@ -39,13 +29,13 @@ export default function Portfolio() {
                   <TableHead>Scheme</TableHead><TableHead>Open corporate actions touching it</TableHead><TableHead>Total NAV impact</TableHead><TableHead>Funding gap</TableHead><TableHead>Flag</TableHead><TableHead />
                 </TableRow></TableHeader>
                 <TableBody>
-                  {rows.map(({ scheme, openActions, funding, available, shortfall, navImpact, flag }) => (
+                  {rows.map((scheme) => (
                     <TableRow key={scheme.id}>
                       <TableCell><Link href={`/schemes/${scheme.id}`} className="font-semibold text-primary hover:underline">{scheme.name}</Link><div className="mt-1 text-xs text-slate-500">{scheme.category}</div></TableCell>
-                      <TableCell>{openActions.length ? <div className="flex flex-wrap gap-1">{openActions.map(({ event }) => <Link key={event.id} href={`/events/${event.id}`} className="rounded border bg-stone-50 px-2 py-1 text-xs hover:text-primary">{event.issuer}</Link>)}</div> : <span className="text-slate-500">Nothing open</span>}</TableCell>
-                      <TableCell>{navImpact > 0 ? <strong className="text-[#a32020]">{navImpact.toFixed(2)} paise</strong> : <span className="text-slate-500">Neutral</span>}</TableCell>
-                      <TableCell>{funding > 0 ? <div className="text-xs leading-5">Needs <strong>{formatInr(funding)}</strong> · Has <strong>{formatInr(available)}</strong><div className={shortfall ? "font-semibold text-rose-700" : "font-semibold text-emerald-700"}>{shortfall ? `Short ${formatInr(shortfall)}` : "Comfortable"}</div></div> : <span className="text-slate-500">No funding gap</span>}</TableCell>
-                      <TableCell>{flag ? <span className="rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{flag}</span> : <span className="text-slate-400">None</span>}</TableCell>
+                      <TableCell>{scheme.openActions.length ? <div className="flex flex-wrap gap-1">{scheme.openActions.map((event) => <Link key={event.eventId} href={`/events/${event.eventId}`} className="rounded border bg-stone-50 px-2 py-1 text-xs hover:text-primary">{event.issuer}</Link>)}</div> : <span className="text-slate-500">Nothing open</span>}</TableCell>
+                      <TableCell>{scheme.totalNavImpactPaise > 0 ? <strong className="text-[#a32020]">{scheme.totalNavImpactPaise.toFixed(2)} paise</strong> : <span className="text-slate-500">Neutral</span>}</TableCell>
+                      <TableCell>{scheme.fundingNeeded > 0 ? <div className="text-xs leading-5">Needs <strong>{formatInr(scheme.fundingNeeded)}</strong> · Has <strong>{formatInr(scheme.cashAvailable)}</strong><div className={scheme.shortfall ? "font-semibold text-rose-700" : "font-semibold text-emerald-700"}>{scheme.shortfall ? `Short ${formatInr(scheme.shortfall)}` : "Comfortable"}</div></div> : <span className="text-slate-500">No funding gap</span>}</TableCell>
+                      <TableCell>{scheme.flag ? <span className="rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{scheme.flag}</span> : <span className="text-slate-400">None</span>}</TableCell>
                       <TableCell><Link href={`/schemes/${scheme.id}`} aria-label={`Open ${scheme.name}`}><ArrowRight className="h-4 w-4 text-primary" /></Link></TableCell>
                     </TableRow>
                   ))}

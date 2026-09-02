@@ -1725,11 +1725,22 @@ export function buildDashboard(events: EventData[], desk: EventData, asOf = new 
   const totalFunding = events.flatMap((event) => event.schemeImpacts ?? [])
     .filter((impact: EventData) => impact.affected && impact.direction === "Funding")
     .reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0);
+  // "Nearest" must be a live obligation: open events with a future deadline only.
   const nearestFunding = events
-    .filter((event) => event.schemeImpacts?.some((impact: EventData) => impact.affected && impact.direction === "Funding" && impact.cashAmount > 0))
+    .filter((event) =>
+      event.status !== "Closed" && event.status !== "Reconciled" &&
+      Date.parse(event.internalDeadlineAt) > asOf.getTime() &&
+      event.schemeImpacts?.some((impact: EventData) => impact.affected && impact.direction === "Funding" && impact.cashAmount > 0))
     .sort((left, right) => Date.parse(left.internalDeadlineAt) - Date.parse(right.internalDeadlineAt))[0];
+  const lowerBound24h = asOf.getTime() - DAY_MS;
+  const arrivalsAffectingSchemes24h = events.filter((event) => {
+    const received = Date.parse(event.receivedAt);
+    return Number.isFinite(received) && received > lowerBound24h && received <= asOf.getTime()
+      && event.schemeImpacts?.some((impact: EventData) => impact.affected);
+  }).length;
   return {
     arrivalCount24h: countArrivalsInLast24Hours(events, asOf),
+    arrivalsAffectingSchemes24h,
     portfolioEventCount: portfolioEvents.length,
     impactedSchemeCount: schemes.filter((scheme) => scheme.openActions.length > 0).length,
     totalSchemeCount: schemes.length,

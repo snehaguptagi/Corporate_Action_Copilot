@@ -837,9 +837,10 @@ components:
         - status
     Dashboard:
       type: object
-      required: [arrivalCount24h, portfolioEventCount, impactedSchemeCount, totalSchemeCount, totalFunding, nearestDeadline, nearestFundingIssuer, inboundEvents, schemes]
+      required: [arrivalCount24h, arrivalsAffectingSchemes24h, portfolioEventCount, impactedSchemeCount, totalSchemeCount, totalFunding, nearestDeadline, nearestFundingIssuer, inboundEvents, schemes]
       properties:
         arrivalCount24h: { type: number }
+        arrivalsAffectingSchemes24h: { type: number }
         portfolioEventCount: { type: number }
         impactedSchemeCount: { type: number }
         totalSchemeCount: { type: number }

@@ -202,6 +202,7 @@ export interface SchemeSummary {
 
 export interface Dashboard {
   arrivalCount24h: number;
+  arrivalsAffectingSchemes24h: number;
   portfolioEventCount: number;
   impactedSchemeCount: number;
   totalSchemeCount: number;

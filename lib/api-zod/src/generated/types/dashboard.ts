@@ -10,6 +10,7 @@ import type { SchemeSummary } from './schemeSummary';
 
 export interface Dashboard {
   arrivalCount24h: number;
+  arrivalsAffectingSchemes24h: number;
   portfolioEventCount: number;
   impactedSchemeCount: number;
   totalSchemeCount: number;

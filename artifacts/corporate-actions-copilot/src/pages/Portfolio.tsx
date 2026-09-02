@@ -40,15 +40,15 @@ export default function Portfolio() {
               {impactedSchemeCount} of {schemes.length} touched · {openActionCount} open actions · {flaggedSchemeCount} flagged · {totalShortfall > 0 ? `${formatInr(totalShortfall)} short` : "fully funded"}
             </p>
           </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">Worst first. The track under each scheme shows its largest issuer position against the 10% SEBI cap.</p>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {triagedSchemes.map((scheme) => <SchemeTile key={scheme.id} scheme={scheme} />)}
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-destructive" /> Exception, funding short</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-warning" /> Review, flagged</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-destructive" /> Funding short</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-warning" /> Flagged</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-success" /> Covered</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-border" /> Nothing open</span>
-            <span className="ml-auto">Track shows the largest issuer position against the 10% SEBI cap. Ordered worst first.</span>
           </div>
         </section>
         <Card className="overflow-hidden border border-stone-200 shadow-sm">
@@ -61,9 +61,7 @@ export default function Portfolio() {
                     <TableHead className="text-right">Fund Size & NAV</TableHead>
                     <TableHead>Open Actions & Deadlines</TableHead>
                     <TableHead className="text-right">Concentration Risk</TableHead>
-                    <TableHead className="text-right">NAV Impact</TableHead>
-                    <TableHead className="text-right">Aggregate Funding</TableHead>
-                    <TableHead>Flag</TableHead>
+                    <TableHead className="text-right">Funding Position</TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -77,6 +75,12 @@ export default function Portfolio() {
                         <TableCell>
                           <Link href={`/schemes/${scheme.id}`} className="font-semibold text-primary hover:underline">{scheme.name}</Link>
                           <div className="mt-1 text-xs text-slate-500">{scheme.category} · {scheme.holdingCount} holdings</div>
+                          {scheme.flag && (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                              <AlertCircle className="h-3 w-3" />
+                              {scheme.flag}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="figure text-right">
                           <div className="font-semibold text-slate-900">₹{scheme.aumCrore.toLocaleString("en-IN")} cr</div>
@@ -116,32 +120,14 @@ export default function Portfolio() {
                              <span className="text-slate-400">None</span>
                            )}
                         </TableCell>
-                        <TableCell className="figure">
-                          {scheme.totalNavImpactPaise > 0 ? (
-                            <div className="font-semibold text-slate-900">{scheme.totalNavImpactPaise.toFixed(2)} p</div>
-                          ) : (
-                             <span className="text-slate-400">Neutral</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="figure">
+                        <TableCell className="figure text-right">
                           {scheme.fundingNeeded > 0 ? (
                             <div className="text-xs leading-5 text-slate-700">
                               <div>Needs <strong className="text-slate-900">{formatInr(scheme.fundingNeeded)}</strong></div>
-                              <div>Has <strong className="text-slate-900">{formatInr(scheme.cashAvailable)}</strong></div>
-                              <div className={scheme.shortfall ? "mt-0.5 font-semibold text-rose-700" : "mt-0.5 font-semibold text-emerald-700"}>
-                                {scheme.shortfall ? `Short ${formatInr(scheme.shortfall)}` : "Comfortable"}
+                              <div className={scheme.shortfall ? "font-semibold text-rose-700" : "font-semibold text-emerald-700"}>
+                                {scheme.shortfall ? `Short ${formatInr(scheme.shortfall)}` : "Covered"}
                               </div>
                             </div>
-                          ) : (
-                             <span className="text-slate-400">None</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {scheme.flag ? (
-                            <span className="inline-flex items-center gap-1.5 rounded bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">
-                              <AlertCircle className="h-3.5 w-3.5" />
-                              {scheme.flag}
-                            </span>
                           ) : (
                              <span className="text-slate-400">None</span>
                           )}
@@ -193,18 +179,13 @@ function SchemeTile({ scheme }: { scheme: SchemeSummary }) {
         <span className="figure-inline shrink-0 text-xs text-muted-foreground">{scheme.openActions.length ? `${scheme.openActions.length} open` : ""}</span>
       </div>
       <div className="mt-0.5 truncate text-[11px] leading-4">{statusLine}</div>
-      {scheme.largestExposurePercent > 0 ? (
-        <div className="mt-2">
-          <div className="h-1 overflow-hidden rounded-full bg-border/70" title={`${scheme.largestExposureIssuer}: ${scheme.largestExposurePercent.toFixed(2)}% of the 10% cap`}>
+      {scheme.largestExposurePercent > 0 && (
+        <div className="mt-2 flex items-center gap-2" title={`${scheme.largestExposureIssuer}: ${scheme.largestExposurePercent.toFixed(2)}% of the 10% cap`}>
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-border/70">
             <div className={`h-full rounded-full ${gaugeTone}`} style={{ width: `${capUsedPercent}%` }} />
           </div>
-          <div className="mt-1 flex items-baseline justify-between gap-2 text-[10px] text-muted-foreground">
-            <span className="truncate">{scheme.largestExposureIssuer}</span>
-            <span className="figure-inline shrink-0">{scheme.largestExposurePercent.toFixed(1)}%</span>
-          </div>
+          <span className="figure-inline shrink-0 text-[10px] text-muted-foreground">{scheme.largestExposurePercent.toFixed(1)}%</span>
         </div>
-      ) : (
-        <div className="mt-2 text-[10px] text-muted-foreground">No concentrated issuer position</div>
       )}
     </Link>
   );

@@ -1,7 +1,7 @@
 import { useListEvents, useSearchLiveCorporateActions, type LiveDiscoveryResponse } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { useMemo, useState } from "react";
-import { AlertCircle, ArrowRight, ExternalLink, Globe2, Inbox, Landmark, LoaderCircle, Search } from "lucide-react";
+import { AlertCircle, ArrowRight, ExternalLink, Globe2, Landmark, LoaderCircle, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -54,10 +54,7 @@ export default function EventsList() {
       <div className="border-b bg-card px-8 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <Inbox className="h-5 w-5 text-primary" />
-              <h1 className="flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><Landmark className="h-6 w-6 text-primary" />Corporate actions</h1>
-            </div>
+            <h1 className="flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><Landmark className="h-6 w-6 text-primary" />Corporate actions</h1>
             <p className="mt-1 text-sm text-slate-500">Decision deadlines first, then constraints and settlement breaks, followed by computed materiality.</p>
           </div>
           <Link href="/intake"><Button variant="outline" size="sm">Add manually</Button></Link>

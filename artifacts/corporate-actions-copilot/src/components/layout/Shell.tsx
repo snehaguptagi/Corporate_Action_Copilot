@@ -7,8 +7,24 @@ import {
   useGetSession,
 } from "@workspace/api-client-react"
 
+const DESKTOP_QUERY = "(min-width: 1024px)"
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => (
+    typeof window !== "undefined" ? window.matchMedia(DESKTOP_QUERY).matches : true
+  ))
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(DESKTOP_QUERY)
+    const onChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches)
+    mediaQuery.addEventListener("change", onChange)
+    return () => mediaQuery.removeEventListener("change", onChange)
+  }, [])
+  return isDesktop
+}
+
 export function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation()
+  const isDesktop = useIsDesktop()
   const [collapsed, setCollapsed] = useState(() => (
     typeof window !== "undefined" && window.localStorage.getItem("corporate-actions-sidebar") === "collapsed"
   ))
@@ -74,8 +90,8 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside className={`relative hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex lg:flex-col lg:shrink-0 ${collapsed ? "w-[4.5rem]" : "w-64"}`}>
+      {/* Sidebar: mounted only at desktop widths so each nav item exists once in the DOM */}
+      {isDesktop && <aside className={`relative flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 shrink-0 ${collapsed ? "w-[4.5rem]" : "w-64"}`}>
         <div className={`flex h-20 shrink-0 items-center border-b border-sidebar-border/60 ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}>
           <Link href="/" className={`flex min-w-0 items-center gap-3 ${collapsed ? "justify-center" : ""}`} aria-label="Corporate Actions Copilot home">
             <BrandLockup collapsed={collapsed} />
@@ -128,11 +144,11 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>}
           </div>
         </div>
-      </aside>
+      </aside>}
       
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
-        <div className="flex shrink-0 flex-col border-b border-slate-200 bg-sidebar text-sidebar-foreground lg:hidden">
+        {!isDesktop && <div className="flex shrink-0 flex-col border-b border-slate-200 bg-sidebar text-sidebar-foreground">
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex min-w-0 items-center gap-3">
               <BrandLockup />
@@ -153,7 +169,7 @@ export function Shell({ children }: { children: ReactNode }) {
               )
             })}
           </nav>
-        </div>
+        </div>}
         {children}
       </main>
     </div>

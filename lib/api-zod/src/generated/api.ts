@@ -138,6 +138,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetDashboardResponse = zod.object({
   "arrivalCount24h": zod.number(),
+  "arrivalsAffectingSchemes24h": zod.number(),
   "portfolioEventCount": zod.number(),
   "impactedSchemeCount": zod.number(),
   "totalSchemeCount": zod.number(),

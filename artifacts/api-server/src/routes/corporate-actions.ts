@@ -53,6 +53,7 @@ import {
   approveControlledEvent,
   buildDashboard,
   buildAnalysis,
+  issuerExposuresForScheme,
   buildSchemeSummaries,
   calculateEventImpacts,
   createIntakeEvent,
@@ -172,8 +173,9 @@ router.get("/schemes/:schemeId", async (req, res): Promise<void> => {
     const shortfall = Math.max(0, fundingNeeded - cashAvailable);
     const rightsEvent = openEvents.find((event) => event.eventType === "Rights issue" && event.schemeImpacts.some((impact: any) => impact.schemeId === scheme.id && impact.affected));
     const rightsImpact = rightsEvent?.schemeImpacts.find((impact: any) => impact.schemeId === scheme.id);
-    const currentExposure = scheme.holdingQuantity > 0 ? Number(((scheme.holdingQuantity * 120) / (Number(seed.aumPaise) / 100) * 100).toFixed(2)) : 0;
-    const postActionExposure = rightsImpact?.navImpactPaise != null ? scheme.capUsagePercent : currentExposure;
+    const largestExposure = issuerExposuresForScheme(events, scheme)[0];
+    const currentExposure = largestExposure?.currentPercent ?? 0;
+    const postActionExposure = largestExposure?.postActionPercent ?? currentExposure;
     const holdings = openEvents.flatMap((event) => {
       const impact = event.schemeImpacts.find((candidate: any) => candidate.schemeId === scheme.id);
       const position = event.positions?.find((candidate: any) => candidate.fund === scheme.name);
@@ -208,9 +210,9 @@ router.get("/schemes/:schemeId", async (req, res): Promise<void> => {
         status: shortfall > 0 ? "Short" : "Comfortable",
       },
       headroom: {
-        issuer: rightsEvent?.issuer ?? "Largest issuer",
+        issuer: largestExposure?.issuer ?? rightsEvent?.issuer ?? "Largest issuer",
         currentPercent: currentExposure,
-        distanceToCapPercent: Math.max(0, 10 - currentExposure),
+        distanceToCapPercent: largestExposure?.distanceToCapPercent ?? 10,
         postActionPercent: postActionExposure,
         capPercent: 10,
         maximumRights: rightsImpact?.flag === "SEBI 10% headroom" ? (scheme.maxRightsByCap ?? 0) : 0,

@@ -17,11 +17,13 @@ export interface ArkaSchemeImpact {
   entitlementRights: number;
   decisionRights: number;
   fullCashCrore: number;
-  cashAvailableCrore: number;
+  /** @nullable */
+  cashAvailableCrore: number | null;
   exerciseCashPaise: number;
   exerciseCashCrore: number;
   navHitPaise: number;
   navHitPercent: number;
+  currentExposurePercent: number;
   capUsagePercent: number;
   sebiLimitPercent: number;
   /** @nullable */

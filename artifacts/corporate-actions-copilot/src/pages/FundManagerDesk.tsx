@@ -305,7 +305,7 @@ export default function FundManagerDesk() {
                       {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
                         <div key={row.id} className="text-foreground">
                           <strong>{row.name}</strong>: {row.id === "arka-focused-25"
-                            ? <>Bharat Renewables is <Figure>9.39%</Figure> of NAV. Exercising all <Figure>{integer.format(row.entitlementRights)}</Figure> rights reaches <Figure>10.77%</Figure> and breaches the <Figure>10%</Figure> cap. Maximum: <Figure>{integer.format(permittedRights(row))}</Figure> rights. Sell the remaining <Figure>{integer.format(row.entitlementRights - permittedRights(row))}</Figure> on exchange before the RE window closes.</>
+                            ? <>Bharat Renewables is <Figure>{row.currentExposurePercent.toFixed(2)}%</Figure> of NAV. Exercising all <Figure>{integer.format(row.entitlementRights)}</Figure> rights reaches <Figure>{row.capUsagePercent.toFixed(2)}%</Figure> and breaches the <Figure>{row.sebiLimitPercent}%</Figure> cap. Maximum: <Figure>{integer.format(permittedRights(row))}</Figure> rights. Sell the remaining <Figure>{integer.format(row.entitlementRights - permittedRights(row))}</Figure> on exchange before the RE window closes.</>
                             : <>Needs <Figure>{formatInr(row.fullCashCrore * 10_000_000)}</Figure>, has <Figure>{formatInr(row.cashAvailableCrore * 10_000_000)}</Figure>. Short <Figure>{formatInr((row.fullCashCrore - row.cashAvailableCrore) * 10_000_000)}</Figure>. Cash covers <Figure>{integer.format(permittedRights(row))}</Figure> of <Figure>{integer.format(row.entitlementRights)}</Figure> rights.</>}
                         </div>
                       ))}

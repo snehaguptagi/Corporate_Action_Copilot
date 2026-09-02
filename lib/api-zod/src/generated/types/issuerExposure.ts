@@ -15,4 +15,5 @@ export interface IssuerExposure {
   capPercent: number;
   distanceToCapPercent: number;
   breach: boolean;
+  status: string;
 }

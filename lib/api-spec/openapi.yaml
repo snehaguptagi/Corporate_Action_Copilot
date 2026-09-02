@@ -813,16 +813,17 @@ components:
           $ref: "#/components/schemas/AnalysisHistory"
     AnalysisScheme:
       type: object
-      required: [schemeId, schemeName, openEventCount, aggregateFundingNeeded, largestSingleEventFunding, cashAvailable, shortfall, fundingStatus, issuerExposures, combinedOnlyBreaches]
+      required: [schemeId, schemeName, openEventCount, aggregateFundingNeeded, largestSingleEventFunding, cashAvailable, shortfall, fundingStatus, aggregateNavImpactPaise, issuerExposures, combinedOnlyBreaches]
       properties:
         schemeId: { type: string }
         schemeName: { type: string }
         openEventCount: { type: number }
         aggregateFundingNeeded: { type: number }
         largestSingleEventFunding: { type: number }
-        cashAvailable: { type: number }
-        shortfall: { type: number }
+        cashAvailable: { type: ["number", "null"] }
+        shortfall: { type: ["number", "null"] }
         fundingStatus: { type: string }
+        aggregateNavImpactPaise: { type: number }
         issuerExposures:
           type: array
           items:
@@ -833,7 +834,7 @@ components:
             $ref: "#/components/schemas/CombinedCapBreach"
     IssuerExposure:
       type: object
-      required: [issuer, eventCount, includesMandatory, currentPercent, postActionPercent, capPercent, distanceToCapPercent, breach]
+      required: [issuer, eventCount, includesMandatory, currentPercent, postActionPercent, capPercent, distanceToCapPercent, breach, status]
       properties:
         issuer: { type: string }
         eventCount: { type: number }
@@ -843,6 +844,7 @@ components:
         capPercent: { type: number }
         distanceToCapPercent: { type: number }
         breach: { type: boolean }
+        status: { type: string }
     CombinedCapBreach:
       type: object
       required: [issuer, eventIds, postActionPercent, capPercent, excessPercent]
@@ -1081,7 +1083,7 @@ components:
               reason: { type: string }
     ArkaSchemeImpact:
       type: object
-      required: [id, schemeCode, name, category, aumCrore, navPaise, holdingQuantity, entitlementRights, decisionRights, fullCashCrore, cashAvailableCrore, exerciseCashPaise, exerciseCashCrore, navHitPaise, navHitPercent, capUsagePercent, sebiLimitPercent, forfeitedRights, eligibilityStatus, blockers, decisionState]
+      required: [id, schemeCode, name, category, aumCrore, navPaise, holdingQuantity, entitlementRights, decisionRights, fullCashCrore, cashAvailableCrore, exerciseCashPaise, exerciseCashCrore, navHitPaise, navHitPercent, currentExposurePercent, capUsagePercent, sebiLimitPercent, forfeitedRights, eligibilityStatus, blockers, decisionState]
       properties:
         id: { type: string }
         schemeCode: { type: string }
@@ -1093,11 +1095,12 @@ components:
         entitlementRights: { type: number }
         decisionRights: { type: number }
         fullCashCrore: { type: number }
-        cashAvailableCrore: { type: number }
+        cashAvailableCrore: { type: ["number", "null"] }
         exerciseCashPaise: { type: number }
         exerciseCashCrore: { type: number }
         navHitPaise: { type: number }
         navHitPercent: { type: number }
+        currentExposurePercent: { type: number }
         capUsagePercent: { type: number }
         sebiLimitPercent: { type: number }
         maxRightsByCap: { type: ["number", "null"] }

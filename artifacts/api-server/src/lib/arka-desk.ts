@@ -15,7 +15,6 @@ const RIGHTS_DENOMINATOR = 5n;
 const CAP_PERCENT = 10n;
 const CAP_BASE = 100n;
 const FOCUSED_MAX_RIGHTS = 1_027_007n;
-const FOCUSED_POST_EXERCISE_PERCENT = 10.77;
 const TERP_NUMERATOR = CURRENT_PRICE_PAISE * RIGHTS_DENOMINATOR + SUBSCRIPTION_PRICE_PAISE * RIGHTS_NUMERATOR;
 const TERP_DENOMINATOR = RIGHTS_DENOMINATOR + RIGHTS_NUMERATOR;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -113,6 +112,23 @@ export function calculateArkaRightsTerms() {
     terp: fractionToRupees(TERP_NUMERATOR, TERP_DENOMINATOR),
     rightValue: fractionToRupees(TERP_NUMERATOR - SUBSCRIPTION_PRICE_PAISE * TERP_DENOMINATOR, TERP_DENOMINATOR),
     dilution: fractionToRupees(CURRENT_PRICE_PAISE * TERP_DENOMINATOR - TERP_NUMERATOR, TERP_DENOMINATOR),
+  };
+}
+
+export function calculateIssuerExposure(input: {
+  holdingQuantity: bigint;
+  actionQuantity: bigint;
+  aumPaise: bigint;
+  currentPricePaise: bigint;
+  postActionPricePaise: bigint;
+}) {
+  const currentValuePaise = input.holdingQuantity * input.currentPricePaise;
+  const dilutionPaise = input.holdingQuantity * (input.currentPricePaise - input.postActionPricePaise);
+  const postActionAumPaise = input.aumPaise - dilutionPaise;
+  const postActionValuePaise = (input.holdingQuantity + input.actionQuantity) * input.postActionPricePaise;
+  return {
+    currentPercent: percentOf(currentValuePaise, input.aumPaise),
+    postActionPercent: percentOf(postActionValuePaise, postActionAumPaise),
   };
 }
 
@@ -224,10 +240,13 @@ export async function getArkaDesk() {
       const exerciseCashPaise = decisionRights * SUBSCRIPTION_PRICE_PAISE;
       const fullCashPaise = entitlement * SUBSCRIPTION_PRICE_PAISE;
       const portfolioLimitPaise = scheme.aumPaise / 10n;
-      const postExerciseIssuerValuePaise = (quantity + decisionRights) * TERP_NUMERATOR / TERP_DENOMINATOR;
-       const capUsage = scheme.id === "arka-focused-25"
-         ? FOCUSED_POST_EXERCISE_PERCENT
-         : percentOf(postExerciseIssuerValuePaise, scheme.aumPaise + exerciseCashPaise);
+       const exposure = calculateIssuerExposure({
+         holdingQuantity: quantity,
+         actionQuantity: decisionRights,
+         aumPaise: scheme.aumPaise,
+         currentPricePaise: CURRENT_PRICE_PAISE,
+         postActionPricePaise: TERP_NUMERATOR / TERP_DENOMINATOR,
+       });
       const unitsOutstanding = divideBigIntFloor(scheme.aumPaise, BigInt(scheme.navPaise));
       const dilutionNumerator = CURRENT_PRICE_PAISE * TERP_DENOMINATOR - TERP_NUMERATOR;
       const navHitPaise = unitsOutstanding === 0n
@@ -255,12 +274,13 @@ export async function getArkaDesk() {
         entitlementRights: Number(entitlement),
         decisionRights: Number(decisionRights),
         fullCashCrore: paiseToCrore(fullCashPaise),
-        cashAvailableCrore: scheme.cashBudgetPaise === null ? 0 : paiseToCrore(scheme.cashBudgetPaise),
+        cashAvailableCrore: scheme.cashBudgetPaise === null ? null : paiseToCrore(scheme.cashBudgetPaise),
         exerciseCashPaise: Number(exerciseCashPaise),
         exerciseCashCrore: paiseToCrore(exerciseCashPaise),
         navHitPaise,
         navHitPercent: Number((navHitPaise * 100 / scheme.navPaise).toFixed(4)),
-        capUsagePercent: capUsage,
+        currentExposurePercent: exposure.currentPercent,
+        capUsagePercent: exposure.postActionPercent,
         sebiLimitPercent: 10,
         maxRightsByCap: maxByCap === null ? null : Number(maxByCap),
         maxRightsByCash: maxByBudget === null ? null : Number(maxByBudget),

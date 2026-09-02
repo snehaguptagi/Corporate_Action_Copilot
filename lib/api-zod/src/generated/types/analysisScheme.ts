@@ -14,9 +14,12 @@ export interface AnalysisScheme {
   openEventCount: number;
   aggregateFundingNeeded: number;
   largestSingleEventFunding: number;
-  cashAvailable: number;
-  shortfall: number;
+  /** @nullable */
+  cashAvailable: number | null;
+  /** @nullable */
+  shortfall: number | null;
   fundingStatus: string;
+  aggregateNavImpactPaise: number;
   issuerExposures: IssuerExposure[];
   combinedOnlyBreaches: CombinedCapBreach[];
 }

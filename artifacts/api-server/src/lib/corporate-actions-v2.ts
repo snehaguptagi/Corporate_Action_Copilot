@@ -8,7 +8,7 @@ import {
   roundCalculation,
 } from "./calculations";
 import { SEED_DATE_ANCHOR as sharedSeedDateAnchor } from "./seed-clock";
-import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka-desk";
+import { ARKA_SCHEME_SEED, ARKA_EVENT, calculateArkaRightsTerms, calculateIssuerExposure, projectArkaBharatPositions } from "./arka-desk";
 
 export type EventData = Record<string, any>;
 
@@ -243,6 +243,12 @@ const preloadedEvents: EventData[] = [
   closedAnalysisEvent({ id: "evt-history-11", reference: "CA-IN-HIST-011", issuer: "Coastal Energy Ltd", ticker: "COASTAL", isin: "INE0COA01051", fund: "Arka Small Cap Fund", account: "ARKA-SC-001", quantity: 65_000, capturedAmount: 0, forfeitedAmount: 750_000, lapsed: true }),
   indianEvent({ id: "evt-settlement-break-02", reference: "CA-IN-DIV-008", issuer: "Bundelkhand Power Ltd", security: "ISIN INE0BUN01052 · BUNDPOWER", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", securityMaster: indianSecurity("INE0BUN01052", "BUNDPOWER", "Bundelkhand Power Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 3.2, withholdingRate: 0 }, notice: notice("bundelkhand-dividend.pdf", "Dividend ₹3.20.", ["₹3.20 per share."]), terms: [term("rate", "Cash rate", "₹3.20"), term("recordDate", "Record date", shortDate(-7)), term("paymentDate", "Payment date", shortDate(-2)), term("currency", "Currency", "INR")], positions: [position("POS-BUN", "Arka Banking & Financial", "ARKA-BF-001", "INE0BUN01052", 500_000, isoDate(-7))], reconciliation: { expected: 1_600_000, actual: 1_560_000, difference: -40_000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is ₹40,000 below expected cash.", expectedCash: 1_600_000, actualCash: 1_560_000, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(-2), actualSettlementDate: isoDate(-2), expectedAccount: "ARKA-BF-001", actualAccount: "ARKA-BF-001", investigationSteps: ["Verify eligible quantity.", "Recover the ₹40,000 shortfall."] } }),
 ];
+
+const concentrationCreepEvent = preloadedEvents.find((event) => event.id === "evt-concentration-creep");
+if (concentrationCreepEvent) {
+  concentrationCreepEvent.analysisCurrentExposurePercent = 7.83;
+  concentrationCreepEvent.analysisExposureChangePercent = 1.96;
+}
 
 const OVERLAP_SCHEMES: Record<string, string[]> = {
   "evt-ind-dividend-review": ["arka-flexi-cap", "arka-nifty-50"],
@@ -1456,6 +1462,7 @@ export function toSummary(event: EventData): EventData {
 }
 
 const isOpenEvent = (event: EventData) => !["Closed", "Reconciled"].includes(event.status);
+export const EXPOSURE_HEADROOM_THRESHOLDS = { critical: 0.5, tight: 2 } as const;
 
 function eventExposure(event: EventData, impact: EventData, scheme: EventData): EventData {
   const seed = ARKA_SCHEME_SEED.find((candidate) => candidate.id === scheme.id);
@@ -1470,19 +1477,36 @@ function eventExposure(event: EventData, impact: EventData, scheme: EventData): 
   } else if (aumRupees > 0 && event.eventType === "Rights issue") {
     inferredChange = Number(impact.quantityResult ?? 0) * price / aumRupees * 100;
   }
-  const currentPercent = Number((event.analysisCurrentExposurePercent ?? inferredCurrent).toFixed(2));
-  const changePercent = Number((event.analysisExposureChangePercent ?? inferredChange).toFixed(2));
+  let currentPercent = Number((event.analysisCurrentExposurePercent ?? inferredCurrent).toFixed(2));
+  let postEventPercent = Number((currentPercent + Number(event.analysisExposureChangePercent ?? inferredChange)).toFixed(2));
+  if (event.eventType === "Rights issue" && event.referencePrice && aumRupees > 0) {
+    const ratioNumerator = Number(event.calculationInputs?.ratioNumerator ?? 1);
+    const ratioDenominator = Number(event.calculationInputs?.ratioDenominator ?? 1);
+    const subscriptionPrice = Number(event.calculationInputs?.subscriptionPrice ?? event.referencePrice);
+    const postPrice = event.id === "evt-bharat-rights"
+      ? calculateArkaRightsTerms().terp
+      : (event.referencePrice * ratioDenominator + subscriptionPrice * ratioNumerator) / (ratioDenominator + ratioNumerator);
+    const exposure = calculateIssuerExposure({
+      holdingQuantity: BigInt(quantity),
+      actionQuantity: BigInt(Number(impact.quantityResult ?? 0)),
+      aumPaise: BigInt(Math.round(aumRupees * 100)),
+      currentPricePaise: BigInt(Math.round(event.referencePrice * 100)),
+      postActionPricePaise: BigInt(Math.round(postPrice * 100)),
+    });
+    currentPercent = exposure.currentPercent;
+    postEventPercent = exposure.postActionPercent;
+  }
   return {
     eventId: event.id,
     issuer: event.issuer,
     mandatory: event.processingType.startsWith("Mandatory"),
     currentPercent,
-    changePercent,
-    postEventPercent: Number((currentPercent + changePercent).toFixed(2)),
+    changePercent: Number((postEventPercent - currentPercent).toFixed(2)),
+    postEventPercent,
   };
 }
 
-function issuerExposuresForScheme(events: EventData[], scheme: EventData): EventData[] {
+export function issuerExposuresForScheme(events: EventData[], scheme: EventData): EventData[] {
   const grouped = new Map<string, EventData[]>();
   for (const event of events.filter(isOpenEvent)) {
     const impact = (event.schemeImpacts ?? []).find((candidate: EventData) => candidate.schemeId === scheme.id && candidate.affected);
@@ -1494,6 +1518,14 @@ function issuerExposuresForScheme(events: EventData[], scheme: EventData): Event
   return [...grouped.entries()].map(([issuer, rows]) => {
     const currentPercent = Math.max(...rows.map((row) => row.currentPercent));
     const postActionPercent = Number((currentPercent + rows.reduce((total, row) => total + row.changePercent, 0)).toFixed(2));
+    const distanceToCapPercent = Number((10 - postActionPercent).toFixed(2));
+    const status = postActionPercent > 10
+      ? "Breach"
+      : distanceToCapPercent < EXPOSURE_HEADROOM_THRESHOLDS.critical
+        ? "Critical"
+        : distanceToCapPercent < EXPOSURE_HEADROOM_THRESHOLDS.tight
+          ? "Tight"
+          : "OK";
     return {
       issuer,
       eventCount: rows.length,
@@ -1501,7 +1533,8 @@ function issuerExposuresForScheme(events: EventData[], scheme: EventData): Event
       currentPercent,
       postActionPercent,
       capPercent: 10,
-      distanceToCapPercent: Number(Math.max(0, 10 - postActionPercent).toFixed(2)),
+      distanceToCapPercent,
+      status,
       breach: postActionPercent > 10,
       eventIds: rows.map((row) => row.eventId),
       combinedOnly: rows.length > 1 && postActionPercent > 10 && rows.every((row) => row.postEventPercent <= 10),
@@ -1549,7 +1582,7 @@ export function buildAnalysis(events: EventData[], desk: EventData, asOf = new D
     const fundingRows = openImpacts.filter(({ impact }) => impact.direction === "Funding");
     const aggregateFundingNeeded = fundingRows.reduce((total, { impact }) => total + Number(impact.cashAmount ?? 0), 0);
     const largestSingleEventFunding = Math.max(0, ...fundingRows.map(({ impact }) => Number(impact.cashAmount ?? 0)));
-    const cashAvailable = Number(scheme.cashAvailableCrore ?? 0) * 10_000_000;
+    const cashAvailable = scheme.cashAvailableCrore == null ? null : Number(scheme.cashAvailableCrore) * 10_000_000;
     const issuerExposures = issuerExposuresForScheme(events, scheme);
     return {
       schemeId: scheme.id,
@@ -1558,8 +1591,9 @@ export function buildAnalysis(events: EventData[], desk: EventData, asOf = new D
       aggregateFundingNeeded: Number(aggregateFundingNeeded.toFixed(2)),
       largestSingleEventFunding: Number(largestSingleEventFunding.toFixed(2)),
       cashAvailable,
-      shortfall: Number(Math.max(0, aggregateFundingNeeded - cashAvailable).toFixed(2)),
-      fundingStatus: aggregateFundingNeeded > cashAvailable ? "Short" : "Covered",
+      shortfall: cashAvailable == null ? null : Number(Math.max(0, aggregateFundingNeeded - cashAvailable).toFixed(2)),
+      fundingStatus: cashAvailable == null ? "Unknown" : aggregateFundingNeeded > cashAvailable ? "Short" : "Covered",
+      aggregateNavImpactPaise: Number(openImpacts.reduce((total, { impact }) => total + Number(impact.navImpactPaise ?? 0), 0).toFixed(2)),
       issuerExposures: issuerExposures.map(({ eventIds: _eventIds, combinedOnly: _combinedOnly, ...exposure }) => exposure),
       combinedOnlyBreaches: issuerExposures.filter((exposure) => exposure.combinedOnly).map((exposure) => ({
         issuer: exposure.issuer,
@@ -1569,7 +1603,13 @@ export function buildAnalysis(events: EventData[], desk: EventData, asOf = new D
         excessPercent: Number((exposure.postActionPercent - exposure.capPercent).toFixed(2)),
       })),
     };
-  }).sort((left: EventData, right: EventData) => right.shortfall - left.shortfall || right.aggregateFundingNeeded - left.aggregateFundingNeeded || right.openEventCount - left.openEventCount);
+  }).sort((left: EventData, right: EventData) => {
+    const severityRank: Record<string, number> = { Breach: 4, Critical: 3, Tight: 2, OK: 1 };
+    const severity = (scheme: EventData) => Math.max(0, ...scheme.issuerExposures.map((exposure: EventData) => severityRank[exposure.status] ?? 0));
+    return severity(right) - severity(left)
+      || Number(right.shortfall ?? 0) - Number(left.shortfall ?? 0)
+      || right.aggregateNavImpactPaise - left.aggregateNavImpactPaise;
+  });
 
   const closedEvents = events.filter((event) => ["Closed", "Reconciled"].includes(event.status)).map((event) => {
     const outcome = event.historicalOutcome ?? {};

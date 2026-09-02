@@ -218,6 +218,7 @@ export interface IssuerExposure {
   capPercent: number;
   distanceToCapPercent: number;
   breach: boolean;
+  status: string;
 }
 
 export interface CombinedCapBreach {
@@ -234,9 +235,12 @@ export interface AnalysisScheme {
   openEventCount: number;
   aggregateFundingNeeded: number;
   largestSingleEventFunding: number;
-  cashAvailable: number;
-  shortfall: number;
+  /** @nullable */
+  cashAvailable: number | null;
+  /** @nullable */
+  shortfall: number | null;
   fundingStatus: string;
+  aggregateNavImpactPaise: number;
   issuerExposures: IssuerExposure[];
   combinedOnlyBreaches: CombinedCapBreach[];
 }
@@ -401,11 +405,13 @@ export interface ArkaSchemeImpact {
   entitlementRights: number;
   decisionRights: number;
   fullCashCrore: number;
-  cashAvailableCrore: number;
+  /** @nullable */
+  cashAvailableCrore: number | null;
   exerciseCashPaise: number;
   exerciseCashCrore: number;
   navHitPaise: number;
   navHitPercent: number;
+  currentExposurePercent: number;
   capUsagePercent: number;
   sebiLimitPercent: number;
   /** @nullable */

@@ -1,0 +1,114 @@
+The Analysis tab EXISTS and works — it is in the nav at /analysis, both
+sections render, and IBM Plex landed correctly. Do not rebuild it. Fix these
+seven specific things.
+
+═══ 1. THE SAME NUMBER IS COMPUTED TWO WAYS ═══
+For Arka Focused 25 / Bharat Renewables, post-action issuer exposure reads:
+    Analysis view      11.27%
+    Scheme page        10.77%
+    Decision page      10.77%
+All three describe the identical thing. Analysis is wrong.
+
+Why: Analysis values the post-rights holding at the PRE-RIGHTS price.
+    1,08,00,000 × ₹120.00  ÷ ₹1,150.00 cr = 11.27%   <- what Analysis does
+    1,08,00,000 × ₹114.1667 ÷ ₹1,144.75 cr = 10.77%  <- correct
+After a rights issue the share price falls to the theoretical ex-rights price
+(TERP ₹114.1667), and AUM falls by the dilution on the existing holding. Using
+₹120 and the undiluted AUM overstates exposure.
+
+This matters beyond cosmetics: it changes whether the cap is breached, by how
+much, and therefore the maximum exercisable quantity.
+
+Fix it by making ONE function compute issuer exposure, called by the analysis
+view, the scheme page and the decision page. Do not fix the number in three
+places — remove the duplicate implementations. Add a test asserting all three
+surfaces return the identical figure for this scheme and issuer.
+
+═══ 2. "AGGREGATE FUNDING NEEDED" IS NOT AGGREGATED ═══
+Arka Focused 25 shows "5 open actions" and "AGGREGATE FUNDING NEEDED ₹15.30 cr"
+— which is the Bharat rights issue alone, the same figure the scheme page shows
+for that single event. Nothing is being summed.
+
+Sum the funding requirement across ALL open events for the scheme. If only one
+event requires funding then the total equals it, but say so — and where more
+than one does, the total must exceed any single event. Add a test asserting
+that for a scheme with two or more funding events the aggregate is strictly
+greater than the largest single one. Seed such a scheme if none exists.
+
+═══ 3. 0.21% HEADROOM IS REPORTED AS "OK" ═══
+Arka Focused 25 / Saffron Digital reads:
+    current 7.83%  post-action 9.79%  cap 10.00%  headroom 0.21%  status OK
+21 basis points from a regulatory breach is not OK, and this is a MANDATORY
+event the fund cannot decline — so it is the most interesting row on the page
+and it is styled as unremarkable.
+
+Introduce a middle state. Suggested thresholds, make them named constants:
+    headroom >= 2.00%          OK
+    headroom 0.50% - 2.00%     Tight
+    headroom < 0.50%           Critical
+    post-action > cap          Breach
+A mandatory event that lands in Tight or Critical deserves the strongest
+treatment on the page, because there is no decision available to avoid it.
+
+═══ 4. THE BREACH ROW BREAKS ITS OWN TABLE ═══
+The Bharat row renders as:
+    9.39% | 11.27% | 10.00% | "Limit exceeded" |          | Breach Risk
+"Limit exceeded" is text sitting in the numeric HEADROOM column, the STATUS
+cell is empty, and "Breach Risk" spills outside the row. Put the numeric
+headroom (negative when breached, e.g. -0.77%) in the headroom column and the
+word in the status column.
+
+Also drop the CAP LIMIT column. It is 10.00% on every row of every scheme.
+State the cap once in the section heading and reclaim the width.
+
+═══ 5. EMPTY SCHEMES GET FULL CARDS ═══
+Arka ELSS Tax Saver and Arka Mid Cap Fund show "0 open actions" with a full
+card reading "AGGREGATE FUNDING NEEDED ₹0 / CASH AVAILABLE ₹0 / STATUS Covered"
+and "No active issuer concentration risks identified."
+
+Collapse schemes with no open actions to a single line, as the Portfolio page
+already does correctly: "2 schemes have no open corporate actions: ELSS Tax
+Saver, Mid Cap Fund."
+
+Also: Arka Value Fund shows "1 open action" with "CASH AVAILABLE ₹0". A scheme
+with ₹1,480 cr AUM does not have zero cash. Either seed a real cash budget for
+every scheme or omit the field when it is unknown — do not print ₹0 as though
+it were measured.
+
+═══ 6. HEADING CASE IS INCONSISTENT WITH THE REST OF THE PRODUCT ═══
+This page uses Title Case: "Cross-Event Analysis", "Historical Performance",
+"Value Captured", "Value Forfeited", "Lapsed Entitlements", "Deadlines Met",
+"Breach Risk". Every other page uses sentence case: "What it touches", "Your
+schemes", "What is moving it". Convert this page to sentence case.
+
+Also each section has a heading AND a subtitle explaining it. Keep one, as was
+already done on the corporate action page.
+
+═══ 7. ORDER BY WHAT NEEDS ATTENTION ═══
+Schemes currently appear Small Cap, Focused 25, Flexi Cap, Large Cap,
+Infrastructure, Nifty 50, then the empty ones. Focused 25 is the only scheme
+with a breach and one of two with a near-miss, so it should be first. Order by:
+breach, then critical or tight headroom, then funding shortfall, then aggregate
+NAV impact.
+
+═══ WHAT IS ALREADY RIGHT — DO NOT CHANGE ═══
+- The historical section: ₹4.24 cr captured, ₹18.00 lakh forfeited, 2 lapsed,
+  16/16 deadlines met, and the two lapsed rights issues named (Malwa
+  Technologies ₹10.50 lakh, Coastal Energy ₹7.50 lakh). This is exactly right.
+- No charts. Keep it that way.
+- IBM Plex Sans and IBM Plex Mono are correctly loaded.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- one shared function computes issuer exposure, and the analysis view, scheme
+  page and decision page all report 10.77% for Focused 25 / Bharat Renewables;
+- aggregate funding for a multi-funding-event scheme strictly exceeds its
+  largest single event;
+- Saffron Digital at 0.21% headroom is flagged, not OK;
+- the breach row's headroom column holds a number and the status column holds
+  the word;
+- no CAP LIMIT column;
+- schemes with no open actions occupy one line;
+- no ₹0 is printed as a measured cash balance;
+- the page is sentence case throughout;
+- Focused 25 sorts first.

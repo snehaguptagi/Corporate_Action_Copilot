@@ -154,13 +154,27 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
   });
 
   test("serves aggregate funding, combined-only breaches, and closed-event outcomes", async () => {
-    const analysis = await request("/analysis", {}, analystSession);
+    const [analysis, focusedScheme, desk] = await Promise.all([
+      request("/analysis", {}, analystSession),
+      request("/schemes/arka-focused-25", {}, analystSession),
+      request("/desk", {}, analystSession),
+    ]);
     assert.equal(analysis.status, 200);
     assert.equal(analysis.body.schemes.length, 10);
     const flexi = analysis.body.schemes.find((scheme: EventData) => scheme.schemeId === "arka-flexi-cap");
     assert.ok(flexi);
     assert.ok(flexi.aggregateFundingNeeded > flexi.largestSingleEventFunding);
     assert.ok(flexi.combinedOnlyBreaches.some((breach: EventData) => breach.issuer === "Western Circuits Ltd"));
+    const focused = analysis.body.schemes.find((scheme: EventData) => scheme.schemeId === "arka-focused-25");
+    const bharat = focused.issuerExposures.find((exposure: EventData) => exposure.issuer === "Bharat Renewables Ltd");
+    const focusedDesk = desk.body.schemes.find((scheme: EventData) => scheme.id === "arka-focused-25");
+    assert.equal(bharat.postActionPercent, 10.77);
+    assert.equal(focusedScheme.body.headroom.postActionPercent, bharat.postActionPercent);
+    assert.equal(focusedDesk.capUsagePercent, bharat.postActionPercent);
+    const saffron = focused.issuerExposures.find((exposure: EventData) => exposure.issuer === "Saffron Digital Ltd");
+    assert.equal(saffron.distanceToCapPercent, 0.21);
+    assert.equal(saffron.status, "Critical");
+    assert.equal(analysis.body.schemes[0].schemeId, "arka-focused-25");
     assert.ok(analysis.body.history.closedEvents.length >= 14);
     assert.equal(analysis.body.history.lapsedCount, 2);
     assert.ok(analysis.body.history.capturedAmount > 0);

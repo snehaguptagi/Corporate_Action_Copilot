@@ -27,7 +27,7 @@ export default function Portfolio() {
       </header>
       <main className="flex-1 p-4 sm:p-5">
         <section className="mb-4 grid gap-3 md:grid-cols-[1.35fr_0.9fr]">
-          <div className="dashboard-panel dashboard-panel--accent">
+          <div className="dashboard-panel dashboard-panel--accent flex flex-col">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
@@ -38,13 +38,13 @@ export default function Portfolio() {
               </div>
               <span className="figure-inline text-xs font-medium text-muted-foreground">{schemes.length} schemes</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-3 grid flex-1 content-center grid-cols-2 gap-2 sm:grid-cols-4">
               <PortfolioMetric label="Schemes touched" value={`${impactedSchemeCount}/${schemes.length}`} icon={<Layers3 className="h-4 w-4" />} />
               <PortfolioMetric label="Open actions" value={openActionCount} icon={<CheckCircle2 className="h-4 w-4" />} />
               <PortfolioMetric label="Flagged" value={flaggedSchemeCount} icon={<ShieldAlert className="h-4 w-4" />} />
               <PortfolioMetric label="Funding shortfall" value={totalShortfall > 0 ? formatInr(totalShortfall) : "None"} icon={<CircleDollarSign className="h-4 w-4" />} />
             </div>
-            <div className="mt-3">
+            <div className="mt-auto pt-3">
               <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted-foreground">
                 <span>Scheme coverage</span>
                 <span className="figure-inline">{impactedSchemeCount} impacted · {schemes.length - impactedSchemeCount} clear</span>

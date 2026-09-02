@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight, Briefcase } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatInr } from "@/lib/format";
+import { formatInr, issuerIdFor } from "@/lib/format";
 import { formatIstDate } from "@/lib/date";
 
 function SectionTitle({ number, children }: { number: string; children: string }) {
@@ -129,15 +129,21 @@ export default function SchemeDetail() {
                       <TableHead>ISIN</TableHead>
                       <TableHead className="text-right">Holding</TableHead>
                        <TableHead className="text-right">Position date</TableHead>
+                      <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {scheme.holdings.map((holding) => (
-                      <TableRow key={holding.eventId}>
-                        <TableCell><Link href={`/events/${holding.eventId}`} className="font-semibold text-primary hover:underline">{holding.issuer}</Link></TableCell>
+                      <TableRow key={holding.eventId} className="group">
+                        <TableCell><Link href={`/issuers/${issuerIdFor(holding.issuer)}`} className="font-semibold text-primary hover:underline">{holding.issuer}</Link></TableCell>
                         <TableCell className="font-mono text-xs">{holding.isin}</TableCell>
                         <TableCell className="text-right">{holding.quantity.toLocaleString("en-IN")} shares</TableCell>
                         <TableCell className="figure">{formatIstDate(`${holding.asOfDate}T00:00:00+05:30`)}</TableCell>
+                        <TableCell>
+                          <Link href={`/events/${holding.eventId}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-accent hover:text-primary group-hover:text-primary" aria-label="Open corporate action">
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

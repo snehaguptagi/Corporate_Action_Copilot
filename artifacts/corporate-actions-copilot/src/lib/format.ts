@@ -12,3 +12,8 @@ export function formatInr(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+/** Same slug rule the server uses for /issuers/:issuerId. */
+export function issuerIdFor(issuer: string): string {
+  return issuer.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}

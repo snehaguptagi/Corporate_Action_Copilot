@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { formatIstDate } from "@/lib/date";
-import { formatInr } from "@/lib/format";
+import { formatInr, issuerIdFor } from "@/lib/format";
 import { fundManagerStatus } from "@/lib/status";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
@@ -250,7 +250,9 @@ export default function FundManagerDesk() {
                 {(data.provenance?.synthetic ?? isPocScenario) && <Badge variant="outline">Synthetic data</Badge>}
                 {isPublicWebDiscovery && <Badge variant="warning">Unverified web discovery</Badge>}
               </div>
-              <h1 className="text-[28px] font-semibold tracking-tight text-foreground">{data.issuer} {data.eventType.toLowerCase()}</h1>
+              <h1 className="text-[28px] font-semibold tracking-tight text-foreground">
+                <Link href={`/issuers/${issuerIdFor(data.issuer)}`} className="hover:text-primary hover:underline">{data.issuer}</Link> {data.eventType.toLowerCase()}
+              </h1>
               <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-foreground">
                 {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}{data.isEarlySighting ? " · Indicative impact" : ""}
               </p>

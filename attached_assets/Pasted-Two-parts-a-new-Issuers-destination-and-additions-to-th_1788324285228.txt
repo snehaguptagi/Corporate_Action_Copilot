@@ -1,0 +1,152 @@
+Two parts: a new Issuers destination, and additions to the dashboard. Every
+figure specified here is derivable from data the product already has — no new
+provider, no new fetch. Where the source is not obvious I have named it.
+
+═══ PART 1 — THE ISSUERS TAB ═══
+WHY IT EXISTS. The product has three axes and only two are navigable:
+    event  -> schemes    the corporate action page          EXISTS
+    scheme -> events     Portfolio and scheme pages         EXISTS
+    issuer -> schemes + events                              MISSING
+There is no issuer endpoint and no issuer page today. But Bharat Renewables
+sits in 6 of 10 schemes, Ganga Telecom in 5, Malabar Foods and Nilgiri Cements
+in 4 each, across 30 issuers. So this question cannot be answered anywhere:
+"What is Arka's total exposure to one company across the whole house, and what
+has that company done to us?"
+
+This matters because SEBI's 10% cap is PER SCHEME, but concentration risk is
+PER ISSUER. The risk committee asks about the house position. And when one
+issuer runs three corporate actions in a quarter, the cumulative effect across
+six schemes is invisible today because each event is its own row.
+
+ADD /issuers (list) AND /issuers/:issuerId (detail). Nav becomes:
+Dashboard, Portfolio, Issuers, Corporate actions, Analysis.
+
+/issuers — the list
+  One row per issuer that any scheme holds, ranked by house exposure value.
+  Columns, and where each comes from:
+    Issuer + ISIN            securityMaster on the event
+    House exposure ₹         SUM over schemes of (holding x CMP)
+                             holdings from scheme holdings, CMP from
+                             securityMaster.cmp
+    % of total AUM           house exposure / SUM of all ten scheme AUMs
+    Schemes holding it       count of schemes with a non-zero holding
+    Open corporate actions   count of open events with this issuer
+    Tightest cap headroom    MIN across schemes of (10% - post-action exposure)
+                             reuse the SHARED exposure function, do not write
+                             a second one
+    Attention                only when a scheme is tight or breaching
+
+/issuers/:issuerId — the detail
+  Open with one computed sentence:
+    "Arka holds ₹158.40 cr of Bharat Renewables across 6 of 10 schemes — 0.51%
+     of total AUM. Arka Focused 25 is 0.77% from the SEBI single-issuer cap."
+  If nothing is at risk, say so plainly.
+
+  Then exactly four blocks:
+   1. HOUSE EXPOSURE
+      total value, % of total AUM, number of schemes, and the largest single
+      scheme position.
+   2. PER SCHEME
+      scheme | holding | value | % of that scheme's NAV | headroom to 10%
+      sorted by % of NAV descending. Scheme names link to /schemes/:id.
+      Source: scheme holdings x CMP, scheme NAV/AUM, shared exposure function.
+   3. CORPORATE ACTIONS FROM THIS ISSUER
+      every event, open and closed, newest first: type, date, status, and what
+      it cost or earned. Source: group existing events by issuer; the
+      cost/earned figure is the same value the Analysis history section already
+      computes for closed events.
+      Event names link to /events/:id.
+   4. WHAT THIS ISSUER HAS DONE TO US
+      one line summing block 3: "3 corporate actions in the last quarter.
+      ₹1.2 cr received, ₹0 forfeited, 1 decision still open."
+
+  No charts on the issuer detail page. It is a ledger, like Portfolio.
+
+═══ PART 2 — WHAT ELSE GOES ON THE DASHBOARD ═══
+These are IN ADDITION to the four charts already specified (deadline timeline,
+funding by week, headroom per scheme, volume versus attention). Each row below
+gives the element, its exact source, and its form.
+
+A. FOUR STAT TILES, top of page, single row. Tiles, not charts.
+
+   1. NEEDS YOU
+      count of open events requiring a decision.
+      SOURCE: events where processingType is Voluntary or Mandatory-with-options
+      AND status is not already submitted or approved.
+      FORM: large number, label "need your decision", and beneath it the
+      complement — "22 need nothing from you". That second half is the product's
+      value proposition in one line: most of what arrives is safely ignorable.
+
+   2. AT STAKE IF YOU DO NOTHING
+      the money forfeited if every open voluntary entitlement lapsed.
+      SOURCE: SUM over open voluntary events of (rights x value of one right),
+      using the same rightValue Stage 1 already computes (TERP - subscription
+      price). Reuse it; do not recompute.
+      FORM: large number in the breach status colour. This is the single most
+      persuasive figure in the product and it currently appears nowhere.
+
+   3. DUE WITHIN 3 DAYS
+      count of open events whose internal deadline is inside 72 hours.
+      SOURCE: internalDeadlineAt versus now.
+      FORM: number, styled with the attention colour when above zero, plain
+      when zero. Zero must look calm, not empty.
+
+   4. OPEN SETTLEMENT BREAKS
+      SOURCE: count of events with a reconciliation classification other than
+      Matched or Not-due.
+      FORM: number, breach colour when above zero.
+
+B. TOP HOUSE EXPOSURES — five rows, links into the new Issuers tab
+   SOURCE: the /issuers list computation above, top five by house exposure.
+   FORM: a compact table — issuer, house exposure ₹, schemes holding it,
+   tightest headroom. Each row links to /issuers/:id.
+   WHY: it is the only place the dashboard shows concentration, and it is the
+   entry point to the new axis.
+
+C. DATA TRUST — one line, not a panel
+   SOURCE: count of events where sourceDisagreements is non-empty; plus the
+   most recent receivedAt per source channel; plus the provenance flag showing
+   whether anything has actually been fetched.
+   FORM: a single sentence beneath the headline, for example:
+     "2 corporate actions have conflicting source data. Custodian feed last
+      delivered 3 hours ago. All records are currently synthetic."
+   WHY: the product's credibility rests on knowing where numbers came from, and
+   nothing on the dashboard says it today.
+
+D. LAST QUARTER'S SCORE — two figures, inline, not a chart
+   SOURCE: the Analysis historical section, already computed — captured,
+   forfeited, lapsed count, deadlines met.
+   FORM: one sentence: "Last quarter: ₹4.24 cr captured, ₹18 lakh forfeited on
+   2 lapsed entitlements, 16 of 16 deadlines met."
+   WHY: it is how the product shows it earns its keep, and it belongs where the
+   fund manager starts their day, not buried in Analysis.
+
+WHAT NOT TO ADD to the dashboard: no scheme table (that is Portfolio), no
+per-event detail, no pie or donut, no dual-axis chart, no sparkline per row.
+
+═══ REUSE, DO NOT DUPLICATE ═══
+Issuer exposure must come from the ONE shared function already used by the
+analysis view, the scheme page and the decision page. Value of a right, TERP
+and NAV impact likewise come from Stage 1. If a figure appears in two places it
+must come from one function — this product has already had the same number
+computed three different ways once, giving 10.77% and 11.27% for the same
+exposure.
+
+Everything server-side. Declare new endpoints and fields in
+lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- /issuers lists every held issuer ranked by house exposure, and the sum of a
+  scheme's issuer positions never exceeds that scheme's AUM;
+- /issuers/:id opens with a computed sentence and shows the four blocks;
+- the tightest-headroom figure on the issuer page equals the figure the
+  analysis view shows for that scheme and issuer — assert equality in a test;
+- "at stake if you do nothing" equals the sum of forfeit values across open
+  voluntary events, and matches the per-event lapse figures;
+- "needs you" plus "needs nothing" equals the open event count;
+- "due within 3 days" is computed from internalDeadlineAt and is zero-safe;
+- the data-trust sentence names the disagreement count and the last delivery
+  time, and states when records are synthetic;
+- issuer names link both ways with schemes and events.

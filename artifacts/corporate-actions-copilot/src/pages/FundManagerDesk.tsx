@@ -73,7 +73,26 @@ function actionStatement(data: EventDetail) {
 function daysUntil(isoInstant: string) {
   const deadline = new Date(isoInstant).getTime();
   if (!Number.isFinite(deadline)) return null;
-  return Math.max(0, Math.ceil((deadline - Date.now()) / 86_400_000));
+  return Math.ceil((deadline - Date.now()) / 86_400_000);
+}
+
+const MANDATORY_EVENT_TYPES = ["Cash dividend", "Stock split", "Bonus issue", "Merger / demerger"];
+
+function deadlineStatement(data: EventDetail, daysLeft: number | null) {
+  const isMandatory = MANDATORY_EVENT_TYPES.includes(data.eventType) || (data.options ?? []).length === 0;
+  if (isMandatory) {
+    return <>No election is required. The desk tracks settlement against <Figure>{data.internalDeadline}</Figure>.</>;
+  }
+  if (daysLeft === null) {
+    return <>Decide by <Figure>{data.internalDeadline}</Figure>.</>;
+  }
+  if (daysLeft < 0) {
+    return <>The internal deadline of <Figure>{data.internalDeadline}</Figure> has passed.</>;
+  }
+  if (daysLeft === 0) {
+    return <>Due today. Decide by <Figure>{data.internalDeadline}</Figure>.</>;
+  }
+  return <><Figure>{daysLeft}</Figure> day{daysLeft === 1 ? "" : "s"} left. Decide by <Figure>{data.internalDeadline}</Figure>.</>;
 }
 
 export default function FundManagerDesk() {
@@ -173,7 +192,7 @@ export default function FundManagerDesk() {
   const isPocScenario = !data.id.startsWith("evt-intake-");
   const daysLeft = daysUntil(data.internalDeadlineAt);
   const statement1 = actionStatement(data);
-  const statement2 = <><Figure>{daysLeft ?? "No"}</Figure> day{daysLeft === 1 ? "" : "s"} left. Decide by <Figure>{data.internalDeadline}</Figure>.</>;
+  const statement2 = deadlineStatement(data, daysLeft);
   const statement3 = isPocScenario
     ? <>Simulated POC scenario. The issuer, notice, holdings and source records on this screen are not live fetched data.</>
     : primarySource

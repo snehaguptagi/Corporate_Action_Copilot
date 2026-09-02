@@ -206,11 +206,9 @@
     @apply text-sm;
   }
   table :is(th, td).text-right {
-    font-family: var(--app-font-mono);
     font-variant-numeric: tabular-nums;
   }
   input[type="number"] {
-    font-family: var(--app-font-mono);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
@@ -222,12 +220,10 @@
 
 @layer components {
   .figure {
-    font-family: var(--app-font-mono);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
   .figure-inline {
-    font-family: var(--app-font-mono);
     font-variant-numeric: tabular-nums;
   }
 

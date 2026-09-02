@@ -120,7 +120,7 @@ export default function SchemeDetail() {
                       <TableRow key={holding.eventId}>
                         <TableCell><Link href={`/events/${holding.eventId}`} className="font-semibold text-primary hover:underline">{holding.issuer}</Link></TableCell>
                         <TableCell className="font-mono text-xs">{holding.isin}</TableCell>
-                        <TableCell className="text-right font-mono">{holding.quantity.toLocaleString("en-IN")} shares</TableCell>
+                        <TableCell className="text-right">{holding.quantity.toLocaleString("en-IN")} shares</TableCell>
                         <TableCell className="figure">{formatIstDate(`${holding.asOfDate}T00:00:00+05:30`)}</TableCell>
                       </TableRow>
                     ))}

@@ -67,7 +67,7 @@ export default function TasksList() {
                     <TableCell><Badge variant="outline">{task.category}</Badge></TableCell>
                     <TableCell>
                       <Link href={`/events/${task.eventId}`}>
-                        <Button variant="link" className="p-0 h-auto text-xs font-mono">View Event</Button>
+                        <Button variant="link" className="p-0 h-auto text-xs">View Event</Button>
                       </Link>
                     </TableCell>
                     <TableCell className="figure text-sm text-slate-600">

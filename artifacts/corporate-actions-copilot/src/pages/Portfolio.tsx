@@ -41,14 +41,14 @@ export default function Portfolio() {
             </p>
           </div>
           <p className="mt-1 text-[11px] text-muted-foreground">Worst first. The track under each scheme shows its largest issuer position against the 10% SEBI cap.</p>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
             {triagedSchemes.map((scheme) => <SchemeTile key={scheme.id} scheme={scheme} />)}
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-destructive" /> Funding short</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-warning" /> Flagged</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-success" /> Covered</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-border" /> Nothing open</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-stone-200" /> Nothing open</span>
           </div>
         </section>
         <Card className="overflow-hidden border border-stone-200 shadow-sm">
@@ -150,13 +150,20 @@ export default function Portfolio() {
   );
 }
 
+function statusLineTitle(scheme: SchemeSummary, state: "exception" | "review" | "covered" | "clear") {
+  if (state === "exception") return `${scheme.name}: funding short ${formatInr(scheme.shortfall)}`;
+  if (state === "review") return `${scheme.name}: ${scheme.flag ?? "flagged for review"}`;
+  if (state === "covered") return `${scheme.name}: funded, within limits`;
+  return `${scheme.name}: nothing open`;
+}
+
 function SchemeTile({ scheme }: { scheme: SchemeSummary }) {
   const state = scheme.shortfall > 0 ? "exception" : scheme.flag ? "review" : scheme.openActions.length > 0 ? "covered" : "clear";
-  const toneClass = {
-    exception: "border-destructive/40 bg-destructive/5 hover:border-destructive/70",
-    review: "border-warning/50 bg-warning/5 hover:border-warning",
-    covered: "border-success/30 bg-success/5 hover:border-success/60",
-    clear: "border-border bg-stone-50/60 hover:border-stone-300",
+  const railTone = {
+    exception: "bg-destructive",
+    review: "bg-warning",
+    covered: "bg-success",
+    clear: "bg-stone-200",
   }[state];
   const statusLine = {
     exception: <span className="figure-inline font-semibold text-destructive">Short {formatInr(scheme.shortfall)}</span>,
@@ -171,9 +178,11 @@ function SchemeTile({ scheme }: { scheme: SchemeSummary }) {
   return (
     <Link
       href={`/schemes/${scheme.id}`}
-      className={`group flex flex-col rounded-md border px-3 py-2.5 transition-colors ${toneClass}`}
+      className="group relative flex flex-col overflow-hidden rounded-md border border-stone-200 bg-card py-2.5 pl-4 pr-3 shadow-sm transition-colors hover:border-primary/50"
       aria-label={`${scheme.name}: ${scheme.openActions.length} open actions`}
+      title={statusLineTitle(scheme, state)}
     >
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${railTone}`} />
       <div className="flex items-baseline justify-between gap-2">
         <span className="truncate text-sm font-semibold text-foreground group-hover:text-primary">{shortName}</span>
         <span className="figure-inline shrink-0 text-xs text-muted-foreground">{scheme.openActions.length ? `${scheme.openActions.length} open` : ""}</span>

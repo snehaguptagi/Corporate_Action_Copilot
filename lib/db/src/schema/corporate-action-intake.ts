@@ -8,3 +8,11 @@ export const corporateActionIntakeDraftsTable = pgTable("corporate_action_intake
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+// Single-row store of the most recent public web discovery search, so the
+// Corporate actions tab can show the last fetch and its results across sessions.
+export const discoverySearchesTable = pgTable("corporate_action_discovery_searches", {
+  id: text("id").primaryKey(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  searchedAt: timestamp("searched_at", { withTimezone: true }).notNull().defaultNow(),
+});

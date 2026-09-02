@@ -915,6 +915,11 @@ export interface LiveDiscoveryResponse {
   notices: LiveDiscoveryNotice[];
 }
 
+export interface LastDiscoveryResponse {
+  searched: boolean;
+  result?: LiveDiscoveryResponse;
+}
+
 export interface RequestUploadUrlInput {
   name: string;
   size: number;

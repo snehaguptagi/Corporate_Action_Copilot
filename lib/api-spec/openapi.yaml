@@ -406,6 +406,20 @@ paths:
           description: Invalid search query
         "502":
           description: Web discovery provider unavailable
+  /discovery/last:
+    get:
+      operationId: getLastDiscovery
+      tags: [copilot]
+      summary: Return the most recent public web discovery search and its results
+      security:
+        - CorporateActionSession: []
+      responses:
+        "200":
+          description: The last stored discovery search, when one exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LastDiscoveryResponse"
   /intake:
     post:
       operationId: createIntake
@@ -1847,6 +1861,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LiveDiscoveryNotice"
+    LastDiscoveryResponse:
+      type: object
+      required: [searched]
+      properties:
+        searched: { type: boolean }
+        result:
+          $ref: "#/components/schemas/LiveDiscoveryResponse"
     RequestUploadUrlInput:
       type: object
       required: [name, size, contentType]

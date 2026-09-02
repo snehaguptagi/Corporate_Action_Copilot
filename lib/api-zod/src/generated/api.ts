@@ -1118,6 +1118,32 @@ export const SearchLiveCorporateActionsResponse = zod.object({
 
 
 /**
+ * @summary Return the most recent public web discovery search and its results
+ */
+export const GetLastDiscoveryResponse = zod.object({
+  "searched": zod.boolean(),
+  "result": zod.object({
+  "mode": zod.enum(['Indicative discovery']),
+  "query": zod.string(),
+  "searchedAt": zod.string(),
+  "warning": zod.string(),
+  "notices": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "sourceUrl": zod.string(),
+  "publishedAt": zod.string(),
+  "issuer": zod.string(),
+  "eventType": zod.string(),
+  "summary": zod.string(),
+  "terms": zod.array(zod.string()),
+  "whyRelevant": zod.string(),
+  "confidence": zod.enum(['Unverified'])
+}))
+}).optional()
+})
+
+
+/**
  * @summary Create a corporate-action case from a named synthetic sample
  */
 export const CreateIntakeBody = zod.object({

@@ -44,6 +44,7 @@ import type {
   IntakeValidationInput,
   IssuerDetail,
   IssuerSummary,
+  LastDiscoveryResponse,
   ListAuditParams,
   ListEventsParams,
   LiveDiscoveryInput,
@@ -1693,6 +1694,83 @@ export const useSearchLiveCorporateActions = <TError = ErrorType<void>,
       > => {
       return useMutation(getSearchLiveCorporateActionsMutationOptions(options));
     }
+
+export const getGetLastDiscoveryUrl = () => {
+
+
+
+
+  return `/api/discovery/last`
+}
+
+/**
+ * @summary Return the most recent public web discovery search and its results
+ */
+export const getLastDiscovery = async ( options?: Parameters<typeof customFetch>[1]): Promise<LastDiscoveryResponse> => {
+
+  return customFetch<LastDiscoveryResponse>(getGetLastDiscoveryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLastDiscoveryQueryKey = () => {
+    return [
+    `/api/discovery/last`
+    ] as const;
+    }
+
+
+export const getGetLastDiscoveryQueryOptions = <TData = Awaited<ReturnType<typeof getLastDiscovery>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLastDiscovery>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLastDiscoveryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLastDiscovery>>> = ({ signal }) => getLastDiscovery({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLastDiscovery>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLastDiscoveryQueryResult = NonNullable<Awaited<ReturnType<typeof getLastDiscovery>>>
+export type GetLastDiscoveryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Return the most recent public web discovery search and its results
+ */
+
+export function useGetLastDiscovery<TData = Awaited<ReturnType<typeof getLastDiscovery>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLastDiscovery>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLastDiscoveryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getCreateIntakeUrl = () => {
 

@@ -1,4 +1,5 @@
-import { useListEvents, useSearchLiveCorporateActions, type LiveDiscoveryResponse } from "@workspace/api-client-react";
+import { getGetLastDiscoveryQueryKey, useGetLastDiscovery, useListEvents, useSearchLiveCorporateActions, type LiveDiscoveryResponse } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useMemo, useState } from "react";
 import { AlertCircle, ArrowRight, ExternalLink, Globe2, Landmark, LoaderCircle, Search } from "lucide-react";
@@ -23,11 +24,18 @@ export default function EventsList() {
   const [processingType, setProcessingType] = useState("All");
   const [liveQuery, setLiveQuery] = useState("India corporate actions announced this week");
   const [discovery, setDiscovery] = useState<LiveDiscoveryResponse | null>(null);
+  const queryClient = useQueryClient();
   const liveSearch = useSearchLiveCorporateActions({
     mutation: {
-      onSuccess: setDiscovery,
+      onSuccess: (result) => {
+        setDiscovery(result);
+        queryClient.setQueryData(getGetLastDiscoveryQueryKey(), { searched: true, result });
+      },
     },
   });
+  const lastFetch = useGetLastDiscovery();
+  const stored = !discovery && lastFetch.data?.searched ? lastFetch.data.result ?? null : null;
+  const shown = discovery ?? stored;
 
   const filtered = useMemo(() => (events ?? []).filter((event) => {
     const haystack = `${event.reference} ${event.issuer} ${event.security} ${event.eventType}`.toLowerCase();
@@ -72,7 +80,12 @@ export default function EventsList() {
                 </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">OpenAI searches public web sources and summarizes supported facts. Results remain unverified until the original evidence is captured and custodian terms are confirmed.</p>
               </div>
-              {discovery && <div className="figure text-xs text-slate-500">Searched {new Date(discovery.searchedAt).toLocaleString("en-IN")}</div>}
+              {shown && (
+                <div className="figure-inline shrink-0 text-right text-xs text-slate-500">
+                  <div>{stored ? "Last fetch" : "Searched"} {new Date(shown.searchedAt).toLocaleString("en-IN")}</div>
+                  {stored && <div className="mt-0.5 max-w-xs truncate italic">"{shown.query}"</div>}
+                </div>
+              )}
             </div>
             <form
               className="mt-4 flex flex-col gap-3 sm:flex-row"
@@ -91,14 +104,16 @@ export default function EventsList() {
             </form>
             {liveSearch.isError && <div className="mt-3 flex items-center gap-2 text-sm text-rose-700"><AlertCircle className="h-4 w-4" />{liveSearch.error instanceof Error ? liveSearch.error.message : "Live discovery failed."}</div>}
           </CardHeader>
-          {discovery && (
+          {shown && (
             <CardContent className="p-0">
-              <div className="border-b border-amber-200 px-5 py-3 text-xs leading-5 text-amber-900">{discovery.warning}</div>
-              {discovery.notices.length === 0 ? (
+              <div className="border-b border-amber-200 px-5 py-3 text-xs leading-5 text-amber-900">
+                {stored ? "These are the results of your last fetch. Search again to refresh them. " : ""}{shown.warning}
+              </div>
+              {shown.notices.length === 0 ? (
                 <div className="px-5 py-8 text-center text-sm text-slate-500">No supported public notices were found for this search. Try a named issuer, exchange, or event type.</div>
               ) : (
                 <div className="divide-y">
-                  {discovery.notices.map((notice) => (
+                  {shown.notices.map((notice) => (
                     <article key={notice.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[1fr_auto]">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +128,7 @@ export default function EventsList() {
                       </div>
                       <div className="flex shrink-0 items-start gap-2 lg:flex-col">
                         <a href={notice.sourceUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm">Open source <ExternalLink className="ml-2 h-3.5 w-3.5" /></Button></a>
-                        <Link href={`/intake?sourceUrl=${encodeURIComponent(notice.sourceUrl)}`}><Button size="sm">Capture evidence</Button></Link>
+                        <Link href={`/intake?sourceUrl=${encodeURIComponent(notice.sourceUrl)}`}><Button size="sm">Capture &amp; analyse</Button></Link>
                       </div>
                     </article>
                   ))}

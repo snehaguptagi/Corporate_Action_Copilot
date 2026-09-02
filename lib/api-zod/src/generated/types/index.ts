@@ -74,6 +74,7 @@ export * from './issuerSchemeRow';
 export * from './issuerSummary';
 export * from './judgement';
 export * from './judgementStatus';
+export * from './lastDiscoveryResponse';
 export * from './listAuditParams';
 export * from './listEventsParams';
 export * from './liveDiscoveryInput';

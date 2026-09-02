@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useGetDashboard, useListSchemes, type EventSummary } from "@workspace/api-client-react";
-import { AlertCircle, ArrowRight, CalendarClock, CheckCircle2, CircleAlert } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarClock } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,7 +63,7 @@ function shortDeadline(display: string) {
 
 function StatTile({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: string }) {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-4 text-center">
+    <div className="flex flex-col items-center justify-center bg-card px-4 py-4 text-center">
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
       <p className={`figure mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</p>
       <p className="figure-inline mt-0.5 text-xs text-muted-foreground">{sub}</p>
@@ -106,7 +106,6 @@ export default function Dashboard() {
 
   const sortedEvents = dashboard.inboundEvents;
   const openEvents = openEventsOf(sortedEvents);
-  const attentionEvents = openEvents.filter((event) => Boolean(event.attention) || isDecisionNeeded(event.status));
   const queue = [...openEvents].sort((left, right) => {
     const leftUrgent = left.attention || isDecisionNeeded(left.status) ? 0 : 1;
     const rightUrgent = right.attention || isDecisionNeeded(right.status) ? 0 : 1;
@@ -123,19 +122,17 @@ export default function Dashboard() {
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Corporate Actions Copilot</p>
-          <h1 className="figure mt-2 text-[28px] font-semibold leading-9 tracking-[-0.03em] text-foreground">{headline}</h1>
-          <p className="mt-2 flex items-center gap-2 text-sm leading-6 text-muted-foreground">
-            <CalendarClock className="h-4 w-4 shrink-0 text-primary" />
-            {dashboard.arrivalCount24h} notices arrived in the last 24 hours; {dashboard.arrivalsAffectingSchemes24h} of them touch your schemes.
-          </p>
-        </div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Corporate Actions Copilot</p>
+        <h1 className="figure mt-1.5 text-[28px] font-semibold leading-9 tracking-[-0.03em] text-foreground">{headline}</h1>
+        <p className="mt-1.5 flex items-center gap-2 text-sm leading-6 text-muted-foreground">
+          <CalendarClock className="h-4 w-4 shrink-0 text-primary" />
+          {dashboard.arrivalCount24h} notices arrived in the last 24 hours; {dashboard.arrivalsAffectingSchemes24h} of them touch your schemes.
+        </p>
       </header>
 
-      <main className="flex-1 space-y-4 p-4 sm:p-5">
+      <main className="flex-1 space-y-4 px-5 py-5 sm:px-8">
         <section aria-label="Today's numbers" className="overflow-hidden rounded-lg border border-stone-200 bg-card shadow-sm">
-          <div className="grid grid-cols-2 divide-y divide-stone-200 lg:grid-cols-4 lg:divide-y-0 lg:divide-x">
+          <div className="grid grid-cols-2 gap-px bg-stone-200 lg:grid-cols-4">
             <StatTile
               label="Needs you"
               value={String(dashboard.needsYouCount)}
@@ -191,7 +188,7 @@ export default function Dashboard() {
                   <span className="block truncate text-sm font-semibold text-foreground">{event.issuer}</span>
                   <span className="block truncate text-xs text-muted-foreground">{actionName(event.eventType)} · {relativeArrival(event.receivedAt)}</span>
                 </span>
-                {event.attention || isDecisionNeeded(event.status) ? <CircleAlert className="h-4 w-4 shrink-0 text-warning" /> : <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />}
+                <span className="figure-inline shrink-0 text-xs text-muted-foreground">{shortDeadline(event.internalDeadline)}</span>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
               </Link>
             ))}
@@ -290,8 +287,8 @@ export default function Dashboard() {
                           </Link>
                         </TableCell>
                         <TableCell>
-                          <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{impact.label}</div>
-                           <div className={`figure mt-1 font-semibold ${impact.tone}`}>{impact.value}</div>
+                          <div className={`figure font-semibold ${impact.tone}`}>{impact.value}</div>
+                          <div className="mt-0.5 text-xs text-slate-500">{impact.label}</div>
                         </TableCell>
                          <TableCell className="figure text-right">
                            {event.materialityPaise === null || event.materialityPaise === 0

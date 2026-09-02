@@ -189,7 +189,6 @@ export default function FundManagerDesk() {
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 <Landmark className="h-3.5 w-3.5" />
-                Arka Mutual Fund
                 {isPocScenario && <Badge variant="outline">Simulated POC scenario</Badge>}
                 {isPublicWebDiscovery && <Badge variant="warning">Unverified web discovery</Badge>}
               </div>

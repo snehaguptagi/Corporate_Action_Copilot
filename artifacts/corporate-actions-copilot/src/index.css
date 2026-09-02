@@ -232,47 +232,23 @@
   }
 
   .pwc-mark {
-    position: relative;
     display: inline-flex;
-    height: 1.75rem;
-    width: 1.75rem;
+    height: 1.8rem;
+    width: 3.65rem;
     flex: 0 0 auto;
-    align-items: flex-end;
     justify-content: center;
     overflow: hidden;
-    border-radius: 0.2rem;
-    background: linear-gradient(145deg, #f6a800 0%, #e86f00 48%, #d04a00 100%);
-    color: white;
-    box-shadow: 0 5px 14px hsl(var(--primary) / 0.22);
+    border-radius: 0.15rem;
+    background: #fff7f4;
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12);
   }
 
-  .pwc-mark__word {
-    position: relative;
-    z-index: 2;
-    margin-bottom: 0.18rem;
-    font-family: Arial, sans-serif;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: -0.08em;
-    line-height: 1;
-  }
-
-  .pwc-mark__block {
-    position: absolute;
-    top: 0.22rem;
-    height: 0.32rem;
-    width: 0.32rem;
-    border-radius: 0.06rem;
-    background: rgba(255,255,255,0.9);
-  }
-
-  .pwc-mark__block--one {
-    left: 0.35rem;
-  }
-
-  .pwc-mark__block--two {
-    left: 0.76rem;
-    opacity: 0.7;
+  .pwc-logo {
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: center;
   }
 
   .dashboard-panel {

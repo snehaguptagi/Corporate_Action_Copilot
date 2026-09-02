@@ -15,7 +15,6 @@ export default function Analysis() {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
         <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Cross-event analysis</h1>
         <p className="mt-2 text-sm text-slate-600">Aggregate concentration risk, cross-event funding obligations, and historical execution performance per scheme.</p>
       </header>

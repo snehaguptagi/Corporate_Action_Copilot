@@ -5,7 +5,6 @@ import { useAuth } from "@workspace/replit-auth-web"
 import {
   getGetSessionQueryKey,
   useGetSession,
-  useListEvents,
 } from "@workspace/api-client-react"
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -27,8 +26,6 @@ export function Shell({ children }: { children: ReactNode }) {
     },
   })
 
-  const { data: events } = useListEvents()
-
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/portfolio", label: "Portfolio", icon: BriefcaseBusiness },
@@ -41,14 +38,6 @@ export function Shell({ children }: { children: ReactNode }) {
     if (href === "/") return location === "/"
     return location.startsWith(href)
   }
-
-  const latestReceived = events?.reduce((latest, e) => {
-    const d = new Date(e.receivedAt).getTime();
-    return d > latest ? d : latest;
-  }, 0) ?? 0;
-
-  const isStale = Date.now() - latestReceived > 24 * 60 * 60 * 1000;
-  const feedDotColor = isStale ? "bg-warning" : "bg-success";
 
   useEffect(() => {
     window.localStorage.setItem("corporate-actions-sidebar", collapsed ? "collapsed" : "expanded")
@@ -88,27 +77,10 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <aside className={`relative hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex lg:flex-col lg:shrink-0 ${collapsed ? "w-[4.5rem]" : "w-64"}`}>
-        <div className={`flex h-16 shrink-0 items-center border-b border-sidebar-border/60 ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}>
+        <div className={`flex h-20 shrink-0 items-center border-b border-sidebar-border/60 ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}>
           <Link href="/" className={`flex min-w-0 items-center gap-3 ${collapsed ? "justify-center" : ""}`} aria-label="Corporate Actions Copilot home">
-            <PwCMark />
-            {!collapsed && <span className="truncate text-[15px] font-semibold tracking-[-0.02em]">Corporate Actions Copilot</span>}
+            <BrandLockup collapsed={collapsed} />
           </Link>
-          {!collapsed && (
-            <button onClick={() => setCollapsed(true)} className="rounded p-1.5 text-sidebar-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground" aria-label="Minimise navigation" title="Minimise navigation">
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        {collapsed && (
-          <button onClick={() => setCollapsed(false)} className="absolute -right-3 top-[4.25rem] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm transition-colors hover:bg-sidebar-accent" aria-label="Expand navigation" title="Expand navigation">
-            <PanelLeftOpen className="h-3.5 w-3.5" />
-          </button>
-        )}
-        <div className={`border-b border-sidebar-border/40 py-3 ${collapsed ? "px-2" : "px-4"}`}>
-          <div className={`flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-sidebar-muted-foreground ${collapsed ? "justify-center" : ""}`}>
-            <div className={`h-1.5 w-1.5 rounded-full ${feedDotColor}`} />
-            {!collapsed && (isStale ? "Feed delayed" : "Feed active")}
-          </div>
         </div>
         
         <nav className={`flex-1 space-y-1 overflow-y-auto ${collapsed ? "p-2" : "p-3"}`}>
@@ -130,7 +102,18 @@ export function Shell({ children }: { children: ReactNode }) {
           })}
         </nav>
         
-        <div className={`shrink-0 border-t border-sidebar-border/50 ${collapsed ? "p-2" : "p-4"}`}>
+        <div className={`shrink-0 border-t border-sidebar-border/50 ${collapsed ? "p-2" : "px-4 py-3"}`}>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`flex w-full items-center rounded-md text-xs font-medium text-sidebar-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${collapsed ? "justify-center p-2" : "gap-2 px-2 py-2"}`}
+            aria-label={collapsed ? "Expand navigation" : "Minimise navigation"}
+            title={collapsed ? "Expand navigation" : "Minimise navigation"}
+          >
+            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            {!collapsed && <span>Minimise navigation</span>}
+          </button>
+        </div>
+        <div className={`shrink-0 ${collapsed ? "p-2" : "p-4"}`}>
           <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : "justify-between"}`}>
             <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`} title={collapsed ? `${activeRole.name}, ${activeRole.role}` : undefined}>
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium">
@@ -152,12 +135,8 @@ export function Shell({ children }: { children: ReactNode }) {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
         <div className="flex shrink-0 flex-col border-b border-slate-200 bg-sidebar text-sidebar-foreground lg:hidden">
           <div className="flex h-14 items-center justify-between px-4">
-            <div className="flex items-center gap-2 font-semibold tracking-tight">
-              <PwCMark />
-              <span>Corporate Actions Copilot</span>
-            </div>
-            <div className="flex items-center gap-1.5" title={isStale ? "Feed may be delayed" : "Feed active"}>
-              <div className={`h-2 w-2 rounded-full ${feedDotColor}`} />
+            <div className="flex min-w-0 items-center gap-3">
+              <BrandLockup />
             </div>
           </div>
           <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
@@ -184,11 +163,23 @@ export function Shell({ children }: { children: ReactNode }) {
 
 function PwCMark() {
   return (
-    <span className="pwc-mark" aria-hidden="true">
-      <span className="pwc-mark__block pwc-mark__block--one" />
-      <span className="pwc-mark__block pwc-mark__block--two" />
-      <span className="pwc-mark__word">pwc</span>
+    <span className="pwc-mark" aria-label="PwC">
+      <img src={`${import.meta.env.BASE_URL}pwc-logo.jpg`} alt="PwC" className="pwc-logo" />
     </span>
+  )
+}
+
+function BrandLockup({ collapsed = false }: { collapsed?: boolean }) {
+  return (
+    <>
+      <PwCMark />
+      {!collapsed && (
+        <span className="min-w-0 border-l border-sidebar-border/70 pl-3 leading-none">
+          <span className="block whitespace-nowrap text-[14px] font-semibold tracking-[-0.02em] text-sidebar-foreground">Corporate Actions</span>
+          <span className="mt-1 block text-[14px] font-semibold tracking-[-0.02em] text-sidebar-primary">Copilot</span>
+        </span>
+      )}
+    </>
   )
 }
 

@@ -24,7 +24,7 @@ export default function SchemeDetail() {
           <Link href="/portfolio" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
             <ArrowLeft className="h-3.5 w-3.5" /> Portfolio
           </Link>
-          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund · {scheme.category}</p>
+          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">{scheme.category}</p>
            <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">{scheme.name}</h1>
            <p className="mt-4 max-w-4xl text-base leading-7 text-foreground">{scheme.situation}</p>
         </div>

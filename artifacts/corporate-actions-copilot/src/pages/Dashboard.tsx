@@ -114,9 +114,8 @@ export default function Dashboard() {
       <header className="border-b border-stone-200 bg-card px-5 py-6 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
-              <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Corporate Actions Copilot</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Evidence-led impact control for Arka Mutual Fund. Review what arrived, what is affected, and what needs a controlled decision.</p>
+              <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Portfolio operations</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Monitor incoming notices, assess scheme impact, and control decisions from one place.</p>
           </div>
         </div>
       </header>

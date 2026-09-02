@@ -5,11 +5,11 @@ import { demoUsers } from "./corporate-actions-v2";
 export type OperationalActor = {
   id: string;
   name: string;
-  role: "Operations Analyst" | "Reviewer" | "Operations Manager" | "Fund Manager" | "Compliance";
+  role: "Fund Manager" | "Compliance";
 };
 
 export const actorCookieName = "corporate_actions_actor";
-const operationalRoles = ["Operations Analyst", "Reviewer", "Operations Manager", "Fund Manager", "Compliance"] as const;
+const operationalRoles = ["Fund Manager", "Compliance"] as const;
 const roleDirectoryEnvironmentKey = "CORPORATE_ACTIONS_ROLE_DIRECTORY";
 type RoleDirectoryEntry = {
   id?: string;
@@ -132,8 +132,8 @@ export function requireActor(
   const actor = getAuthenticatedActor(req);
   if (!actor) {
     res.status(401).json({
-      error: "An authenticated operational identity is required for this action.",
-      details: ["Sign in through the trusted identity gateway before changing a corporate-action event."],
+      error: "An authenticated identity is required for this action.",
+      details: ["Sign in through the trusted identity gateway before changing a corporate action."],
     });
     return null;
   }

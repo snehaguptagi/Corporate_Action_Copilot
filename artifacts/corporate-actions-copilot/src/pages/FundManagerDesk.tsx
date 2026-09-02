@@ -1,57 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   getGetEventQueryKey,
-  useApproveEvent,
   useGetEvent,
-  useGetSession,
   useSaveElection,
-  useUpdateEvent,
-  useUpdateInstruction,
-  useSaveReconciliation,
   type EventDetail,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import {
   AlertTriangle,
-  ArrowDownRight,
-  Banknote,
-  CalendarDays,
-  Check,
-  CheckCircle2,
-  CircleDollarSign,
-  FileCheck2,
-  FileText,
-  Gauge,
-  IndianRupee,
   Landmark,
-  Scale,
-  ShieldCheck,
-  WalletCards,
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { formatIstDate } from "@/lib/date";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function rupees(value: number, digits = 2) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(value);
-}
 
 function crore(value: number) {
   return `₹${decimal.format(value)} cr`;
@@ -70,12 +40,48 @@ function SectionHeading({ index, eyebrow, title, description }: { index: string;
   );
 }
 
+function termValue(data: EventDetail, key: string) {
+  return data.terms?.find((term) => term.key === key)?.value ?? "";
+}
+
+function actionStatement(data: EventDetail) {
+  const quantity = data.schemeImpacts.filter((impact) => impact.affected).reduce((total, impact) => total + impact.eligibleQuantity, 0);
+  const resultQuantity = data.schemeImpacts.filter((impact) => impact.affected).reduce((total, impact) => total + (impact.quantityResult ?? 0), 0);
+  if (data.eventType === "Cash dividend") {
+    return `${data.issuer} is paying ${termValue(data, "rate")} per share. Record date ${termValue(data, "recordDate")}. Nothing to decide.`;
+  }
+  if (data.eventType === "Stock split") {
+    return `${data.issuer} is splitting each share into ${termValue(data, "splitRatio").replace(" for 1", "")}. Your ${integer.format(quantity)} shares become ${integer.format(resultQuantity)}. Nothing to decide.`;
+  }
+  if (data.eventType === "Bonus issue") {
+    return `${data.issuer} is issuing ${termValue(data, "bonusRatio").replace(" for ", " bonus share for every ")} held. Nothing to decide.`;
+  }
+  if (data.eventType === "Tender offer") {
+    return `${data.issuer} is buying back up to ${termValue(data, "maximumAcceptance")} at ${termValue(data, "offerPrice")}.`;
+  }
+  if (data.eventType === "Rights issue") {
+    const discount = data.discountPercentage && data.referencePrice
+      ? `, a ${data.discountPercentage.toFixed(1)}% discount to the ₹${integer.format(data.referencePrice)} close`
+      : "";
+    return `${data.issuer} is offering ${termValue(data, "rightsRatio").replace(" for ", " new share for every ")} you hold, at ${termValue(data, "subscriptionPrice")}${discount}.`;
+  }
+  if (data.eventType === "Merger / demerger") {
+    return `${data.issuer} is merging under a scheme where you receive ${termValue(data, "shareExchangeRatio")} shares plus ${termValue(data, "cashRate")} per share.`;
+  }
+  return `${data.issuer} announced a ${data.eventType.toLowerCase()}.`;
+}
+
+function daysUntil(isoInstant: string) {
+  const deadline = new Date(isoInstant).getTime();
+  if (!Number.isFinite(deadline)) return null;
+  return Math.max(0, Math.ceil((deadline - Date.now()) / 86_400_000));
+}
+
 export default function FundManagerDesk() {
   const { eventId = "" } = useParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: event, isLoading, isError } = useGetEvent(eventId);
-  const { data: actor } = useGetSession();
 
   const [electionOptions, setElectionOptions] = useState<Record<string, string>>({});
   const [electionQuantities, setElectionQuantities] = useState<Record<string, string>>({});
@@ -83,21 +89,6 @@ export default function FundManagerDesk() {
   const saveElection = useSaveElection({
     mutation: { onSuccess: () => { toast({ title: "Election submitted" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
   });
-  const updateEvent = useUpdateEvent({
-    mutation: { onSuccess: () => { toast({ title: "Term validated" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
-  });
-  const updateInstruction = useUpdateInstruction({
-    mutation: { onSuccess: () => { toast({ title: "Instruction simulated" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
-  });
-  const saveReconciliation = useSaveReconciliation({
-    mutation: { onSuccess: () => { toast({ title: "Settlement reconciled" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
-  });
-  const approveEvent = useApproveEvent({
-    mutation: { onSuccess: () => { toast({ title: "Checker approval recorded" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
-  });
-
-  const [termValues, setTermValues] = useState<Record<string, string>>({});
-  const [reconActual, setReconActual] = useState("");
 
   if (isLoading) {
     return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading event...</div>;
@@ -107,10 +98,6 @@ export default function FundManagerDesk() {
   }
 
   const data = event as EventDetail;
-  const isFundManager = actor?.role === "Fund Manager";
-  const isAnalyst = actor?.role === "Operations Analyst";
-  const isReviewer = actor?.role === "Reviewer";
-  const isManager = actor?.role === "Operations Manager";
 
   const isMandatory = data.processingType === "Mandatory" || ["Cash dividend", "Stock split", "Bonus issue"].includes(data.eventType);
   const affectedSchemes = (data.schemeImpacts ?? []).filter((impact) => impact.affected);
@@ -127,6 +114,14 @@ export default function FundManagerDesk() {
     }
     saveElection.mutate({ eventId, data: { impactId: impact.id, optionId, quantityElected, comment: "Submitted from workspace." } });
   };
+
+  const primarySource = data.sourceRecords.find((source) => source.primary);
+  const daysLeft = daysUntil(data.internalDeadlineAt);
+  const statement1 = actionStatement(data);
+  const statement2 = `${daysLeft ?? "No"} day${daysLeft === 1 ? "" : "s"} left. Decide by ${data.internalDeadline}.`;
+  const statement3 = primarySource
+    ? `Received ${formatIstDate(primarySource.receivedAt)} from your custodian (${primarySource.provider}, ${primarySource.messageType}). ${data.sourceAgreement}`
+    : `Received ${formatIstDate(data.receivedAt)} from ${data.source}. ${data.sourceAgreement}`;
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#f7f5f2]">
@@ -153,36 +148,20 @@ export default function FundManagerDesk() {
         <div className="space-y-8">
           <section>
             <SectionHeading index="01" eyebrow="Confirmed event" title="What it is" description="Notice terms, calendar, and security details extracted from the source document." />
-            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-              <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-base text-[#5b1235]">{data.issuer}</CardTitle>
-                      <CardDescription>{data.eventType} · {data.securityMaster?.market ?? "Exchange"}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2">
-                    <Detail label="Ordinary ISIN" value={data.securityMaster?.isin ?? "N/A"} mono />
-                    <Detail label="Ticker" value={data.securityMaster?.ticker ?? "N/A"} />
-                    <Detail label="Currency" value={data.currency} />
-                    <Detail label="Amount" value={data.amount ? crore(data.amount / 10000000) : "N/A"} />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base text-[#5b1235]"><CalendarDays className="h-4 w-4 text-[#dc6900]" /> Calendar</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-x-6 gap-y-4 text-xs sm:grid-cols-3">
-                  <CalendarItem label="Notice received" value={new Date(data.receivedAt).toLocaleDateString("en-GB")} />
-                  <CalendarItem label="Market deadline" value={data.marketDeadline ? new Date(data.marketDeadline).toLocaleDateString("en-GB") : "N/A"} emphasis />
-                  <CalendarItem label="Internal deadline" value={data.internalDeadline ? new Date(data.internalDeadline).toLocaleDateString("en-GB") : "N/A"} />
-                </CardContent>
-              </Card>
-            </div>
+            <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
+              <CardContent className="p-6">
+                <div className="space-y-3 text-sm text-[#322823] leading-relaxed">
+                  <p>{statement1}</p>
+                  <p>{statement2}</p>
+                  <p>{statement3}</p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-[#d8d1cb]/50 text-xs font-mono text-muted-foreground flex gap-4">
+                  <span>ISIN: {data.securityMaster?.isin ?? "N/A"}</span>
+                  <span>Ticker: {data.securityMaster?.ticker ?? "N/A"}</span>
+                  <span>Ref: {data.reference}</span>
+                </div>
+              </CardContent>
+            </Card>
           </section>
 
           <section>
@@ -297,31 +276,13 @@ export default function FundManagerDesk() {
                       </CardContent>
                     </Card>
                   ))}
-
-                  {data.status === "Awaiting approval" && (
-                    <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base text-[#5b1235]"><ShieldCheck className="h-4 w-4 text-[#dc6900]" /> Maker-checker control</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {isReviewer ? (
-                           <div className="flex gap-2">
-                             <Button onClick={() => approveEvent.mutate({ eventId, data: { approved: true, note: "Approved." }})} disabled={approveEvent.isPending}>Approve elections</Button>
-                             <Button variant="outline" onClick={() => approveEvent.mutate({ eventId, data: { approved: false, note: "Returned." }})} disabled={approveEvent.isPending}>Return</Button>
-                           </div>
-                        ) : (
-                           <p className="text-xs text-muted-foreground">Only a Reviewer can approve these elections.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
               </section>
             </>
           )}
 
           <section>
-            <SectionHeading index={isMandatory ? "03" : "06"} eyebrow="Audit" title="History" description="Immutable ledger of workflow actions." />
+            <SectionHeading index={isMandatory ? "03" : "06"} eyebrow="History" title="History" description="A short record of what has happened." />
             <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
               <CardContent className="p-0">
                 <Table>
@@ -335,7 +296,7 @@ export default function FundManagerDesk() {
                   <TableBody>
                     {(data.audit ?? []).map((entry: any) => (
                       <TableRow key={entry.id} className="text-xs">
-                        <TableCell>{new Date(entry.timestamp).toLocaleString("en-GB")}</TableCell>
+                        <TableCell>{formatIstDate(entry.timestamp)}</TableCell>
                         <TableCell>{entry.actor}</TableCell>
                         <TableCell>{entry.action}</TableCell>
                       </TableRow>
@@ -345,60 +306,8 @@ export default function FundManagerDesk() {
               </CardContent>
             </Card>
           </section>
-
-          {(isAnalyst || isReviewer || isManager) && (
-            <details className="mt-8 rounded-md border border-[#d8d1cb] bg-[#faf8f5]">
-              <summary className="cursor-pointer p-4 font-semibold text-[#5b1235] outline-none">Operations detail</summary>
-              <div className="p-4 pt-0 space-y-6">
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-[#5b1235]">Extracted Terms Validation</h3>
-                  <div className="grid gap-3">
-                    {data.terms?.map((term: any) => (
-                      <div key={term.key} className="flex items-center gap-4 text-xs bg-white p-3 border border-[#d8d1cb] rounded">
-                        <div className="w-[200px] font-medium">{term.label}</div>
-                        <Input className="w-[200px] h-8 text-xs" value={termValues[term.key] ?? term.value} onChange={e => setTermValues(prev => ({...prev, [term.key]: e.target.value}))} />
-                        <Badge variant="outline">{term.reviewStatus}</Badge>
-                        <Button size="sm" variant="outline" className="h-8 ml-auto" onClick={() => updateEvent.mutate({ eventId, data: { terms: [{ key: term.key, value: termValues[term.key] ?? term.value }] }})}>Validate</Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator className="bg-[#d8d1cb]" />
-
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-[#5b1235]">Simulate Instruction</h3>
-                  <div className="text-xs text-muted-foreground mb-2">Simulate an outbound instruction message to the custodian.</div>
-                  <Button size="sm" onClick={() => updateInstruction.mutate({ eventId, data: { status: "SIMULATED - NOT SENT" }})} disabled={updateInstruction.isPending || data.status !== "Approved"}>
-                    Simulate Instruction
-                  </Button>
-                </div>
-
-                <Separator className="bg-[#d8d1cb]" />
-
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-[#5b1235]">Settlement Reconciliation</h3>
-                  <div className="flex items-center gap-4 text-xs">
-                    <Input className="w-[200px] h-8 text-xs" placeholder="Actual cash received" value={reconActual} onChange={e => setReconActual(e.target.value)} />
-                    <Button size="sm" onClick={() => saveReconciliation.mutate({ eventId, data: { actual: Number(reconActual), note: "Reconciled from workspace." }})} disabled={saveReconciliation.isPending || !["Awaiting settlement", "Break identified"].includes(data.status)}>
-                      Reconcile
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </details>
-          )}
-
         </div>
       </div>
     </div>
   );
-}
-
-function Detail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return <div><div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div><div className={`mt-1 leading-5 text-[#322823] ${mono ? "font-mono" : ""}`}>{value}</div></div>;
-}
-
-function CalendarItem({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
-  return <div className={emphasis ? "rounded border border-[#edb57e] bg-[#fff8ef] p-2.5" : "p-2.5"}><div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div><div className={`mt-1 font-mono leading-5 ${emphasis ? "font-semibold text-[#9d4d00]" : "text-[#322823]"}`}>{value}</div></div>;
 }

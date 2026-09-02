@@ -972,7 +972,7 @@ components:
             - type: "null"
     EventSummary:
       type: object
-      required: [id, reference, issuer, security, eventType, processingType, status, marketDeadline, internalDeadline, affectedAccounts, amount, currency, receivedAt, source, schemeImpacts, materialityPaise, cashImpactAmount, attention]
+      required: [id, reference, issuer, security, eventType, processingType, status, marketDeadline, internalDeadline, marketDeadlineAt, internalDeadlineAt, affectedAccounts, amount, currency, receivedAt, source, sourceRecords, sourceAgreement, schemeImpacts, materialityPaise, cashImpactAmount, attention]
       properties:
         id: { type: string }
         reference: { type: string }
@@ -983,13 +983,18 @@ components:
         status: { type: string }
         marketDeadline: { type: string }
         internalDeadline: { type: string }
+        marketDeadlineAt: { type: string, format: date-time }
+        internalDeadlineAt: { type: string, format: date-time }
         affectedAccounts: { type: number }
         amount: { type: number }
         currency: { type: string }
         receivedAt: { type: string }
-        source:
-          type: string
-          enum: [NSE corporate filing, BSE corporate filing, RTA notice, NSDL/CDSL corporate action file, Manual upload]
+        source: { type: string }
+        sourceRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventSourceRecord"
+        sourceAgreement: { type: string }
         schemeImpacts:
           type: array
           items:
@@ -998,6 +1003,8 @@ components:
         cashImpactAmount: { type: ["number", "null"] }
         attention: { type: ["string", "null"] }
         cashDirection: { type: string, enum: [Receivable, Payable] }
+        referencePrice: { type: number }
+        discountPercentage: { type: number }
         isHero: { type: boolean }
         noticeReference: { type: string }
         settlementStage: { type: string }
@@ -1005,6 +1012,20 @@ components:
         cashCurrency: { type: string }
         shareAmount: { type: number }
         shareLabel: { type: string }
+    EventSourceRecord:
+      type: object
+      required: [id, channel, provider, messageType, receivedAt, assertedFields, primary]
+      properties:
+        id: { type: string }
+        channel: { type: string }
+        provider: { type: string }
+        messageType: { type: string }
+        receivedAt: { type: string, format: date-time }
+        assertedFields:
+          type: object
+          additionalProperties:
+            type: string
+        primary: { type: boolean }
     EventDetail:
       allOf:
         - $ref: "#/components/schemas/EventSummary"
@@ -1272,7 +1293,9 @@ components:
       properties:
         id: { type: string }
         name: { type: string }
-        role: { type: string }
+        role:
+          type: string
+          enum: [Fund Manager, Compliance]
     IntakeInput:
       type: object
       required: [sampleId, fileName, source]

@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DashboardSchemeImpact } from './dashboardSchemeImpact';
+import type { EventSourceRecord } from './eventSourceRecord';
 import type { EventSummaryCashDirection } from './eventSummaryCashDirection';
-import type { EventSummarySource } from './eventSummarySource';
 
 export interface EventSummary {
   id: string;
@@ -19,11 +19,15 @@ export interface EventSummary {
   status: string;
   marketDeadline: string;
   internalDeadline: string;
+  marketDeadlineAt: Date;
+  internalDeadlineAt: Date;
   affectedAccounts: number;
   amount: number;
   currency: string;
   receivedAt: string;
-  source: EventSummarySource;
+  source: string;
+  sourceRecords: EventSourceRecord[];
+  sourceAgreement: string;
   schemeImpacts: DashboardSchemeImpact[];
   /** @nullable */
   materialityPaise: number | null;
@@ -32,6 +36,8 @@ export interface EventSummary {
   /** @nullable */
   attention: string | null;
   cashDirection?: EventSummaryCashDirection;
+  referencePrice?: number;
+  discountPercentage?: number;
   isHero?: boolean;
   noticeReference?: string;
   settlementStage?: string;

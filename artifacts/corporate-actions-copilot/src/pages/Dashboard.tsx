@@ -30,17 +30,6 @@ function relativeArrival(timestamp: string) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-function parseDeadline(value: string) {
-  const match = value.match(/(\d{1,2})\s+([A-Z][a-z]{2})\s+(\d{4})/);
-  if (!match) return Number.POSITIVE_INFINITY;
-  return Date.UTC(Number(match[3]), MONTHS[match[2]], Number(match[1]), 9, 30);
-}
-
-function shortDeadline(value: string) {
-  const match = value.match(/(\d{1,2}\s+[A-Z][a-z]{2})/);
-  return match?.[1] ?? value;
-}
-
 function formatCrore(amount: number) {
   return `₹${(amount / 10_000_000).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -97,7 +86,7 @@ function navImpactCopy(event: EventSummary) {
 function needsFromYou(event: EventSummary) {
   if (["Closed", "Reconciled"].includes(event.status)) return "Settled";
   if (event.status === "Awaiting approval") return "With Compliance";
-  if (needsDecision(event) || event.status === "Under review") return `Decide by ${shortDeadline(event.internalDeadline)}`;
+  if (needsDecision(event) || event.status === "Under review") return `Decide by ${event.internalDeadline}`;
   if (event.processingType === "Mandatory") return "Nothing, mandatory";
   if (event.status === "Break identified") return "Exception under review";
   return "Nothing required";
@@ -158,7 +147,11 @@ export default function Dashboard() {
   );
   const fundingEvents = eventList
     .filter((event) => event.schemeImpacts.some((impact) => impact.direction === "Funding" && impact.cashAmount > 0))
-    .sort((a, b) => parseDeadline(a.internalDeadline) - parseDeadline(b.internalDeadline));
+    .sort((a, b) => {
+      const da = a.internalDeadlineAt ? new Date(a.internalDeadlineAt).getTime() : Number.POSITIVE_INFINITY;
+      const db = b.internalDeadlineAt ? new Date(b.internalDeadlineAt).getTime() : Number.POSITIVE_INFINITY;
+      return da - db;
+    });
   const nearestFunding = fundingEvents[0];
   const totalFunding = eventList.flatMap((event) => event.schemeImpacts)
     .filter((impact) => impact.direction === "Funding")
@@ -186,8 +179,8 @@ export default function Dashboard() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Portfolio corporate actions</h1>
           </div>
-          <Link href="/intake">
-            <Button className="gap-2"><FileInput className="h-4 w-4" /> Add a notice</Button>
+          <Link href="/intake" className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 gap-2">
+            <FileInput className="h-4 w-4" /> Add manually
           </Link>
         </div>
       </header>
@@ -206,7 +199,7 @@ export default function Dashboard() {
                   {arrivedToday.length} notices arrived today. {eventsAffectingSchemes.length} affect your schemes.{" "}
                   {impactedSchemeIds.size} of {desk.schemes.length} schemes impacted.{" "}
                   {totalFunding > 0 ? `${formatInr(totalFunding)} to fund` : "No funding required"}
-                  {nearestFunding ? ` by ${shortDeadline(nearestFunding.internalDeadline)} for ${nearestFunding.issuer}.` : "."}
+                  {nearestFunding ? ` by ${nearestFunding.internalDeadline} for ${nearestFunding.issuer}.` : "."}
                 </p>
               </div>
               <div className="grid shrink-0 grid-cols-2 gap-3 text-sm sm:grid-cols-4 lg:grid-cols-2">
@@ -229,8 +222,8 @@ export default function Dashboard() {
               <h2 id="inbound-actions" className="text-lg font-semibold text-slate-950">Inbound corporate actions</h2>
               <p className="mt-1 text-sm text-slate-500">What arrived, what it touches, and what Arka needs to do.</p>
             </div>
-            <Link href="/events">
-              <Button variant="outline" size="sm" className="gap-1.5">Corporate actions <ArrowRight className="h-3.5 w-3.5" /></Button>
+            <Link href="/events" className="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent hover:text-accent-foreground gap-1.5">
+              Corporate actions <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
@@ -264,8 +257,8 @@ export default function Dashboard() {
                           <div className="mt-1 max-w-36 text-xs leading-4 text-slate-500">{event.source}</div>
                         </TableCell>
                         <TableCell>
-                          <Link href={`/events/${event.id}`}>
-                            <span className="font-semibold text-primary hover:underline">{impacted} of {desk.schemes.length}</span>
+                          <Link href={`/events/${event.id}`} className="font-semibold text-primary hover:underline">
+                            {impacted} of {desk.schemes.length}
                           </Link>
                         </TableCell>
                         <TableCell>
@@ -279,10 +272,8 @@ export default function Dashboard() {
                             : <span className="text-slate-500">{needsFromYou(event)}</span>}
                         </TableCell>
                         <TableCell>
-                          <Link href={`/events/${event.id}`}>
-                            <Button variant="ghost" size="icon" aria-label={`Open ${event.reference}`} className="text-slate-400 group-hover:text-primary">
-                              <ArrowRight className="h-4 w-4" />
-                            </Button>
+                          <Link href={`/events/${event.id}`} className="inline-flex h-8 w-8 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium text-slate-400 transition-colors hover:bg-accent hover:text-primary group-hover:text-primary">
+                            <ArrowRight className="h-4 w-4" />
                           </Link>
                         </TableCell>
                       </TableRow>
@@ -324,10 +315,8 @@ export default function Dashboard() {
                         {openActions.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5">
                             {openActions.map(({ event }) => (
-                              <Link key={event.id} href={`/events/${event.id}`}>
-                                <span className="inline-flex rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-slate-700 hover:border-orange-300 hover:text-primary">
-                                  {actionName(event.eventType)}
-                                </span>
+                              <Link key={event.id} href={`/events/${event.id}`} className="inline-flex rounded border border-stone-200 bg-stone-50 px-2 py-1 text-xs font-medium text-slate-700 hover:border-orange-300 hover:text-primary">
+                                {actionName(event.eventType)}
                               </Link>
                             ))}
                           </div>

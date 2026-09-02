@@ -5,9 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { OperationalActorRole } from './operationalActorRole';
 
 export interface OperationalActor {
   id: string;
   name: string;
-  role: string;
+  role: OperationalActorRole;
 }

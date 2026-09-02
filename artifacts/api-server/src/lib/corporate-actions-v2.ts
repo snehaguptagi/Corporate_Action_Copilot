@@ -13,7 +13,7 @@ import { ARKA_SCHEME_SEED, ARKA_EVENT, projectArkaBharatPositions } from "./arka
 export type EventData = Record<string, any>;
 
 export const SEED_DATE_ANCHOR = sharedSeedDateAnchor;
-export const SEED_VERSION = "single-scheme-impact-model-v11";
+export const SEED_VERSION = "fund-manager-source-provenance-v12";
 let seedPromise: Promise<void> | undefined;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -39,6 +39,17 @@ const taskDate = (dayOffset: number) => {
   return `${date.getUTCDate()} ${SHORT_MONTHS[date.getUTCMonth()]}`;
 };
 const seedTimestamp = (dayOffset: number, time: string) => `${isoDate(dayOffset)}T${time}.000Z`;
+const istTimestamp = (dayOffset: number, time: string) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  const date = seedDate(dayOffset);
+  return new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    hours - 5,
+    minutes - 30,
+  )).toISOString();
+};
 
 const seedTimeline = {
   noticeReceived: 12,
@@ -53,9 +64,6 @@ const seedTimeline = {
 } as const;
 
 export const demoUsers = [
-  { id: "USR-001", name: "Aisha Mehta", role: "Operations Analyst", desk: "London Operations" },
-  { id: "USR-002", name: "Daniel Reed", role: "Reviewer", desk: "London Operations" },
-  { id: "USR-003", name: "Maya Shah", role: "Operations Manager", desk: "Global Oversight" },
   { id: "USR-004", name: "Rohan Iyer", role: "Fund Manager", desk: "Arka Mutual Fund" },
   { id: "USR-005", name: "Nisha Kapoor", role: "Compliance", desk: "Arka Mutual Fund" },
 ];
@@ -64,22 +72,47 @@ const indianSecurity = (isin: string, ticker: string, issuer: string) => ({
   securityId: `SEC-${ticker}`, isin, ticker, securityName: issuer, currency: "INR", market: "India", status: "Active",
 });
 const istDeadline = (offset: number, time = "15:30") => `${shortDate(offset)} · ${time} IST`;
-const INDIAN_EVENT_META: Record<string, { deadlineOffset: number; receivedOffset: number; receivedTime: string; source: string }> = {
-  "evt-ind-dividend-review": { deadlineOffset: 12, receivedOffset: 0, receivedTime: "08:45:00", source: "NSE corporate filing" },
-  "evt-ind-split": { deadlineOffset: 14, receivedOffset: 0, receivedTime: "10:20:00", source: "BSE corporate filing" },
-  "evt-ind-bonus": { deadlineOffset: 6, receivedOffset: -1, receivedTime: "11:10:00", source: "RTA notice" },
-  "evt-ind-buyback": { deadlineOffset: 16, receivedOffset: 0, receivedTime: "13:05:00", source: "NSDL/CDSL corporate action file" },
-  "evt-ind-scheme": { deadlineOffset: 17, receivedOffset: -2, receivedTime: "15:40:00", source: "Manual upload" },
-  "evt-ind-dividend-break": { deadlineOffset: 1, receivedOffset: -1, receivedTime: "09:30:00", source: "RTA notice" },
-  "evt-bharat-rights": { deadlineOffset: 15, receivedOffset: -1, receivedTime: "14:15:00", source: "NSE corporate filing" },
+const INDIAN_EVENT_META: Record<string, { deadlineOffset: number; receivedOffset: number; receivedTime: string }> = {
+  "evt-ind-dividend-review": { deadlineOffset: 12, receivedOffset: 0, receivedTime: "08:45:00" },
+  "evt-ind-split": { deadlineOffset: 14, receivedOffset: 0, receivedTime: "10:20:00" },
+  "evt-ind-bonus": { deadlineOffset: 6, receivedOffset: -1, receivedTime: "11:10:00" },
+  "evt-ind-buyback": { deadlineOffset: 16, receivedOffset: 0, receivedTime: "13:05:00" },
+  "evt-ind-scheme": { deadlineOffset: 17, receivedOffset: -2, receivedTime: "15:40:00" },
+  "evt-ind-dividend-break": { deadlineOffset: 3, receivedOffset: -1, receivedTime: "09:30:00" },
+  "evt-bharat-rights": { deadlineOffset: 15, receivedOffset: -1, receivedTime: "14:15:00" },
 };
+
+function sourceRecordsFor(input: EventData): EventData[] {
+  const meta = INDIAN_EVENT_META[input.id] ?? { deadlineOffset: 15, receivedOffset: -1, receivedTime: "09:00:00" };
+  const canonicalRecordDate = input.calculationInputs?.recordDate ?? isoDate(input.recordOffset ?? 10);
+  const vendorRecordDate = input.id === "evt-ind-dividend-review"
+    ? new Date(`${canonicalRecordDate}T00:00:00.000Z`).toISOString().slice(0, 10).replace(/(\d{4}-\d{2}-)(\d{2})/, (_, prefix, day) => `${prefix}${String(Number(day) + 1).padStart(2, "0")}`)
+    : canonicalRecordDate;
+  const receivedAt = seedTimestamp(meta.receivedOffset, meta.receivedTime);
+  const asserted = (recordDate: string) => ({ recordDate });
+  return [
+    { id: `${input.id}-sbi`, channel: "Custodian", provider: "SBI-SG", messageType: "MT564", receivedAt, assertedFields: asserted(canonicalRecordDate), primary: true },
+    { id: `${input.id}-nsdl`, channel: "Depository file", provider: "NSDL", messageType: "Corporate action file", receivedAt: seedTimestamp(meta.receivedOffset, "18:00:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-nse`, channel: "Exchange announcement", provider: "NSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:00:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-bse`, channel: "Exchange announcement", provider: "BSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:05:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
+    { id: `${input.id}-refinitiv`, channel: "Market data", provider: "Refinitiv", messageType: "Live vendor feed", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:10:00"), assertedFields: asserted(vendorRecordDate), primary: false },
+    { id: `${input.id}-kfin`, channel: "RTA notice", provider: "KFin", messageType: "Email", receivedAt: seedTimestamp(meta.receivedOffset - 1, "12:20:00"), assertedFields: asserted(canonicalRecordDate), primary: false },
+  ];
+}
+
 const indianEvent = (input: EventData): EventData => eventBase({
   currency: "INR",
   marketDeadline: istDeadline(INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15),
   internalDeadline: istDeadline((INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15) - 1, "15:00"),
+  marketDeadlineAt: istTimestamp(INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15, "15:30"),
+  internalDeadlineAt: istTimestamp((INDIAN_EVENT_META[input.id]?.deadlineOffset ?? 15) - 1, "15:00"),
   affectedAccounts: input.positions?.length ?? 1,
   receivedAt: seedTimestamp(INDIAN_EVENT_META[input.id]?.receivedOffset ?? -1, INDIAN_EVENT_META[input.id]?.receivedTime ?? "09:00:00"),
-  source: INDIAN_EVENT_META[input.id]?.source ?? "NSE corporate filing",
+  source: "Custodian · SBI-SG",
+  sourceRecords: sourceRecordsFor(input),
+  sourceAgreement: input.id === "evt-ind-dividend-review"
+    ? `3 of 4 sources agree. Refinitiv shows a record date of ${shortDate(11)}; the NSE filing says ${shortDate(10)} and wins.`
+    : "The custodian MT564, NSE filing and NSDL file agree.",
   calculationInputs: { recordDate: isoDate(input.recordOffset ?? 10), currency: "INR", cashDecimals: 2, ...input.calculationInputs },
   reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement pending.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate((input.deadlineOffset ?? 15) + 7), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
   instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
@@ -95,7 +128,7 @@ const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-ind-buyback", reference: "CA-IN-BUYBACK-001", issuer: "Meridian Infrastructure India Ltd", security: "ISIN INE0MER01014 · MII", eventType: "Tender offer", processingType: "Voluntary", status: "Awaiting approval", amount: 6800000, securityMaster: indianSecurity("INE0MER01014", "MII", "Meridian Infrastructure India Ltd"), requiredTermKeys: ["offerPrice", "maximumAcceptance", "marketDeadline"], calculationInputs: { offerPrice: 850, maximumPercentage: .2 }, notice: notice("meridian-buyback-notice.pdf", "Buyback at ₹850 with 20% acceptance.", ["Tender offer / buyback: ₹850 per share; 20% maximum acceptance."]), terms: [term("offerPrice", "Offer price", "₹850", 1, "₹850."), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "20%."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST deadline.")], positions: [position("POS-MER", "Arka Focused 25 Fund", "ARKA-F25-001", "INE0MER01014", 40000, isoDate(10))], options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20%.", result: "Cash proceeds.", default: false, fundingFormula: "Quantity × price" }, { id: "decline", label: "Do not tender", description: "Retain holding.", result: "No cash.", default: true, fundingFormula: "No funding" }] }),
   indianEvent({ id: "evt-ind-scheme", reference: "CA-IN-SCHEME-001", issuer: "Vindhya Mobility Ltd", security: "ISIN INE0VIN01015 · VINDHYA", eventType: "Merger / demerger", processingType: "Mandatory with options", status: "Election required", amount: 0, securityMaster: indianSecurity("INE0VIN01015", "VINDHYA", "Vindhya Mobility Ltd"), requiredTermKeys: ["cashRate", "shareExchangeRatio", "marketDeadline", "recordDate"], calculationInputs: { cashRate: 425, shareExchangeRatio: .333 }, notice: notice("vindhya-scheme-notice.pdf", "Scheme of arrangement.", ["₹425 cash and 0.333 successor shares."]), terms: [term("cashRate", "Cash consideration", "₹425", 1, "Cash."), term("shareExchangeRatio", "Share exchange ratio", "0.333", 1, "Shares."), term("recordDate", "Record date", shortDate(10), 1, "Record date."), term("marketDeadline", "Market deadline", istDeadline(15), 1, "IST.")], positions: [position("POS-VIN", "Arka Infrastructure Fund", "ARKA-INF-001", "INE0VIN01015", 13005, isoDate(10))], options: [{ id: "default-consideration", label: "Accept default consideration", description: "Cash and shares.", result: "Cash plus shares.", default: true, fundingFormula: "No funding" }] }),
   indianEvent({ id: "evt-ind-dividend-break", reference: "CA-IN-DIV-002", issuer: "Harit Utilities Ltd", security: "ISIN INE0HAR01016 · HARIT", eventType: "Cash dividend", processingType: "Mandatory", status: "Break identified", amount: 1912500, securityMaster: indianSecurity("INE0HAR01016", "HARIT", "Harit Utilities Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency", "withholding"], calculationInputs: { rate: 4.25, withholdingRate: 0 }, notice: notice("harit-dividend-notice.pdf", "Interim dividend ₹4.25.", ["₹4.25 dividend. TDS not applicable to Arka Mutual Fund under s.196."]), terms: [term("rate", "Cash rate", "₹4.25", 1, "Rate."), term("recordDate", "Record date", shortDate(10), 1, "Record."), term("paymentDate", "Payment date", shortDate(17), 1, "Payment."), term("currency", "Payment currency", "INR", 1, "INR."), term("withholding", "TDS applicability", "Not applicable — mutual fund, s.196", 1, "s.196.")], positions: [position("POS-HAR", "Arka Large Cap Fund", "ARKA-LC-001", "INE0HAR01016", 450000, isoDate(10))], reconciliation: { expected: 1912500, actual: 1870000, difference: -42500, tolerance: .01, status: "Under-settled", classification: "Under-settled", note: "Custodian paid 4,40,000 shares against 4,50,000 entitled.", expectedCash: 1912500, expectedGrossCash: 1912500, expectedWithholdingAmount: 0, expectedNetCash: 1912500, actualCash: 1870000, expectedSecurityQuantity: 450000, actualSecurityQuantity: 440000, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(17), actualSettlementDate: isoDate(17), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: ["Verify entitled quantity of 4,50,000 shares.", "Confirm custodian paid on only 4,40,000 shares.", "Recover ₹42,500 for the 10,000-share shortfall."] } }),
-  indianEvent({ id: "evt-bharat-rights", reference: ARKA_EVENT.reference, issuer: ARKA_EVENT.issuer, security: `ISIN ${ARKA_EVENT.isin} · ${ARKA_EVENT.ticker}`, eventType: "Rights issue", processingType: "Voluntary", status: "Validated", amount: 0, securityMaster: indianSecurity(ARKA_EVENT.isin, ARKA_EVENT.ticker, ARKA_EVENT.issuer), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 85 }, notice: notice("bharat-rights-issue-notice.pdf", "Rights issue 1:5 at ₹85.", ["Bharat Renewables rights issue: 1 for 5 at ₹85."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5", 1, "Ratio."), term("subscriptionPrice", "Subscription price", "₹85", 1, "Price."), term("recordDate", "Record date", ARKA_EVENT.recordDate, 1, "Record."), term("marketDeadline", "Market deadline", ARKA_EVENT.marketDeadline, 1, "IST.")], positions: projectArkaBharatPositions(), options: [{ id: "exercise", label: "Exercise", description: "Subscribe.", result: "Funding required.", default: true, fundingFormula: "Rights × ₹85" }] }),
+  indianEvent({ id: "evt-bharat-rights", reference: ARKA_EVENT.reference, issuer: ARKA_EVENT.issuer, security: `ISIN ${ARKA_EVENT.isin} · ${ARKA_EVENT.ticker}`, eventType: "Rights issue", processingType: "Voluntary", status: "Validated", amount: 0, referencePrice: 120, discountPercentage: 29.2, securityMaster: indianSecurity(ARKA_EVENT.isin, ARKA_EVENT.ticker, ARKA_EVENT.issuer), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 85 }, notice: notice("bharat-rights-issue-notice.pdf", "Rights issue 1:5 at ₹85.", ["Bharat Renewables rights issue: 1 for 5 at ₹85."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5", 1, "Ratio."), term("subscriptionPrice", "Subscription price", "₹85", 1, "Price."), term("recordDate", "Record date", ARKA_EVENT.recordDate, 1, "Record."), term("marketDeadline", "Market deadline", ARKA_EVENT.marketDeadline, 1, "IST.")], positions: projectArkaBharatPositions(), options: [{ id: "exercise", label: "Exercise", description: "Subscribe.", result: "Funding required.", default: true, fundingFormula: "Rights × ₹85" }] }),
 ];
 
 function buildSchemeImpacts(event: EventData): EventData[] {
@@ -235,8 +268,7 @@ function refreshSchemeImpacts(event: EventData): void {
   event.schemeImpacts = buildSchemeImpacts(event);
   const affected = event.schemeImpacts.filter((impact: EventData) => impact.affected);
   event.affectedAccounts = affected.length;
-  event.amount = affected.reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0)
-    || affected.reduce((total: number, impact: EventData) => total + Number(impact.quantityResult ?? 0), 0);
+  event.amount = affected.reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0);
 }
 
 for (const event of preloadedEvents) {
@@ -450,7 +482,7 @@ const task = (
   category,
   dependency,
   sourceRule,
-  escalationPath: "Escalate to Operations Manager",
+  escalationPath: "Escalate to Compliance",
 });
 
 function eventCashDirection(eventType: string): "Receivable" | "Payable" | undefined {
@@ -465,6 +497,18 @@ function eventBase(input: Record<string, any>): EventData {
     isHero: false,
     receivedAt: input.notice?.receivedAt ?? seedTimestamp(seedTimeline.noticeReceived, "04:06:00"),
     source: "Manual upload",
+    marketDeadlineAt: input.marketDeadlineAt ?? istTimestamp(15, "15:30"),
+    internalDeadlineAt: input.internalDeadlineAt ?? istTimestamp(14, "15:00"),
+    sourceRecords: input.sourceRecords ?? [{
+      id: `${input.id ?? "manual"}-manual`,
+      channel: "Manual upload",
+      provider: "Arka Mutual Fund",
+      messageType: "PDF",
+      receivedAt: input.notice?.receivedAt ?? seedTimestamp(seedTimeline.noticeReceived, "04:06:00"),
+      assertedFields: {},
+      primary: true,
+    }],
+    sourceAgreement: input.sourceAgreement ?? "No second source has been received yet.",
     schemeImpacts: [],
     noticeReference: input.reference,
     settlementStage: input.status,
@@ -525,7 +569,7 @@ const legacyPreloadedEvents: EventData[] = [
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory event. No market instruction is generated.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Expected net cash is pending withholding-rate validation.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.aurora.payment), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
     tasks: [
-      task("task-aur-1", "evt-aurora-review", "CA-2026-0814-AX", "Validate payment currency", "Aisha Mehta", "Today · 11:00 BST", "High", "Term validation", "Confirm the currency evidence before calculation can be released."),
+      task("task-aur-1", "evt-aurora-review", "CA-2026-0814-AX", "Check payment currency", "Rohan Iyer", "Today · 11:00 BST", "High", "Term check", "Confirm the currency evidence before calculation can be released."),
       task("task-aur-2", "evt-aurora-review", "CA-2026-0814-AX", "Supply withholding rate", "Tax Operations", `${taskDate(seedTimeline.aurora.market)} · 09:00 BST`, "High", "Term validation", "Provide the event-level withholding rate from market documentation. The analyst must record the correction reason before calculation.", "Open", "Validate payment currency", "CA-CONTROL-008"),
     ],
     audit: [
@@ -565,8 +609,8 @@ const legacyPreloadedEvents: EventData[] = [
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory position adjustment. No instruction is submitted.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 420000, actual: 0, difference: -420000, tolerance: 1, status: "Not due", classification: "Not due", note: "Awaiting custodian movement confirmation.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 420000, actualSecurityQuantity: 0, expectedCurrency: "Shares", actualCurrency: "Shares", expectedSettlementDate: isoDate(seedTimeline.delta.settlement), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
-    tasks: [task("task-dgt-1", "evt-delta-split", "CA-2026-0809-DL", "Check security receipt", "Aisha Mehta", `${taskDate(seedTimeline.delta.market)} · EOD ET`, "Medium", "Settlement", "Reconcile post-split quantities once custodian movement arrives.")],
-    audit: [{ id: "audit-dgt-1", eventId: "evt-delta-split", action: "Calculation approved", actor: "Daniel Reed", actorType: "user", timestamp: seedTimestamp(seedTimeline.delta.audit, "06:45:00"), detail: "Split calculation and position eligibility approved.", previousValue: "Impact calculated", newValue: "Awaiting settlement", reason: "Mandatory event", evidenceId: "EVD-DGT-01", workflowStatus: "Awaiting settlement" }],
+    tasks: [task("task-dgt-1", "evt-delta-split", "CA-2026-0809-DL", "Check security receipt", "Rohan Iyer", `${taskDate(seedTimeline.delta.market)} · EOD ET`, "Medium", "Settlement", "Reconcile post-split quantities once custodian movement arrives.")],
+    audit: [{ id: "audit-dgt-1", eventId: "evt-delta-split", action: "Calculation approved", actor: "Nisha Kapoor", actorType: "user", timestamp: seedTimestamp(seedTimeline.delta.audit, "06:45:00"), detail: "Split calculation and position eligibility approved.", previousValue: "Impact calculated", newValue: "Awaiting settlement", reason: "Mandatory event", evidenceId: "EVD-DGT-01", workflowStatus: "Awaiting settlement" }],
   }),
   eventBase({
     id: "evt-nimbus-bonus",
@@ -592,7 +636,7 @@ const legacyPreloadedEvents: EventData[] = [
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory bonus issue processed without instruction.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 5000, actual: 5000, difference: 0, tolerance: 1, status: "Matched", classification: "Matched", note: "Custodian security movement matches expected entitlement.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 5000, actualSecurityQuantity: 5000, expectedCurrency: "Shares", actualCurrency: "Shares", expectedSettlementDate: isoDate(seedTimeline.nimbus.settlement), actualSettlementDate: isoDate(seedTimeline.nimbus.settlement), expectedAccount: "CUST-6632", actualAccount: "CUST-6632", investigationSteps: [] },
     tasks: [],
-    audit: [{ id: "audit-nmb-1", eventId: "evt-nimbus-bonus", action: "Event closed", actor: "Maya Shah", actorType: "user", timestamp: seedTimestamp(seedTimeline.nimbus.audit, "09:15:00"), detail: "Settlement matched and closure control completed.", previousValue: "Reconciled", newValue: "Closed", reason: "All mandatory controls complete", evidenceId: "SET-NMB-01", workflowStatus: "Closed" }],
+    audit: [{ id: "audit-nmb-1", eventId: "evt-nimbus-bonus", action: "Event closed", actor: "Nisha Kapoor", actorType: "user", timestamp: seedTimestamp(seedTimeline.nimbus.audit, "09:15:00"), detail: "Settlement matched and closure control completed.", previousValue: "Reconciled", newValue: "Closed", reason: "All mandatory controls complete", evidenceId: "SET-NMB-01", workflowStatus: "Closed" }],
   }),
   eventBase({
     id: "evt-meridian-tender",
@@ -613,12 +657,12 @@ const legacyPreloadedEvents: EventData[] = [
     notice: notice("meridian-tender-offer.pdf", "The company offers to acquire up to twenty per cent of each eligible holding at AUD 8.50 per share.", ["OFF-MARKET TENDER OFFER\nMaximum acceptance: 20% of each eligible holding.\nOffer price: AUD 8.50 per share.", `Market deadline: ${longDate(seedTimeline.meridian.market)}, 19:00 AEST. Default option: do not tender.`]),
     terms: [term("offerPrice", "Offer price", "AUD 8.50", 1, "“Offer price: AUD 8.50 per share.”"), term("maximumAcceptance", "Maximum acceptance", "20%", 1, "“Up to twenty per cent of each eligible holding.”"), term("marketDeadline", "Market deadline", `${shortDate(seedTimeline.meridian.market)} · 19:00 AEST`, 2, `“Market deadline: ${longDate(seedTimeline.meridian.market)}, 19:00 AEST.”`)],
     positions: [position("POS-MRL-1", "Sovereign Select Mandate", "CUST-1138", "AU0000MERID2", 40000, isoDate(seedTimeline.meridian.record))],
-    historicalRows: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: isoDate(seedTimeline.meridian.record), securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, cashDirection: "Receivable", expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-001", analyst: "Aisha Mehta", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
+    historicalRows: [{ id: "imp-mrl-1", fund: "Sovereign Select Mandate", account: "CUST-1138", eligibleQuantity: 40000, positionDate: isoDate(seedTimeline.meridian.record), securityId: "SEC-005", eligibilityStatus: "Eligible", dataQualityWarning: "", formula: "8,000 × AUD 8.50", expected: 68000, expectedCash: 68000, cashDirection: "Receivable", expectedSecurityQuantity: 0, securityMovement: "Tender 8,000 shares", currency: "AUD", status: "Election submitted", election: "tender", electionDecision: { optionId: "tender", quantityElected: 8000, requiredFunding: 0, analystId: "USR-004", analyst: "Rohan Iyer", comment: "Portfolio decision received.", status: "Submitted" }, approval: "Pending" }],
     options: [{ id: "tender", label: "Tender maximum", description: "Tender up to 20% of the eligible position.", result: "Expected cash proceeds at the offer price.", default: false, fundingFormula: "Quantity elected × offer price" }, { id: "decline", label: "Do not tender", description: "Retain the current holding.", result: "No cash proceeds.", default: true, fundingFormula: "No funding" }],
     instruction: { status: "DRAFT", destination: "Synthetic custodian gateway", reference: "DRAFT-MRL-0818", generatedAt: seedTimestamp(seedTimeline.meridian.audit, "06:40:00"), content: "DRAFT ONLY - awaiting reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 68000, actual: 0, difference: -68000, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Tender outcome pending.", expectedCash: 68000, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "AUD", actualCurrency: "AUD", expectedSettlementDate: isoDate(seedTimeline.meridian.settlement), actualSettlementDate: "", expectedAccount: "CUST-1138", actualAccount: "", investigationSteps: [] },
-    tasks: [task("task-mrl-1", "evt-meridian-tender", "CA-2026-0818-MT", "Complete checker approval", "Daniel Reed", `${taskDate(seedTimeline.meridian.internal)} · 19:00 AEST`, "High", "Approval", "A reviewer independent of the maker must approve the tender.", "Open", "Obtain election decision", "CA-CONTROL-004")],
-    audit: [{ id: "audit-mrl-1", eventId: "evt-meridian-tender", action: "Election submitted", actor: "Aisha Mehta", actorType: "user", timestamp: seedTimestamp(seedTimeline.meridian.audit, "06:35:00"), detail: "Tender election for 8,000 shares submitted for independent review.", previousValue: "Election required", newValue: "Awaiting approval", reason: "Portfolio decision received", evidenceId: "EVD-MRL-02", workflowStatus: "Awaiting approval" }],
+    tasks: [task("task-mrl-1", "evt-meridian-tender", "CA-2026-0818-MT", "Complete Compliance approval", "Nisha Kapoor", `${taskDate(seedTimeline.meridian.internal)} · 19:00 AEST`, "High", "Approval", "Compliance must independently approve the tender.", "Open", "Obtain election decision", "CA-CONTROL-004")],
+    audit: [{ id: "audit-mrl-1", eventId: "evt-meridian-tender", action: "Election submitted", actor: "Rohan Iyer", actorType: "user", timestamp: seedTimestamp(seedTimeline.meridian.audit, "06:35:00"), detail: "Tender election for 8,000 shares submitted for independent review.", previousValue: "Election required", newValue: "Awaiting approval", reason: "Portfolio decision received", evidenceId: "EVD-MRL-02", workflowStatus: "Awaiting approval" }],
   }),
   eventBase({
     id: "evt-verdant-merger",
@@ -672,7 +716,7 @@ const legacyPreloadedEvents: EventData[] = [
     options: [],
     instruction: { status: "Not required", destination: "N/A", reference: "N/A", generatedAt: "", content: "Mandatory cash event. No instruction is submitted.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 162562.5, actual: 160562.5, difference: -2000, tolerance: 0.01, status: "Under-settled", classification: "Under-settled", note: "Custodian payment is GBP 2,000 below the expected net cash after 15% withholding.", expectedCash: 162562.5, expectedGrossCash: 191250, expectedWithholdingAmount: 28687.5, expectedNetCash: 162562.5, actualCash: 160562.5, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "GBP", actualCurrency: "GBP", expectedSettlementDate: isoDate(seedTimeline.harbor.settlement), actualSettlementDate: isoDate(seedTimeline.harbor.settlement), expectedAccount: "CUST-4081", actualAccount: "CUST-4081", investigationSteps: ["Verify the eligible quantity and record date.", "Confirm the GBP 0.425 gross dividend rate.", "Confirm the validated 15% withholding rate and GBP 28,687.50 tax amount.", "Compare the expected net GBP 162,562.50 with the custodian's GBP 160,562.50 payment.", "Contact the synthetic custodian about the remaining GBP 2,000 shortfall."] },
-    tasks: [task("task-hbr-1", "evt-harbor-break", "CA-2026-0804-HB", "Investigate post-tax payment shortfall", "Aisha Mehta", "Today · 14:00 BST", "High", "Reconciliation", "Expected net GBP 162,562.50 after GBP 28,687.50 withholding; actual GBP 160,562.50. Investigate the remaining GBP 2,000 shortfall.", "Open", "", "CA-CONTROL-007")],
+    tasks: [task("task-hbr-1", "evt-harbor-break", "CA-2026-0804-HB", "Investigate post-tax payment shortfall", "Rohan Iyer", "Today · 14:00 BST", "High", "Reconciliation", "Expected net GBP 162,562.50 after GBP 28,687.50 withholding; actual GBP 160,562.50. Investigate the remaining GBP 2,000 shortfall.", "Open", "", "CA-CONTROL-007")],
     audit: [{ id: "audit-hbr-1", eventId: "evt-harbor-break", action: "Settlement break identified", actor: "System", actorType: "system", timestamp: seedTimestamp(seedTimeline.harbor.audit, "10:00:00"), detail: "Under-settlement of GBP 2,000 detected; exception task generated.", previousValue: "Awaiting settlement", newValue: "Break identified", reason: "Actual cash below expected", evidenceId: "SET-HBR-01", workflowStatus: "Break identified" }],
   }),
 ];
@@ -731,7 +775,7 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
     ],
     instruction: { status: "DRAFT", destination: "Synthetic Euroclear gateway", reference: "DRAFT-VRN-0821", generatedAt: "", content: "DRAFT ONLY - generated after independent reviewer approval.", simulated: false, approvalActor: "" },
     reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Not due", classification: "Not due", note: "Settlement follows an approved election.", expectedCash: 0, actualCash: 0, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "EUR", actualCurrency: "EUR", expectedSettlementDate: isoDate(seedTimeline.rights.settlement), actualSettlementDate: "", expectedAccount: "Multiple accounts", actualAccount: "", investigationSteps: [] },
-    tasks: [task("task-vrn-1", eventId, "CA-2026-0821-VR", "Validate notice terms", "Aisha Mehta", "Today · 12:00 CEST", "High", "Term validation", "Review all extracted terms against the uploaded notice.", "Open", "", "CA-CONTROL-001")],
+    tasks: [task("task-vrn-1", eventId, "CA-2026-0821-VR", "Check notice terms", "Rohan Iyer", "Today · 12:00 CEST", "High", "Term check", "Review all extracted terms against the uploaded notice.", "Open", "", "CA-CONTROL-001")],
     audit: [audit(eventId, "Notice uploaded", `${documentName} accepted as a synthetic notice; deterministic extraction prepared for analyst review.`, actor.name, "Received", { evidenceId: "DOC-VRN-01", actorId: actor.id, actorRole: actor.role })],
   });
 }
@@ -739,7 +783,7 @@ function heroRightsEvent(documentName: string, source: string, actor: WorkflowAc
 export type WorkflowActor = {
   id: string;
   name: string;
-  role: "Operations Analyst" | "Reviewer" | "Operations Manager" | "Fund Manager" | "Compliance";
+  role: "Fund Manager" | "Compliance";
 };
 
 export function appendAudit(event: EventData, action: string, detail: string, actor: WorkflowActor | string = "System", extras: Record<string, string> = {}): void {
@@ -810,7 +854,7 @@ export function refreshValidation(event: EventData): void {
 }
 
 export function applyTermUpdates(event: EventData, updates: any[], actor: any, reason: string): void {
-  if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can validate or correct extracted terms.");
+  if (actor.role !== "Fund Manager") throw new Error("Only the Fund Manager can update a corporate action.");
   for (const update of updates) {
     const current = event.terms?.find((candidate: any) => candidate.key === update.key);
     if (!current) throw new Error(`Unknown extracted term: ${update.key}`);
@@ -847,7 +891,7 @@ function eligiblePositions(event: EventData): any[] {
 }
 
 export function calculateEventImpacts(event: EventData, actor: any): void {
-  if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can run deterministic calculations.");
+  if (actor.role !== "Fund Manager") throw new Error("Only the Fund Manager can refresh a corporate action.");
   if (event.schemeImpacts?.some((impact: any) => impact.electionDecision)) throw new Error("Calculation cannot be re-run after elections are submitted. Return the event for analyst review first.");
   if (["Approved", "Awaiting settlement", "Reconciled", "Break identified", "Closed"].includes(event.status)) throw new Error(`Calculation cannot be re-run while the event is ${event.status}.`);
   refreshValidation(event);
@@ -991,7 +1035,7 @@ export function calculateEventImpacts(event: EventData, actor: any): void {
 }
 
 export function recordElection(event: EventData, body: any, actor: any): void {
-  if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can prepare an election.");
+  if (actor.role !== "Fund Manager") throw new Error("Only the Fund Manager can submit a decision.");
   if (event.processingType === "Mandatory") throw new Error("Mandatory events do not have an election workflow.");
   if (!["Election required", "Awaiting approval"].includes(event.status)) throw new Error(`Election cannot be saved while the event is ${event.status}.`);
   const impact = event.schemeImpacts?.find((candidate: any) => candidate.id === body.impactId);
@@ -1015,7 +1059,7 @@ export function recordElection(event: EventData, body: any, actor: any): void {
 }
 
 export function approveControlledEvent(event: EventData, approved: boolean, note: string, actor: any): void {
-  if (actor.role !== "Reviewer") throw new Error("Only a Reviewer can approve or return controlled actions.");
+  if (actor.role !== "Compliance") throw new Error("Only Compliance can approve or return a decision.");
   if (event.processingType !== "Mandatory" && event.status !== "Awaiting approval") throw new Error(`Approval is blocked while the event is ${event.status}.`);
   if (approved) {
     const makerActions = new Set(["Election submitted", "Extracted term corrected", "Extracted term validated"]);
@@ -1033,7 +1077,7 @@ export function approveControlledEvent(event: EventData, approved: boolean, note
 }
 
 export function simulateInstruction(event: EventData, status: string, actor: any): void {
-  if (actor.role !== "Operations Analyst") throw new Error("Only an Operations Analyst can prepare a simulated instruction.");
+  if (actor.role !== "Fund Manager") throw new Error("Only the Fund Manager can prepare a simulated instruction.");
   if (event.processingType === "Mandatory") throw new Error("Mandatory events do not require an outbound instruction; proceed directly to settlement monitoring.");
   const canIssue = event.status === "Approved";
   if (!canIssue) throw new Error(`Instruction is blocked while the event is ${event.status}. Approval and calculation controls must complete first.`);
@@ -1054,7 +1098,7 @@ export function simulateInstruction(event: EventData, status: string, actor: any
 }
 
 export function reconcileEvent(event: EventData, body: any, actor: any): void {
-  if (!["Operations Analyst", "Operations Manager"].includes(actor.role)) throw new Error("Only Operations Analysts or Managers can record settlement results.");
+  if (actor.role !== "Fund Manager") throw new Error("Only the Fund Manager can record settlement results.");
   if (!["Awaiting settlement", "Break identified"].includes(event.status)) throw new Error(`Settlement reconciliation is blocked while the event is ${event.status}. The case must be ready for settlement first.`);
   const recon = event.reconciliation;
   const actualCash = body.actual;
@@ -1095,7 +1139,7 @@ export function reconcileEvent(event: EventData, body: any, actor: any): void {
   } else {
     event.status = "Break identified";
     const exists = event.tasks?.some((current: any) => current.category === "Reconciliation" && current.status === "Open");
-    if (!exists) event.tasks.push(task(`task-${event.id}-break`, event.id, event.reference, "Investigate settlement difference", "Aisha Mehta", "Today · 16:00", "High", "Reconciliation", `${classification}: expected and actual settlement results differ.`, "Open", "", "CA-CONTROL-007"));
+    if (!exists) event.tasks.push(task(`task-${event.id}-break`, event.id, event.reference, "Investigate settlement difference", "Rohan Iyer", "Today · 16:00", "High", "Reconciliation", `${classification}: expected and actual settlement results differ.`, "Open", "", "CA-CONTROL-007"));
   }
   event.settlementStage = event.status;
   appendAudit(event, "Settlement reconciled", body.note, actor, { previousValue: "Awaiting settlement", newValue: event.status, reason: classification });

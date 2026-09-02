@@ -32,11 +32,15 @@ function rightsFixture(): EventData {
     settlementStage: "Validated",
     marketDeadline: "30 Aug 2026 · 17:30 CEST",
     internalDeadline: "30 Aug 2026 · 14:00 CEST",
+    marketDeadlineAt: "2026-08-30T15:30:00.000Z",
+    internalDeadlineAt: "2026-08-30T12:00:00.000Z",
     affectedAccounts: 0,
     amount: 0,
     currency: "EUR",
     receivedAt: "2026-08-26T08:00:00.000Z",
     source: "Manual upload",
+    sourceRecords: [],
+    sourceAgreement: "The test sources agree.",
     schemeImpacts: [],
     notice: {
       documentName: "test-rights-notice.pdf",
@@ -110,8 +114,8 @@ before(async () => {
 
   assert.ok(address && typeof address !== "string");
   baseUrl = `http://127.0.0.1:${address.port}/api`;
-  analystSession = await signIn("USR-001");
-  reviewerSession = await signIn("USR-002");
+  analystSession = await signIn("USR-004");
+  reviewerSession = await signIn("USR-005");
 });
 
 beforeEach(resetFixture);
@@ -136,7 +140,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     const unauthenticated = await request(`/events/${eventId}/calculate`, {
       method: "POST",
       body: JSON.stringify({}),
-    });
+    }, reviewerSession);
     assert.equal(unauthenticated.status, 403);
 
     const calculated = await request(`/events/${eventId}/calculate`, {
@@ -188,16 +192,16 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       body: JSON.stringify({
         approved: true,
         note: "Role in the payload must be ignored.",
-        actorId: "USR-002",
-        actorRole: "Reviewer",
+        actorId: "USR-005",
+        actorRole: "Compliance",
       }),
     }, analystSession);
     assert.equal(spoofedReviewer.status, 403);
 
-    const aisha = demoUsers.find((user) => user.id === "USR-001");
-    assert.ok(aisha);
-    const originalRole = aisha.role;
-    aisha.role = "Reviewer";
+    const rohan = demoUsers.find((user) => user.id === "USR-004");
+    assert.ok(rohan);
+    const originalRole = rohan.role;
+    rohan.role = "Compliance";
     try {
       const selfApproval = await request(`/events/${eventId}/approval`, {
         method: "POST",
@@ -206,7 +210,7 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       assert.equal(selfApproval.status, 409);
       assert.match(selfApproval.body.error, /Maker-checker control failed/);
     } finally {
-      aisha.role = originalRole;
+      rohan.role = originalRole;
     }
 
     const approved = await request(`/events/${eventId}/approval`, {
@@ -215,9 +219,9 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     }, reviewerSession);
     assert.equal(approved.status, 200);
     assert.equal(approved.body.status, "Approved");
-    assert.equal(approved.body.audit[0].actor, "Daniel Reed");
-    assert.equal(approved.body.audit[0].actorId, "USR-002");
-    assert.equal(approved.body.audit[0].actorRole, "Reviewer");
+    assert.equal(approved.body.audit[0].actor, "Nisha Kapoor");
+    assert.equal(approved.body.audit[0].actorId, "USR-005");
+    assert.equal(approved.body.audit[0].actorRole, "Compliance");
   });
 
   test("records server-resolved identity on term and intake audit entries", async () => {
@@ -226,9 +230,9 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
       body: JSON.stringify({ terms: [{ key: "subscriptionPrice", value: "EUR 8.50" }] }),
     }, analystSession);
     assert.equal(updated.status, 200, JSON.stringify(updated.body));
-    assert.equal(updated.body.audit[0].actor, "Aisha Mehta");
-    assert.equal(updated.body.audit[0].actorId, "USR-001");
-    assert.equal(updated.body.audit[0].actorRole, "Operations Analyst");
+    assert.equal(updated.body.audit[0].actor, "Rohan Iyer");
+    assert.equal(updated.body.audit[0].actorId, "USR-004");
+    assert.equal(updated.body.audit[0].actorRole, "Fund Manager");
 
     const intake = await request("/intake", {
       method: "POST",
@@ -236,9 +240,9 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     }, analystSession);
     assert.equal(intake.status, 201);
     createdEventIds.add(intake.body.id);
-    assert.equal(intake.body.audit[0].actor, "Aisha Mehta");
-    assert.equal(intake.body.audit[0].actorId, "USR-001");
-    assert.equal(intake.body.audit[0].actorRole, "Operations Analyst");
+    assert.equal(intake.body.audit[0].actor, "Rohan Iyer");
+    assert.equal(intake.body.audit[0].actorId, "USR-004");
+    assert.equal(intake.body.audit[0].actorRole, "Fund Manager");
 
     const invalidSample = await request("/intake", {
       method: "POST",

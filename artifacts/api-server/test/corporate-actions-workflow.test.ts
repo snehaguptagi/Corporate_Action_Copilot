@@ -8,8 +8,8 @@ import {
   recordElection,
 } from "../src/lib/corporate-actions-v2.js";
 
-const analyst = { id: "USR-001", name: "Aisha Mehta", role: "Operations Analyst" };
-const reviewer = { id: "USR-002", name: "Daniel Reed", role: "Reviewer" };
+const analyst = { id: "USR-004", name: "Rohan Iyer", role: "Fund Manager" };
+const reviewer = { id: "USR-005", name: "Nisha Kapoor", role: "Compliance" };
 
 function rightsEvent() {
   return {
@@ -149,7 +149,7 @@ test("election prevents quantity above entitlement and requires an independent r
   assert.equal(event.reconciliation.expectedSecurityQuantity, 20000);
   assert.equal(event.audit[0].actorId, analyst.id);
   assert.equal(event.audit[0].actorRole, analyst.role);
-  const samePersonAsReviewer = { ...analyst, role: "Reviewer" as const };
+  const samePersonAsReviewer = { ...analyst, role: "Compliance" as const };
   assert.throws(() => approveControlledEvent(event, true, "Self approval", samePersonAsReviewer), /Maker-checker control failed/);
   approveControlledEvent(event, true, "Independent check complete", reviewer);
   assert.equal(event.status, "Approved");
@@ -161,7 +161,7 @@ test("a term editor cannot approve the same event under a checker role", () => {
   const event = rightsEvent();
   applyTermUpdates(event, [{ key: "subscriptionPrice", value: "EUR 8.50" }], analyst, "");
   event.status = "Awaiting approval";
-  const samePersonAsReviewer = { ...analyst, role: "Reviewer" as const };
+  const samePersonAsReviewer = { ...analyst, role: "Compliance" as const };
   assert.throws(() => approveControlledEvent(event, true, "Self approval after term validation", samePersonAsReviewer), /Maker-checker control failed/);
 });
 

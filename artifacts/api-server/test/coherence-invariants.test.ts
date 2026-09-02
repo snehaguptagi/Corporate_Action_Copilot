@@ -17,12 +17,24 @@ const previousTradingDay = (date: Date) => {
 test("active India seed deadlines are future and audit history is past", () => {
   const now = Date.now();
   for (const event of getSeededEventSnapshot()) {
-    for (const deadline of [event.internalDeadline, event.marketDeadline]) {
-      const timestamp = new Date(deadline.replace("·", " ").replace(/\s+IST$/, ""));
-      assert.ok(timestamp.getTime() > now, `${event.id} deadline must be future`);
+    for (const deadline of [event.internalDeadlineAt, event.marketDeadlineAt]) {
+      const timestamp = new Date(deadline);
+      assert.ok(timestamp.getTime() - now >= 24 * 60 * 60 * 1000, `${event.id} deadline must be at least 24 hours away`);
     }
     for (const entry of event.audit) assert.ok(new Date(entry.timestamp).getTime() < now, `${event.id} audit must be past`);
   }
+});
+
+test("seeded events include six source channels and one explicit disagreement", () => {
+  const events = getSeededEventSnapshot();
+  for (const event of events) {
+    assert.equal(event.sourceRecords.length, 6);
+    assert.equal(event.sourceRecords.find((source: any) => source.primary)?.provider, "SBI-SG");
+    assert.equal(event.sourceRecords.find((source: any) => source.primary)?.messageType, "MT564");
+  }
+  const disagreement = events.find((event) => event.id === "evt-ind-dividend-review");
+  assert.match(disagreement.sourceAgreement, /Refinitiv/);
+  assert.match(disagreement.sourceAgreement, /NSE filing/);
 });
 
 test("Arka calendar derives T+1 ex-date and ordered deadlines", () => {

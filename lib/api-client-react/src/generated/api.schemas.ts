@@ -288,17 +288,6 @@ export interface DashboardSchemeImpact {
   electionDecision?: DashboardSchemeImpactElectionDecision;
 }
 
-export type EventSummarySource = typeof EventSummarySource[keyof typeof EventSummarySource];
-
-
-export const EventSummarySource = {
-  NSE_corporate_filing: 'NSE corporate filing',
-  BSE_corporate_filing: 'BSE corporate filing',
-  RTA_notice: 'RTA notice',
-  'NSDL/CDSL_corporate_action_file': 'NSDL/CDSL corporate action file',
-  Manual_upload: 'Manual upload',
-} as const;
-
 export type EventSummaryCashDirection = typeof EventSummaryCashDirection[keyof typeof EventSummaryCashDirection];
 
 
@@ -306,6 +295,18 @@ export const EventSummaryCashDirection = {
   Receivable: 'Receivable',
   Payable: 'Payable',
 } as const;
+
+export type EventSourceRecordAssertedFields = {[key: string]: string};
+
+export interface EventSourceRecord {
+  id: string;
+  channel: string;
+  provider: string;
+  messageType: string;
+  receivedAt: string;
+  assertedFields: EventSourceRecordAssertedFields;
+  primary: boolean;
+}
 
 export interface EventSummary {
   id: string;
@@ -317,11 +318,15 @@ export interface EventSummary {
   status: string;
   marketDeadline: string;
   internalDeadline: string;
+  marketDeadlineAt: string;
+  internalDeadlineAt: string;
   affectedAccounts: number;
   amount: number;
   currency: string;
   receivedAt: string;
-  source: EventSummarySource;
+  source: string;
+  sourceRecords: EventSourceRecord[];
+  sourceAgreement: string;
   schemeImpacts: DashboardSchemeImpact[];
   /** @nullable */
   materialityPaise: number | null;
@@ -330,6 +335,8 @@ export interface EventSummary {
   /** @nullable */
   attention: string | null;
   cashDirection?: EventSummaryCashDirection;
+  referencePrice?: number;
+  discountPercentage?: number;
   isHero?: boolean;
   noticeReference?: string;
   settlementStage?: string;
@@ -528,10 +535,18 @@ export interface SignInInput {
   actorId: string;
 }
 
+export type OperationalActorRole = typeof OperationalActorRole[keyof typeof OperationalActorRole];
+
+
+export const OperationalActorRole = {
+  Fund_Manager: 'Fund Manager',
+  Compliance: 'Compliance',
+} as const;
+
 export interface OperationalActor {
   id: string;
   name: string;
-  role: string;
+  role: OperationalActorRole;
 }
 
 export type IntakeInputSampleId = typeof IntakeInputSampleId[keyof typeof IntakeInputSampleId];

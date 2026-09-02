@@ -70,6 +70,25 @@ import { getAuthenticatedActor, isPocEnvironment, requireActor, signInDemoActor 
 
 const router: IRouter = Router();
 
+function withCurrentResponseFields(event: any) {
+  const fallbackInstant = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+  const validInstant = (value: unknown, days: number) =>
+    typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : fallbackInstant(days);
+  event.marketDeadlineAt = validInstant(event.marketDeadlineAt, 15);
+  event.internalDeadlineAt = validInstant(event.internalDeadlineAt, 14);
+  event.sourceRecords ??= [{
+    id: `${event.id}-manual`,
+    channel: "Manual upload",
+    provider: "Arka Mutual Fund",
+    messageType: "PDF",
+    receivedAt: event.receivedAt,
+    assertedFields: {},
+    primary: true,
+  }];
+  event.sourceAgreement ??= "No second source has been received yet.";
+  return event;
+}
+
 const parse = <T>(schema: { safeParse: (value: unknown) => { success: boolean; data?: T; error?: { message: string } } }, value: unknown, res: any): T | null => {
   const parsed = schema.safeParse(value);
   if (!parsed.success) {
@@ -85,7 +104,7 @@ async function findEvent(eventId: string, res: any) {
     res.status(404).json({ error: "Corporate action event not found" });
     return null;
   }
-  return event;
+  return withCurrentResponseFields(event);
 }
 
 const workflowError = (res: any, error: unknown) => {
@@ -131,13 +150,13 @@ router.get("/events", async (req, res): Promise<void> => {
       && (!query.eventType || event.eventType === query.eventType)
       && (!search || haystack.includes(search));
   });
-  res.json(ListEventsResponse.parse(sortCorporateActionEvents(events).map(toSummary)));
+  res.json(ListEventsResponse.parse(sortCorporateActionEvents(events.map(withCurrentResponseFields)).map(toSummary)));
 });
 
 router.post("/intake", async (req, res): Promise<void> => {
   const body = parse(CreateIntakeBody, req.body, res);
   if (!body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   try {
     const event = await createIntakeEvent(body.sampleId, body.fileName, body.source, actor);
@@ -150,7 +169,7 @@ router.post("/intake", async (req, res): Promise<void> => {
 router.post("/intake/drafts", async (req, res): Promise<void> => {
   const body = parse(CreateIntakeDraftBody, req.body, res);
   if (!body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   try {
     const draft = await createIntakeDraft(body, actor);
@@ -176,7 +195,7 @@ router.get("/intake/drafts/:draftId", async (req, res): Promise<void> => {
 router.post("/intake/drafts/:draftId/extract", async (req, res): Promise<void> => {
   const params = parse(ExtractIntakeDraftParams, req.params, res);
   if (!params) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   try {
     const draft = await extractIntakeDraft(params.draftId, actor);
@@ -190,7 +209,7 @@ router.post("/intake/drafts/:draftId/validate", async (req, res): Promise<void> 
   const params = parse(ValidateIntakeDraftParams, req.params, res);
   const body = parse(ValidateIntakeDraftBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   try {
     const draft = await validateIntakeDraft(params.draftId, body.terms, actor);
@@ -203,7 +222,7 @@ router.post("/intake/drafts/:draftId/validate", async (req, res): Promise<void> 
 router.post("/intake/drafts/:draftId/create-case", async (req, res): Promise<void> => {
   const params = parse(CreateCaseFromIntakeDraftParams, req.params, res);
   if (!params) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   try {
     const event = await createCaseFromIntakeDraft(params.draftId, actor);
@@ -224,7 +243,7 @@ router.patch("/events/:eventId", async (req, res): Promise<void> => {
   const params = parse(UpdateEventParams, req.params, res);
   const body = parse(UpdateEventBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
@@ -241,7 +260,7 @@ router.post("/events/:eventId/calculate", async (req, res): Promise<void> => {
   const params = parse(CalculateEventParams, req.params, res);
   const body = parse(CalculateEventBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
@@ -258,7 +277,7 @@ router.post("/events/:eventId/election", async (req, res): Promise<void> => {
   const params = parse(SaveElectionParams, req.params, res);
   const body = parse(SaveElectionBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
@@ -275,7 +294,7 @@ router.post("/events/:eventId/approval", async (req, res): Promise<void> => {
   const params = parse(ApproveEventParams, req.params, res);
   const body = parse(ApproveEventBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Reviewer"]);
+  const actor = requireActor(req, res, ["Compliance"]);
   if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
@@ -304,7 +323,7 @@ router.post("/events/:eventId/instruction", async (req, res): Promise<void> => {
   const params = parse(UpdateInstructionParams, req.params, res);
   const body = parse(UpdateInstructionBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Operations Analyst"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;
@@ -333,7 +352,7 @@ router.post("/events/:eventId/reconciliation", async (req, res): Promise<void> =
   const params = parse(SaveReconciliationParams, req.params, res);
   const body = parse(SaveReconciliationBody, req.body, res);
   if (!params || !body) return;
-  const actor = requireActor(req, res, ["Operations Analyst", "Operations Manager"]);
+  const actor = requireActor(req, res, ["Fund Manager"]);
   if (!actor) return;
   const event = await findEvent(params.eventId, res);
   if (!event) return;

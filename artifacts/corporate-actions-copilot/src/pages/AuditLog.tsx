@@ -2,6 +2,7 @@ import { useListAudit } from "@workspace/api-client-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { formatIstDate } from "@/lib/date";
 
 export default function AuditLog() {
   const { data: audits, isLoading } = useListAudit();
@@ -9,9 +10,9 @@ export default function AuditLog() {
   if (isLoading) return <div className="p-8">Loading audit trail...</div>;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-50/50">
       <div className="border-b bg-white px-8 py-6 shrink-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Organisation Audit Trail</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Audit trail</h1>
         <p className="text-sm text-slate-500 mt-1">Immutable record of all operational decisions and actions.</p>
       </div>
 
@@ -41,14 +42,7 @@ export default function AuditLog() {
                 audits?.map(entry => (
                   <TableRow key={entry.id}>
                     <TableCell className="text-sm font-mono text-slate-600">
-                      {new Date(entry.timestamp).toLocaleString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                      })}
+                      {formatIstDate(entry.timestamp)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -1,0 +1,142 @@
+SCOPE: who the user is, what a corporate action IS, and how it arrived. Do not
+touch the portfolio or the analysis sections — those are the next two steps.
+
+PRINCIPLE FOR THIS WHOLE PRODUCT: fewer fields, each one insightful. Do not add
+information. Replace weak information with strong information. If a field does
+not change what the fund manager does, delete it.
+
+═══ A. ONE USER ═══
+This product is for a FUND MANAGER. Nobody else.
+
+Delete these personas entirely, and every screen, section and vocabulary that
+exists to serve them:
+  Aisha Mehta   · Operations Analyst
+  Daniel Reed   · Reviewer
+  Maya Shah     · Operations Manager
+
+Keep:
+  Rohan Iyer    · Fund Manager   — the user. Default and only viewpoint.
+  Nisha Kapoor  · Compliance     — an APPROVER, not a viewpoint. Compliance
+                                   exists so a decision can be independently
+                                   signed. It is not a way to browse the product.
+
+Remove the demo-operator role switcher from the main surface. Delete the
+"Operations detail" concept, analyst term-validation UI, and ops vocabulary
+("case", "workbench", "operational", "workflow status"). The fund manager
+receives confirmed terms; they do not validate documents.
+
+═══ B. "WHAT IT IS" — THREE SENTENCES, NOT A FIELD GRID ═══
+Today this section shows ORDINARY ISIN, TICKER, CURRENCY, AMOUNT and a calendar
+— and never shows the ratio or the price, which ARE the corporate action.
+
+Replace the whole grid with three plain statements:
+
+1. What the company is doing, in words, numbers inline:
+   "Bharat Renewables is offering 1 new share for every 5 you hold, at ₹85 —
+    a 29.2% discount to the ₹120 close."
+
+2. What the clock says:
+   "14 days left. Decide by 15 Sep 2026, 15:00 IST."
+
+3. Where it came from and whether the sources agree:
+   "Received 31 Aug, 14:15 from your custodian (SBI-SG, MT564).
+    Confirmed by the NSE filing and the NSDL file. All three agree."
+
+Put ISIN, ticker and reference in one small identifier line beneath. DELETE the
+AMOUNT field from this section — money belongs in the impact section, and here
+it is currently wrong anyway (see E).
+
+Write sentence 1 per event type, and say plainly when nothing is required:
+  dividend  "Aarav Industries is paying ₹4.25 per share. Record date 10 Sep.
+             Nothing to decide."
+  split     "Deccan Grid is splitting each share into 5. Your 80,000 shares
+             become 4,00,000. Nothing to decide."
+  bonus     "Narmada Logistics is issuing 1 bonus share for every 10 held.
+             Nothing to decide."
+  buyback   "... is buying back up to 20% at ₹850. Decide by ..."
+  rights    as above
+  merger    "... is merging into ...; you receive N shares plus ₹X per share."
+
+"Nothing to decide" is the most valuable sentence on the page for a mandatory
+event. Say it, do not leave the reader to infer it.
+
+═══ C. FIX THE DATES ═══
+1. Every event page currently renders "MARKET DEADLINE: Invalid Date" and
+   "INTERNAL DEADLINE: Invalid Date". The frontend is trying to parse the
+   display string "16 Sep 2026 · 15:30 IST" as a Date. Store every deadline as
+   an ISO instant AND a display string. Render the display string; compute from
+   the instant. Never parse the display string.
+2. Two formats appear on one page: "31/08/2026" and "16 Sep 2026 · 15:30 IST".
+   Use one everywhere: "31 Aug 2026 · 14:15 IST".
+3. evt-ind-dividend-break has deadlineOffset 1, so its internal deadline lands
+   today at 15:00 IST and is in the PAST for any session after 3pm — this is
+   currently failing the coherence test. No event may have an internal deadline
+   less than 2 days out. Add a test that fails if any seeded deadline is within
+   24 hours of now.
+
+═══ D. WHERE CORPORATE ACTIONS COME FROM ═══
+For an Indian mutual fund the chain is:
+  company -> NSE/BSE (SEBI LODR Reg 30/42; the exchange sets ex-date)
+  RTA (KFin / Link Intime) runs the event for the issuer
+  NSDL / CDSL build the authoritative ENTITLEMENT file from record-date positions
+  CUSTODIAN -> the fund   *** this is where it enters an AMC ***
+               SEBI requires every scheme to appoint one: SBI-SG, Deutsche Bank,
+               HSBC, Standard Chartered, Citi, ICICI, Stock Holding Corp
+  data vendors (Refinitiv / Bloomberg) as early warning and cross-check
+
+The custodian notification is a SWIFT MT564. The cycle is
+  MT564 notification -> MT565 your instruction -> MT567 status -> MT566 confirmation.
+
+Model this:
+1. A corporate action has MANY source records, not one. Each carries: channel,
+   received timestamp, and the field values that source asserted.
+2. Seed these six channels, with the custodian as the primary arrival:
+     Custodian · SBI-SG            MT564 SWIFT feed
+     NSDL corporate action file    daily 18:00 IST
+     NSE corporate announcements   live
+     BSE corporate announcements   live
+     Market data · Refinitiv       live
+     RTA notices · KFin            email
+3. Authority is per FIELD, not per source:
+     entitlement quantity                  -> depository (NSDL/CDSL)
+     ratio, record date, ex-date, deadlines -> exchange filing
+     cash amounts                          -> custodian MT564/MT566
+     price                                 -> vendor, advisory only
+4. Seed ONE event where sources genuinely disagree — the vendor feed carries a
+   record date one day off the exchange filing — and show it on that event as:
+     "3 of 4 sources agree. Refinitiv shows a record date of 11 Sep; the NSE
+      filing says 10 Sep and wins."
+   That single sentence is the insight. Do not build a comparison table.
+
+Manual upload stays as a small exception path ("Add manually"), not a page and
+not a wizard. Delete the "Choose the source type" selector, the "Website URL"
+source, the "Capture source evidence" step and the "Evidence label" field.
+
+Do NOT add a Sources page to the nav. Put a small feed-health dot in the shell
+that turns amber when a feed is stale.
+
+═══ E. FIX THE UNIT LIE ═══
+The Deccan Grid split page shows "AMOUNT ₹0.04 cr". That is ₹4,00,000, which is
+80,000 × 5 — the post-split SHARE QUANTITY rendered as rupees. Two lines below,
+the table correctly says "Expected Cash: -" and "Direction: Neutral".
+A quantity is never a currency. Audit every money field for the same mistake;
+the bonus issue shows "₹5,000" for 5,000 shares on the dashboard.
+
+═══ DO NOT ═══
+- Do not add fields. This step should REDUCE what is on screen.
+- Do not touch the scheme impact table, constraints, or the decision section.
+- Do not build real SWIFT connectivity — seed MT564-shaped synthetic fixtures.
+- Do not add tabs.
+
+Declare new fields in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- no "Invalid Date" anywhere;
+- one date format across the product;
+- no seeded deadline within 24 hours of now;
+- three personas removed; Compliance cannot browse, only approve;
+- the split page shows no rupee amount anywhere;
+- every event names its arrival channel and time;
+- the disagreement event states which source wins and why, in one sentence.

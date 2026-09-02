@@ -262,6 +262,8 @@ export const GetDashboardResponse = zod.object({
  */
 export const GetAnalysisResponse = zod.object({
   "generatedAt": zod.coerce.date(),
+  "purpose": zod.string(),
+  "conclusion": zod.string(),
   "schemes": zod.array(zod.object({
   "schemeId": zod.string(),
   "schemeName": zod.string(),
@@ -307,7 +309,18 @@ export const GetAnalysisResponse = zod.object({
   "deadlineOutcome": zod.string(),
   "reconciliationStatus": zod.string()
 }))
-})
+}),
+  "decisions": zod.array(zod.object({
+  "eventId": zod.string(),
+  "eventLabel": zod.string(),
+  "schemeName": zod.string(),
+  "decision": zod.string(),
+  "decidedBy": zod.string(),
+  "decidedAt": zod.string(),
+  "approvedBy": zod.string(),
+  "valueAmount": zod.number(),
+  "status": zod.string()
+}))
 })
 
 
@@ -1244,6 +1257,22 @@ export const CreateIntakeResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -1682,6 +1711,22 @@ export const CreateCaseFromIntakeDraftResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -1934,6 +1979,22 @@ export const GetEventResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -2175,6 +2236,22 @@ export const UpdateEventResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -2411,6 +2488,22 @@ export const CalculateEventResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -2650,6 +2743,22 @@ export const SaveElectionResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -2887,6 +2996,22 @@ export const ApproveEventResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -3123,6 +3248,22 @@ export const UpdateInstructionResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -3364,6 +3505,22 @@ export const SaveReconciliationResponse = zod.object({
   "market": zod.string(),
   "status": zod.string(),
   "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
 }).optional()
 }))
 
@@ -3411,6 +3568,260 @@ export const ResolveTaskResponse = zod.object({
   "escalationPath": zod.string().optional(),
   "eventReference": zod.string().optional()
 })
+
+
+/**
+ * @summary Run Stage 2 AI judgement over the Stage 1 deterministic output
+ */
+export const GenerateJudgementParams = zod.object({
+  "eventId": zod.coerce.string()
+})
+
+export const GenerateJudgementResponse = zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "issuer": zod.string(),
+  "security": zod.string(),
+  "eventType": zod.string(),
+  "processingType": zod.string(),
+  "status": zod.string(),
+  "marketDeadline": zod.string(),
+  "internalDeadline": zod.string(),
+  "marketDeadlineAt": zod.coerce.date(),
+  "internalDeadlineAt": zod.coerce.date(),
+  "affectedAccounts": zod.number(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "receivedAt": zod.string(),
+  "source": zod.string(),
+  "sourceRecords": zod.array(zod.object({
+  "id": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "messageType": zod.string(),
+  "receivedAt": zod.coerce.date(),
+  "assertedFields": zod.record(zod.string(), zod.string()),
+  "primary": zod.boolean()
+})),
+  "sourceAgreement": zod.string(),
+  "schemeImpacts": zod.array(zod.object({
+  "id": zod.string(),
+  "schemeId": zod.string(),
+  "schemeName": zod.string(),
+  "affected": zod.boolean(),
+  "eligibleQuantity": zod.number(),
+  "direction": zod.enum(['Receivable', 'Funding', 'Neutral']),
+  "cashDirection": zod.string().optional(),
+  "cashAmount": zod.number(),
+  "quantityResult": zod.number().nullable(),
+  "navImpactPaise": zod.number().nullable(),
+  "navImpactTreatment": zod.string(),
+  "flag": zod.string().nullable(),
+  "account": zod.string().optional(),
+  "formula": zod.string().optional(),
+  "expected": zod.number().optional(),
+  "expectedCash": zod.number().optional(),
+  "grossCash": zod.number().optional(),
+  "withholdingRate": zod.number().optional(),
+  "withholdingAmount": zod.number().optional(),
+  "netCash": zod.number().optional(),
+  "expectedSecurityQuantity": zod.number().optional(),
+  "securityMovement": zod.string().optional(),
+  "positionDate": zod.string().optional(),
+  "securityId": zod.string().optional(),
+  "eligibilityStatus": zod.string().optional(),
+  "dataQualityWarning": zod.string().optional(),
+  "status": zod.string().optional(),
+  "election": zod.string().nullish(),
+  "approval": zod.string().optional(),
+  "entitlement": zod.number().optional(),
+  "electionDecision": zod.union([zod.record(zod.string(), zod.unknown()),zod.null()]).optional()
+})),
+  "materialityPaise": zod.number().nullable(),
+  "cashImpactAmount": zod.number().nullable(),
+  "attention": zod.string().nullable(),
+  "cashDirection": zod.enum(['Receivable', 'Payable']).optional(),
+  "referencePrice": zod.number().optional(),
+  "discountPercentage": zod.number().optional(),
+  "isHero": zod.boolean().optional(),
+  "noticeReference": zod.string().optional(),
+  "settlementStage": zod.string().optional(),
+  "cashAmount": zod.number().optional(),
+  "cashCurrency": zod.string().optional(),
+  "shareAmount": zod.number().optional(),
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
+}).and(zod.object({
+  "notice": zod.object({
+  "documentName": zod.string(),
+  "source": zod.string(),
+  "receivedAt": zod.string(),
+  "version": zod.string(),
+  "role": zod.string(),
+  "excerpt": zod.string(),
+  "pages": zod.array(zod.object({
+  "page": zod.number(),
+  "text": zod.string()
+})).optional(),
+  "uploadState": zod.string().optional(),
+  "sourceDocumentId": zod.string().optional(),
+  "sourcePath": zod.string().optional(),
+  "sourceUrl": zod.string().optional(),
+  "previewUrl": zod.string().optional(),
+  "extractionMethod": zod.string().optional(),
+  "extractionConfidence": zod.number().optional()
+}),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string(),
+  "page": zod.string(),
+  "evidence": zod.string(),
+  "confidence": zod.number(),
+  "reviewStatus": zod.string(),
+  "sourceType": zod.string().optional(),
+  "manuallyCorrected": zod.boolean().optional(),
+  "oldValue": zod.string().optional(),
+  "correctionReason": zod.string().optional()
+})),
+  "positions": zod.array(zod.object({
+  "id": zod.string(),
+  "fund": zod.string(),
+  "account": zod.string(),
+  "isin": zod.string(),
+  "securityId": zod.string().optional(),
+  "settledQuantity": zod.number().optional(),
+  "unsettledQuantity": zod.number().optional(),
+  "eligibleQuantity": zod.number(),
+  "positionDate": zod.string(),
+  "eligibilityStatus": zod.string(),
+  "dataQualityWarning": zod.string().optional()
+})),
+  "options": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "result": zod.string(),
+  "default": zod.boolean(),
+  "fundingFormula": zod.string().optional()
+})),
+  "instruction": zod.object({
+  "status": zod.string(),
+  "destination": zod.string(),
+  "reference": zod.string(),
+  "generatedAt": zod.string(),
+  "content": zod.string(),
+  "approvalActor": zod.string().optional(),
+  "simulated": zod.boolean().optional()
+}),
+  "reconciliation": zod.object({
+  "expected": zod.number(),
+  "actual": zod.number(),
+  "difference": zod.number(),
+  "tolerance": zod.number(),
+  "status": zod.string(),
+  "note": zod.string(),
+  "expectedCash": zod.number().optional(),
+  "expectedGrossCash": zod.number().optional(),
+  "expectedWithholdingAmount": zod.number().optional(),
+  "expectedNetCash": zod.number().optional(),
+  "actualCash": zod.number().optional(),
+  "expectedSecurityQuantity": zod.number().optional(),
+  "actualSecurityQuantity": zod.number().optional(),
+  "expectedCurrency": zod.string().optional(),
+  "actualCurrency": zod.string().optional(),
+  "expectedSettlementDate": zod.string().optional(),
+  "actualSettlementDate": zod.string().optional(),
+  "expectedAccount": zod.string().optional(),
+  "actualAccount": zod.string().optional(),
+  "classification": zod.string().optional(),
+  "investigationSteps": zod.array(zod.string()).optional()
+}),
+  "tasks": zod.array(zod.object({
+  "id": zod.string(),
+  "eventId": zod.string(),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "priority": zod.string(),
+  "owner": zod.string(),
+  "due": zod.string(),
+  "status": zod.string(),
+  "category": zod.string(),
+  "dependency": zod.string().optional(),
+  "sourceRule": zod.string().optional(),
+  "escalationPath": zod.string().optional(),
+  "eventReference": zod.string().optional()
+})),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "eventId": zod.string(),
+  "action": zod.string(),
+  "actor": zod.string(),
+  "actorId": zod.string().optional(),
+  "actorRole": zod.string().optional(),
+  "timestamp": zod.string(),
+  "detail": zod.string(),
+  "actorType": zod.string().optional(),
+  "previousValue": zod.string().optional(),
+  "newValue": zod.string().optional(),
+  "reason": zod.string().optional(),
+  "evidenceId": zod.string().optional(),
+  "workflowStatus": zod.string().optional()
+})),
+  "validation": zod.object({
+  "missingTerms": zod.array(zod.string()),
+  "isReady": zod.boolean()
+}),
+  "calculation": zod.object({
+  "calculationRunAt": zod.string().optional(),
+  "rounding": zod.string(),
+  "assumptions": zod.string(),
+  "sourceRule": zod.string()
+}),
+  "securityMaster": zod.object({
+  "securityId": zod.string(),
+  "isin": zod.string(),
+  "ticker": zod.string(),
+  "securityName": zod.string(),
+  "issuer": zod.string().optional(),
+  "currency": zod.string(),
+  "market": zod.string(),
+  "status": zod.string(),
+  "aliases": zod.array(zod.string()).optional()
+}).optional(),
+  "provenance": zod.object({
+  "asOf": zod.string(),
+  "channel": zod.string(),
+  "provider": zod.string(),
+  "synthetic": zod.boolean(),
+  "fetchedAt": zod.string().optional(),
+  "extractedAt": zod.string().optional(),
+  "computedAt": zod.string().optional()
+}).optional(),
+  "judgement": zod.object({
+  "status": zod.enum(['ok', 'rejected', 'unavailable']),
+  "summary": zod.string().optional(),
+  "model": zod.string(),
+  "generatedAt": zod.string(),
+  "rejectedReason": zod.string().optional()
+}).optional()
+}))
+
+
+/**
+ * @summary Download the full audit trail as a compliance CSV export
+ */
+export const ExportAuditResponse = zod.unknown()
 
 
 /**

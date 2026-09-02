@@ -154,7 +154,7 @@ export default function EventsList() {
                     const cashTotal = event.schemeImpacts.filter((impact) => impact.affected).reduce((total, impact) => total + impact.cashAmount, 0);
                     return (
                     <TableRow key={event.id} className="group">
-                      <TableCell><div className="font-medium">{event.issuer}</div><div className="text-xs text-slate-500">{event.reference} · {event.eventType} · {event.security}</div>{event.isEarlySighting && <div className="mt-1 text-xs font-semibold text-amber-700">Indicative impact</div>}{!event.id.startsWith("evt-intake-") && <div className="mt-1 text-xs font-semibold text-slate-500">Simulated POC scenario</div>}</TableCell>
+                      <TableCell><div className="font-medium">{event.issuer}</div><div className="text-xs text-slate-500">{event.reference} · {event.eventType} · {event.security}</div>{event.isEarlySighting && <div className="mt-1 text-xs font-semibold text-amber-700">Indicative impact</div>}{event.source === "Public web discovery" ? <div className="mt-1 text-xs font-semibold text-slate-500">Fetched from public web source</div> : <div className="mt-1 text-xs font-semibold text-slate-500">Synthetic record, no live fetch yet</div>}</TableCell>
                       <TableCell className="figure"><strong>{impacted}</strong> of 10</TableCell>
                       <TableCell>
                         <Badge variant="outline">{event.processingType}</Badge>

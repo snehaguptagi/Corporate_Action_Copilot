@@ -2699,6 +2699,154 @@ export const useResolveTask = <TError = ErrorType<unknown>,
       return useMutation(getResolveTaskMutationOptions(options));
     }
 
+export const getGenerateJudgementUrl = (eventId: string,) => {
+
+
+
+
+  return `/api/events/${eventId}/judgement`
+}
+
+/**
+ * @summary Run Stage 2 AI judgement over the Stage 1 deterministic output
+ */
+export const generateJudgement = async (eventId: string, options?: Parameters<typeof customFetch>[1]): Promise<EventDetail> => {
+
+  return customFetch<EventDetail>(getGenerateJudgementUrl(eventId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getGenerateJudgementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateJudgement>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateJudgement>>, TError,{eventId: string}, TContext> => {
+
+const mutationKey = ['generateJudgement'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateJudgement>>, {eventId: string}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  generateJudgement(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateJudgementMutationResult = NonNullable<Awaited<ReturnType<typeof generateJudgement>>>
+
+    export type GenerateJudgementMutationError = ErrorType<void>
+
+    /**
+ * @summary Run Stage 2 AI judgement over the Stage 1 deterministic output
+ */
+export const useGenerateJudgement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateJudgement>>, TError,{eventId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateJudgement>>,
+        TError,
+        {eventId: string},
+        TContext
+      > => {
+      return useMutation(getGenerateJudgementMutationOptions(options));
+    }
+
+export const getExportAuditUrl = () => {
+
+
+
+
+  return `/api/audit/export`
+}
+
+/**
+ * @summary Download the full audit trail as a compliance CSV export
+ */
+export const exportAudit = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportAuditUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAuditQueryKey = () => {
+    return [
+    `/api/audit/export`
+    ] as const;
+    }
+
+
+export const getExportAuditQueryOptions = <TData = Awaited<ReturnType<typeof exportAudit>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAuditQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAudit>>> = ({ signal }) => exportAudit({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAudit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAuditQueryResult = NonNullable<Awaited<ReturnType<typeof exportAudit>>>
+export type ExportAuditQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Download the full audit trail as a compliance CSV export
+ */
+
+export function useExportAudit<TData = Awaited<ReturnType<typeof exportAudit>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAuditQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListAuditUrl = (params?: ListAuditParams,) => {
   const normalizedParams = new URLSearchParams();
 

@@ -5,11 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AnalysisDecision } from './analysisDecision';
 import type { AnalysisHistory } from './analysisHistory';
 import type { AnalysisScheme } from './analysisScheme';
 
 export interface Analysis {
   generatedAt: Date;
+  purpose: string;
+  conclusion: string;
   schemes: AnalysisScheme[];
   history: AnalysisHistory;
+  decisions: AnalysisDecision[];
 }

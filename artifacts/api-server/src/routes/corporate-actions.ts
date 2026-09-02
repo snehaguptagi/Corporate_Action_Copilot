@@ -75,6 +75,8 @@ import {
   validateIntakeDraft,
 } from "../lib/source-intake";
 import { getAuthenticatedActor, isPocEnvironment, requireActor, signInDemoActor } from "../lib/actor-context";
+import { generateJudgement } from "../lib/judgement";
+import { refreshEventFromProvider } from "../lib/market-data-provider";
 
 const router: IRouter = Router();
 
@@ -100,6 +102,29 @@ function withCurrentResponseFields(event: any) {
   event.mergedFromSightingId ??= "";
   event.sourceDisagreements ??= [];
   event.teachingScenario ??= "";
+  const primarySource = (event.sourceRecords ?? []).find((record: any) => record.primary) ?? event.sourceRecords?.[0];
+  // Derived fresh on every response. A completed pipeline run is the only
+  // thing that may claim a fetch; otherwise fetchedAt/extractedAt stay empty
+  // so the UI can say plainly that nothing has been fetched yet.
+  event.provenance = event.pipeline?.fetchedAt
+    ? {
+        asOf: event.pipeline.fetchedAt,
+        channel: event.pipeline.channel ?? "Synthetic",
+        provider: event.pipeline.provider ?? "Unknown provider",
+        synthetic: event.pipeline.synthetic ?? true,
+        fetchedAt: event.pipeline.fetchedAt,
+        extractedAt: event.pipeline.extractedAt ?? "",
+        computedAt: event.calculation?.calculationRunAt ?? "",
+      }
+    : {
+        asOf: primarySource?.receivedAt ?? event.receivedAt,
+        channel: primarySource?.channel ?? event.source ?? "Manual upload",
+        provider: primarySource?.provider ?? "Arka Mutual Fund",
+        synthetic: event.source !== "Public web discovery",
+        fetchedAt: "",
+        extractedAt: "",
+        computedAt: event.calculation?.calculationRunAt ?? "",
+      };
   return event;
 }
 
@@ -496,6 +521,52 @@ router.post("/tasks/:taskId/resolve", async (req, res): Promise<void> => {
   appendAudit(event, "Task resolved", currentTask.title, actor, { previousValue: "Open", newValue: "Resolved" });
   await saveCorporateActionEvent(event);
   res.json(ResolveTaskResponse.parse(currentTask));
+});
+
+router.post("/events/:eventId/judgement", async (req, res): Promise<void> => {
+  const params = parse(GetEventParams, req.params, res);
+  if (!params) return;
+  const actor = requireActor(req, res, ["Fund Manager", "Compliance"]);
+  if (!actor) return;
+  const event = await findEvent(params.eventId, res);
+  if (!event) return;
+  try {
+    await refreshEventFromProvider(event);
+    const desk = await getArkaDesk();
+    const judgement = await generateJudgement(event, desk);
+    event.judgement = judgement;
+    appendAudit(
+      event,
+      "AI judgement generated",
+      judgement.status === "ok"
+        ? `Stage 2 judgement produced by ${judgement.model}. Advisory only; no figure, election, instruction or approval was changed.`
+        : `Stage 2 judgement ${judgement.status}: ${judgement.rejectedReason ?? ""}`,
+      actor,
+      { newValue: judgement.status },
+    );
+    await saveCorporateActionEvent(event);
+    res.json(GetEventResponse.parse(withCurrentResponseFields(event)));
+  } catch (error) {
+    workflowError(res, error);
+  }
+});
+
+const csvCell = (value: unknown): string => {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+router.get("/audit/export", async (req, res): Promise<void> => {
+  const actor = requireActor(req, res);
+  if (!actor) return;
+  const entries = (await getCorporateActionEvents())
+    .flatMap((event) => event.audit ?? [])
+    .sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp));
+  const header = ["timestamp", "eventId", "action", "actor", "actorRole", "detail", "previousValue", "newValue", "reason"];
+  const rows = entries.map((entry: any) => header.map((key) => csvCell(entry[key])).join(","));
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="arka-corporate-actions-audit-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send([header.join(","), ...rows].join("\n"));
 });
 
 router.get("/audit", async (req, res): Promise<void> => {

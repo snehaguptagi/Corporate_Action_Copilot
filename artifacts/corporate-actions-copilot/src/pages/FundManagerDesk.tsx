@@ -4,6 +4,7 @@ import {
   getGetArkaDeskQueryKey,
   useGetEvent,
   useGetArkaDesk,
+  useGenerateJudgement,
   useSaveArkaDeskDecisions,
   useSubmitArkaDesk,
   useSaveElection,
@@ -15,6 +16,8 @@ import {
   AlertTriangle,
   ChevronDown,
   Landmark,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -125,6 +128,12 @@ export default function FundManagerDesk() {
   const saveElection = useSaveElection({
     mutation: { onSuccess: () => { toast({ title: "Election submitted" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
   });
+  const generateJudgement = useGenerateJudgement({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }),
+      onError: (error: any) => toast({ title: error?.message ?? "Judgement run failed", variant: "destructive" }),
+    },
+  });
   const queryClient2 = useQueryClient();
   const saveArka = useSaveArkaDeskDecisions({
     mutation: {
@@ -160,6 +169,7 @@ export default function FundManagerDesk() {
   const showConstraints = !isMandatory && (isRightsHero || constraints.length > 0);
   let sectionNumber = 2;
   const nextSection = () => String(++sectionNumber).padStart(2, "0");
+  const judgementIndex = nextSection();
   const optionsIndex = showOptions ? nextSection() : "";
   const constraintsIndex = showConstraints ? nextSection() : "";
   const decisionIndex = isMandatory ? "" : nextSection();
@@ -237,13 +247,18 @@ export default function FundManagerDesk() {
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 <Landmark className="h-3.5 w-3.5" />
-                {isPocScenario && <Badge variant="outline">Simulated POC scenario</Badge>}
+                {(data.provenance?.synthetic ?? isPocScenario) && <Badge variant="outline">Synthetic data</Badge>}
                 {isPublicWebDiscovery && <Badge variant="warning">Unverified web discovery</Badge>}
               </div>
               <h1 className="text-[28px] font-semibold tracking-tight text-foreground">{data.issuer} {data.eventType.toLowerCase()}</h1>
               <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-foreground">
                 {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}{data.isEarlySighting ? " · Indicative impact" : ""}
               </p>
+              {data.provenance && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  As of <span className="figure-inline">{formatIstDate(data.provenance.asOf)}</span> · Arrived via {data.provenance.channel} ({data.provenance.provider}){data.provenance.synthetic ? (data.provenance.fetchedAt ? " · Synthetic provider fetch, not live market data" : " · Synthetic record, nothing has been fetched yet") : ""}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="border-primary/35 bg-accent-soft text-primary">India · {data.currency} only</Badge>
@@ -285,7 +300,7 @@ export default function FundManagerDesk() {
             </div>
           </Section>
 
-          <Section index="02" title="What it touches" summary={`${affectedSchemes.length} affected scheme${affectedSchemes.length === 1 ? "" : "s"}${totalExpectedCash > 0 ? ` · ${formatInr(totalExpectedCash)} expected` : ""}`}>
+          <Section index="02" title="Stage 1 · Deterministic" summary={`The maths, computed and reproducible, no model call · ${affectedSchemes.length} affected scheme${affectedSchemes.length === 1 ? "" : "s"}${totalExpectedCash > 0 ? ` · ${formatInr(totalExpectedCash)} expected` : ""}`}>
             {affectedSchemes.length > 0 && (
               <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <ImpactStat label="Affected schemes" value={String(affectedSchemes.length)} />
@@ -335,6 +350,51 @@ export default function FundManagerDesk() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </Section>
+
+          <Section
+            index={judgementIndex}
+            title="Stage 2 · AI judgement"
+            summary={data.judgement?.status === "ok" ? `Interpretation by ${data.judgement.model}, generated ${formatIstDate(data.judgement.generatedAt)}` : "Interpretation of the Stage 1 output. Advisory only, cannot change a figure."}
+          >
+            {data.judgement?.status === "ok" && data.judgement.summary ? (
+              <>
+                <p className="max-w-4xl text-sm leading-6 text-foreground">{data.judgement.summary}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+                  <span>Model {data.judgement.model} · Generated <span className="figure-inline">{formatIstDate(data.judgement.generatedAt)}</span> · Reads Stage 1 output only. Every number above is checked against Stage 1 before display, and this text feeds no calculation, election, instruction or approval.</span>
+                  <Button size="sm" variant="outline" onClick={() => generateJudgement.mutate({ eventId })} disabled={generateJudgement.isPending}>
+                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${generateJudgement.isPending ? "animate-spin" : ""}`} />
+                    {generateJudgement.isPending ? "Re-running" : "Refresh"}
+                  </Button>
+                </div>
+              </>
+            ) : data.judgement && data.judgement.status !== "ok" ? (
+              <div className="space-y-3 text-sm">
+                <p className="max-w-3xl leading-6 text-foreground">
+                  {data.judgement.status === "rejected"
+                    ? "Judgement is unavailable for this run. The model response introduced a figure that does not appear in the Stage 1 output, so it was rejected and the deterministic Stage 1 figures above stand alone."
+                    : "Judgement is unavailable. The deterministic Stage 1 figures above stand alone."}
+                </p>
+                {data.judgement.rejectedReason && <p className="max-w-3xl text-xs text-muted-foreground">{data.judgement.rejectedReason}</p>}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <Button size="sm" variant="outline" onClick={() => generateJudgement.mutate({ eventId })} disabled={generateJudgement.isPending}>
+                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${generateJudgement.isPending ? "animate-spin" : ""}`} />
+                    {generateJudgement.isPending ? "Re-running" : "Try again"}
+                  </Button>
+                  <span>Attempted with {data.judgement.model} at <span className="figure-inline">{formatIstDate(data.judgement.generatedAt)}</span></span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                  Not run yet. Stage 2 reads the Stage 1 output above plus portfolio context and writes the trade-off, what to do first, and what is missing from the notice. It can cite Stage 1 figures but is structurally blocked from introducing or changing a number.
+                </p>
+                <Button size="sm" onClick={() => generateJudgement.mutate({ eventId })} disabled={generateJudgement.isPending}>
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  {generateJudgement.isPending ? "Running" : "Run AI judgement"}
+                </Button>
               </div>
             )}
           </Section>

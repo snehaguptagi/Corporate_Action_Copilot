@@ -1659,9 +1659,54 @@ export function buildAnalysis(events: EventData[], desk: EventData, asOf = new D
       reconciliationStatus: event.reconciliation?.classification ?? event.reconciliation?.status ?? "Closed",
     };
   });
+  const breaches = schemes.flatMap((scheme: EventData) =>
+    scheme.issuerExposures.filter((exposure: EventData) => exposure.postActionPercent > exposure.capPercent)
+      .map((exposure: EventData) => ({ scheme, exposure })));
+  const nearCap = schemes.flatMap((scheme: EventData) =>
+    scheme.issuerExposures.filter((exposure: EventData) => exposure.postActionPercent <= exposure.capPercent && exposure.distanceToCapPercent < 2)
+      .map((exposure: EventData) => ({ scheme, exposure })));
+  const shortSchemes = schemes.filter((scheme: EventData) => Number(scheme.shortfall ?? 0) > 0);
+  const conclusionParts: string[] = [];
+  for (const { scheme, exposure } of breaches) {
+    conclusionParts.push(`${scheme.schemeName} will breach the SEBI single-issuer cap on ${exposure.issuer} if the open actions complete in full: ${exposure.postActionPercent.toFixed(2)}% against a ${exposure.capPercent}% limit.`);
+  }
+  for (const { scheme, exposure } of nearCap) {
+    conclusionParts.push(`${scheme.schemeName} is ${exposure.distanceToCapPercent.toFixed(2)}% from the cap on ${exposure.issuer}${exposure.includesMandatory ? " on a mandatory event it cannot decline" : ""}.`);
+  }
+  if (breaches.length === 0 && nearCap.length === 0) {
+    conclusionParts.push("No scheme is within 2% of a single-issuer limit.");
+  } else {
+    const flagged = new Set([...breaches, ...nearCap].map(({ scheme }) => scheme.schemeId));
+    if (schemes.some((scheme: EventData) => !flagged.has(scheme.schemeId))) conclusionParts.push("No other scheme is within 2% of a limit.");
+  }
+  if (shortSchemes.length > 0) {
+    conclusionParts.push(`Funding is short in ${shortSchemes.map((scheme: EventData) => scheme.schemeName).join(" and ")}.`);
+  }
+
+  const decisions = events.flatMap((event) => (event.schemeImpacts ?? []).flatMap((impact: EventData) => {
+    if (!impact.electionDecision) return [];
+    const decidedEntry = (event.audit ?? []).find((entry: EventData) =>
+      entry.action === "Election submitted" && String(entry.detail ?? "").includes(String(impact.account ?? "")));
+    const approvalEntry = (event.audit ?? []).find((entry: EventData) => entry.action === "Checker approval recorded");
+    return [{
+      eventId: event.id,
+      eventLabel: `${event.issuer} ${String(event.eventType ?? "").toLowerCase()}`,
+      schemeName: impact.schemeName ?? impact.fund ?? impact.account ?? "",
+      decision: `${impact.electionDecision.optionLabel ?? impact.electionDecision.optionId}${impact.electionDecision.quantityElected ? ` for ${Number(impact.electionDecision.quantityElected).toLocaleString("en-IN")} units` : ""}`,
+      decidedBy: impact.electionDecision.analyst ?? "",
+      decidedAt: decidedEntry?.timestamp ?? event.receivedAt ?? "",
+      approvedBy: impact.approval === "Approved" ? (approvalEntry?.actor ?? event.instruction?.approvalActor ?? "Compliance") : "",
+      valueAmount: Number(Number(impact.electionDecision.requiredFunding || impact.cashAmount || 0).toFixed(2)),
+      status: impact.approval === "Approved" ? "Approved" : impact.status ?? "Submitted",
+    }];
+  })).sort((left, right) => String(right.decidedAt).localeCompare(String(left.decidedAt)));
+
   return {
     generatedAt: asOf.toISOString(),
+    purpose: "Each corporate action is checked on its own. A scheme holding one issuer across several concurrent events can breach the SEBI single-issuer cap on the combination alone. Catching that combined breach is what this page exists for.",
+    conclusion: conclusionParts.join(" "),
     schemes,
+    decisions,
     history: {
       capturedAmount: Number(closedEvents.reduce((total, event) => total + event.capturedAmount, 0).toFixed(2)),
       forfeitedAmount: Number(closedEvents.reduce((total, event) => total + event.forfeitedAmount, 0).toFixed(2)),

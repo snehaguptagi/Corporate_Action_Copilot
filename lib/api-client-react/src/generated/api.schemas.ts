@@ -268,10 +268,25 @@ export interface AnalysisHistory {
   closedEvents: ClosedEventHistory[];
 }
 
+export interface AnalysisDecision {
+  eventId: string;
+  eventLabel: string;
+  schemeName: string;
+  decision: string;
+  decidedBy: string;
+  decidedAt: string;
+  approvedBy: string;
+  valueAmount: number;
+  status: string;
+}
+
 export interface Analysis {
   generatedAt: string;
+  purpose: string;
+  conclusion: string;
   schemes: AnalysisScheme[];
   history: AnalysisHistory;
+  decisions: AnalysisDecision[];
 }
 
 export interface SchemeContribution {
@@ -640,6 +655,33 @@ export interface SecurityMaster {
   aliases?: string[];
 }
 
+export interface DataProvenance {
+  asOf: string;
+  channel: string;
+  provider: string;
+  synthetic: boolean;
+  fetchedAt?: string;
+  extractedAt?: string;
+  computedAt?: string;
+}
+
+export type JudgementStatus = typeof JudgementStatus[keyof typeof JudgementStatus];
+
+
+export const JudgementStatus = {
+  ok: 'ok',
+  rejected: 'rejected',
+  unavailable: 'unavailable',
+} as const;
+
+export interface Judgement {
+  status: JudgementStatus;
+  summary?: string;
+  model: string;
+  generatedAt: string;
+  rejectedReason?: string;
+}
+
 export type EventDetail = EventSummary & {
   notice: Notice;
   terms: Term[];
@@ -652,6 +694,8 @@ export type EventDetail = EventSummary & {
   validation: Validation;
   calculation: Calculation;
   securityMaster?: SecurityMaster;
+  provenance?: DataProvenance;
+  judgement?: Judgement;
 };
 
 export interface TermUpdate {

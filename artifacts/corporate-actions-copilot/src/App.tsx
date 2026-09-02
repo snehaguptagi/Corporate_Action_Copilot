@@ -15,7 +15,6 @@ import {
 import Dashboard from '@/pages/Dashboard';
 import EventsList from '@/pages/EventsList';
 import TasksList from '@/pages/TasksList';
-import AuditLog from '@/pages/AuditLog';
 import NoticeIntake from '@/pages/NoticeIntake';
 import FundManagerDesk from '@/pages/FundManagerDesk';
 import SchemeDetail from '@/pages/SchemeDetail';
@@ -37,7 +36,6 @@ function Router() {
           <Route path="/events/:eventId" component={FundManagerDesk} />
           <Route path="/schemes/:schemeId" component={SchemeDetail} />
           <Route path="/tasks" component={TasksList} />
-          <Route path="/audit" component={AuditLog} />
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>

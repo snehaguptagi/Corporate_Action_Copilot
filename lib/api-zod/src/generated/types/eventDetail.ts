@@ -7,8 +7,10 @@
  */
 import type { AuditEntry } from './auditEntry';
 import type { Calculation } from './calculation';
+import type { DataProvenance } from './dataProvenance';
 import type { EventSummary } from './eventSummary';
 import type { Instruction } from './instruction';
+import type { Judgement } from './judgement';
 import type { Notice } from './notice';
 import type { Option } from './option';
 import type { Position } from './position';
@@ -30,4 +32,6 @@ export type EventDetail = EventSummary & {
   validation: Validation;
   calculation: Calculation;
   securityMaster?: SecurityMaster;
+  provenance?: DataProvenance;
+  judgement?: Judgement;
 };

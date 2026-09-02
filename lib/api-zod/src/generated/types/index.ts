@@ -7,6 +7,7 @@
  */
 
 export * from './analysis';
+export * from './analysisDecision';
 export * from './analysisHistory';
 export * from './analysisScheme';
 export * from './approvalInput';
@@ -38,6 +39,7 @@ export * from './dashboard';
 export * from './dashboardSchemeImpact';
 export * from './dashboardSchemeImpactDirection';
 export * from './dashboardSchemeImpactElectionDecision';
+export * from './dataProvenance';
 export * from './electionInput';
 export * from './errorEnvelope';
 export * from './eventDetail';
@@ -61,6 +63,8 @@ export * from './intakeInputSampleId';
 export * from './intakeSource';
 export * from './intakeValidationInput';
 export * from './issuerExposure';
+export * from './judgement';
+export * from './judgementStatus';
 export * from './listAuditParams';
 export * from './listEventsParams';
 export * from './liveDiscoveryInput';

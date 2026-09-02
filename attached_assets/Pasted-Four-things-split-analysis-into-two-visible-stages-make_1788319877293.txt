@@ -1,0 +1,135 @@
+Four things: split analysis into two visible stages, make the corporate action's
+resting state be real cached data, make cross-event analysis explain itself, and
+resolve what Audit is for.
+
+═══ 1. TWO STAGES OF ANALYSIS, RUN IN ORDER, VISIBLY SEPARATE ═══
+Every corporate action must be analysed twice, in this sequence, and the
+frontend must show them as two distinct labelled stages — not blended:
+
+  STAGE 1 · DETERMINISTIC   the maths
+    entitlement, rounding, eligible schemes, cash required or receivable,
+    NAV paise per unit, TERP, value of a right, SEBI issuer exposure before
+    and after, cash headroom, permitted maximum.
+    No model call. Reproducible. Same inputs always give the same output.
+
+  STAGE 2 · AI JUDGEMENT    the interpretation
+    reads Stage 1's OUTPUT plus the portfolio context and writes prose:
+    the trade-off, the recommendation, the risk, what to do first.
+
+Label them exactly that way in the UI so the fund manager can see which numbers
+are computed and which words are inferred. Stage 2 must visibly come after
+Stage 1 and must state which model produced it and when.
+
+═══ 2. THE GUARDRAIL — THIS IS THE MOST IMPORTANT PART ═══
+Stage 2 must be structurally incapable of changing a number.
+
+  - Stage 2 receives Stage 1's computed figures as its ONLY numeric input.
+  - Stage 2 may cite those figures. It may NOT introduce a figure of its own,
+    recompute one, or contradict one.
+  - Validate the model output before rendering: extract every number from the
+    response and assert each one appears in Stage 1's output. If a number is
+    not there, reject the response and show Stage 1 alone with a note that
+    judgement is unavailable.
+  - Never let Stage 2 output feed a calculation, an election, an instruction or
+    an approval.
+
+Add a test that feeds a deliberately hallucinated figure through the validator
+and asserts it is rejected.
+
+═══ 3. WHAT STAGE 2 SHOULD ACTUALLY CONTRIBUTE ═══
+Otherwise it is decoration. It must say things the maths cannot:
+
+  - the trade-off, in one sentence: "Exercising in full breaches the cap.
+    Selling the excess 7,72,993 rights on exchange recovers about ₹2.25 cr of
+    the ₹2.51 cr at stake, so sell rather than lapse."
+  - cross-event judgement: "Three of your schemes hold this issuer. The bonus
+    issue raises that exposure and you cannot decline it."
+  - what to do first, with a reason that is not just size: "Act on Bharat
+    first — not because it is largest, but because the rights-entitlement
+    window closes five days before the subscription deadline."
+  - precedent from history: "You lapsed two rights issues last quarter worth
+    ₹18 lakh, both in schemes that had cash available."
+  - what is MISSING from the notice: "The notice does not state the RE trading
+    window. Confirm with SBI-SG before relying on the sell option."
+
+That last one is the most valuable — the model noticing an absence in the data.
+
+Keep it short. Four or five sentences per corporate action, not an essay.
+
+═══ 4. LIVE DATA IS THE RESTING STATE, NOT DEMO DATA ═══
+What a corporate action shows before any fetch must be the LAST FETCHED LIVE
+DATA, cached — not synthetic seed data.
+
+Build it as: fetch -> store raw -> extract -> Stage 1 -> Stage 2, each step
+persisted, so the page renders the last completed run instantly with no waiting.
+
+  - Store the raw provider response verbatim, immutably, with a fetch timestamp.
+  - Extract the fields the product needs from that raw payload; keep the raw
+    copy so extraction can be re-run without re-fetching.
+  - Show "as of <timestamp>" on every corporate action, and how it arrived.
+  - A manual "Refresh" re-runs the chain and shows what changed.
+  - Where nothing has been fetched yet, SAY SO plainly and label the record
+    synthetic. Never present seeded data as though it were fetched. Do not mix
+    a real record and a synthetic one in the same list without marking which is
+    which.
+
+I still need the market-data provider name and docs before the fetch layer can
+be written — build the cache, extraction and staging structure now with a
+clearly isolated provider adapter so the real one drops in without touching
+anything else.
+
+═══ 5. CROSS-EVENT ANALYSIS DOES NOT EXPLAIN ITSELF ═══
+It currently opens with a table of percentages per issuer per scheme. Nothing
+tells the reader why the page exists or which row matters, so it reads as data
+rather than a finding.
+
+Lead with the conclusion in words, then the table as evidence — the same
+pattern that already works on the corporate action page and the scheme page:
+
+  "Arka Focused 25 will breach the SEBI single-issuer cap on Bharat Renewables
+   if you exercise in full — 10.77% against a 10% limit. Separately, Saffron
+   Digital leaves the same scheme 0.21% from the cap on a MANDATORY event it
+   cannot decline. No other scheme is within 2% of a limit."
+
+And say in one line why anyone should care, because right now it is unstated:
+each corporate action is checked on its own, but a scheme holding one issuer
+across several concurrent events can breach on the combination. That is the
+only thing this page exists to catch. Say it.
+
+If nothing is at risk, say that too: "No scheme is within 2% of a
+single-issuer limit."
+
+═══ 6. RESOLVE AUDIT ═══
+A raw action log is not useful to a fund manager as a destination, and its
+purpose is currently unexplained.
+
+  - Remove "Audit" from the navigation.
+  - Keep the data. Per-event history already exists as section 06 on the
+    corporate action page; that is where it belongs.
+  - Move the part a fund manager wants into the Analysis history section and
+    frame it as decisions rather than events: what we decided, when, who
+    approved it, and what it was worth. That is the quarter-end question.
+  - Retain a compliance export — the full trail, downloadable — because SEBI
+    stewardship disclosure needs it. Reachable from Analysis, not the main nav.
+
+═══ DO NOT ═══
+- Do not let Stage 2 write to any figure, election, instruction or approval.
+- Do not blend the two stages into one block of text.
+- Do not add charts.
+- Do not present synthetic data without labelling it synthetic.
+- Do not change any Stage 1 figure — the deterministic maths is correct and
+  tested.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- every corporate action page shows Stage 1 and Stage 2 as separate labelled
+  sections, in that order, with the model and timestamp named on Stage 2;
+- the validator rejects a Stage 2 response containing a number absent from
+  Stage 1, and the page still renders Stage 1 alone;
+- Stage 1 output is identical across repeated runs with no model call;
+- each corporate action shows "as of <timestamp>" and its arrival channel;
+- any record with no completed fetch is labelled synthetic;
+- cross-event analysis opens with a written conclusion naming the breaching
+  scheme and issuer, and states why combination risk matters;
+- Audit is gone from the nav, per-event history still renders, and a compliance
+  export is reachable from Analysis.

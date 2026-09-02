@@ -684,6 +684,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Task"
+  /events/{eventId}/judgement:
+    post:
+      operationId: generateJudgement
+      tags: [copilot]
+      summary: Run Stage 2 AI judgement over the Stage 1 deterministic output
+      security:
+        - CorporateActionSession: []
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Updated event with the latest judgement result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventDetail"
+        "404":
+          description: Event not found
+  /audit/export:
+    get:
+      operationId: exportAudit
+      tags: [copilot]
+      summary: Download the full audit trail as a compliance CSV export
+      responses:
+        "200":
+          description: Full audit trail in CSV form
+          content:
+            text/csv:
+              schema:
+                type: string
   /audit:
     get:
       operationId: listAudit
@@ -826,15 +856,34 @@ components:
             $ref: "#/components/schemas/SchemeSummary"
     Analysis:
       type: object
-      required: [generatedAt, schemes, history]
+      required: [generatedAt, purpose, conclusion, schemes, history, decisions]
       properties:
         generatedAt: { type: string, format: date-time }
+        purpose: { type: string }
+        conclusion: { type: string }
         schemes:
           type: array
           items:
             $ref: "#/components/schemas/AnalysisScheme"
         history:
           $ref: "#/components/schemas/AnalysisHistory"
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisDecision"
+    AnalysisDecision:
+      type: object
+      required: [eventId, eventLabel, schemeName, decision, decidedBy, decidedAt, approvedBy, valueAmount, status]
+      properties:
+        eventId: { type: string }
+        eventLabel: { type: string }
+        schemeName: { type: string }
+        decision: { type: string }
+        decidedBy: { type: string }
+        decidedAt: { type: string }
+        approvedBy: { type: string }
+        valueAmount: { type: number }
+        status: { type: string }
     AnalysisScheme:
       type: object
       required: [schemeId, schemeName, openEventCount, aggregateFundingNeeded, largestSingleEventFunding, cashAvailable, shortfall, fundingStatus, aggregateNavImpactPaise, issuerExposures, combinedOnlyBreaches]
@@ -1336,6 +1385,32 @@ components:
               $ref: "#/components/schemas/Calculation"
             securityMaster:
               $ref: "#/components/schemas/SecurityMaster"
+            provenance:
+              $ref: "#/components/schemas/DataProvenance"
+            judgement:
+              $ref: "#/components/schemas/Judgement"
+    DataProvenance:
+      type: object
+      required: [asOf, channel, provider, synthetic]
+      properties:
+        asOf: { type: string }
+        channel: { type: string }
+        provider: { type: string }
+        synthetic: { type: boolean }
+        fetchedAt: { type: string }
+        extractedAt: { type: string }
+        computedAt: { type: string }
+    Judgement:
+      type: object
+      required: [status, model, generatedAt]
+      properties:
+        status:
+          type: string
+          enum: [ok, rejected, unavailable]
+        summary: { type: string }
+        model: { type: string }
+        generatedAt: { type: string }
+        rejectedReason: { type: string }
     Notice:
       type: object
       required: [documentName, source, receivedAt, version, role, excerpt]

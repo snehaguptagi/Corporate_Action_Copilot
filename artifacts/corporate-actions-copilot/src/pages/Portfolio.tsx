@@ -26,7 +26,7 @@ export default function Portfolio() {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ten schemes ranked by corporate-action exposure, concentration headroom, and cash readiness. Every row opens into its control view.</p>
       </header>
       <main className="flex-1 p-4 sm:p-5">
-        <section className="mb-4 grid gap-3 xl:grid-cols-[1.35fr_0.9fr]">
+        <section className="mb-4 grid gap-3 md:grid-cols-[1.35fr_0.9fr]">
           <div className="dashboard-panel dashboard-panel--accent">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -56,9 +56,9 @@ export default function Portfolio() {
               </div>
             </div>
           </div>
-          <div className="dashboard-panel flex flex-col">
+          <div className="dashboard-panel">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Where to focus first</div>
-            <div className="mt-3 flex-1 space-y-2">
+            <div className="mt-3 space-y-2">
               <TriageRow
                 icon={<ShieldAlert className="h-4 w-4" />}
                 toneClass="border-destructive/30 bg-destructive/5 text-destructive"

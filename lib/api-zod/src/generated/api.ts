@@ -355,6 +355,8 @@ export const GetSchemeResponse = zod.object({
   "category": zod.string(),
   "situation": zod.string(),
   "totalHoldings": zod.number(),
+  "aumCrore": zod.number(),
+  "navRupees": zod.number(),
   "contributions": zod.array(zod.object({
   "eventId": zod.string(),
   "eventName": zod.string(),

@@ -317,6 +317,8 @@ export interface SchemeDetail {
   category: string;
   situation: string;
   totalHoldings: number;
+  aumCrore: number;
+  navRupees: number;
   contributions: SchemeContribution[];
   funding: SchemeFunding;
   headroom: SchemeHeadroom;

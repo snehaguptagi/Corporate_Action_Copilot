@@ -202,6 +202,8 @@ router.get("/schemes/:schemeId", async (req, res): Promise<void> => {
       category: scheme.category,
       situation,
       totalHoldings: ARKA_SCHEME_HOLDING_COUNTS[scheme.id] ?? holdings.length,
+      aumCrore: scheme.aumCrore,
+      navRupees: Number((scheme.navPaise / 100).toFixed(2)),
       contributions,
       funding: {
         needed: fundingNeeded,

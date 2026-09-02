@@ -10,6 +10,15 @@ function SectionTitle({ number, children }: { number: string; children: string }
   return <h2 className="mb-3 text-xl font-semibold tracking-tight text-foreground">{number}. {children}</h2>;
 }
 
+function SchemeFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5">
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</dt>
+      <dd className="figure mt-1 text-left text-base font-semibold tracking-tight text-foreground">{value}</dd>
+    </div>
+  );
+}
+
 export default function SchemeDetail() {
   const { schemeId = "" } = useParams();
   const { data: scheme, isLoading, isError } = useGetScheme(schemeId);
@@ -27,6 +36,13 @@ export default function SchemeDetail() {
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">{scheme.category}</p>
            <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">{scheme.name}</h1>
            <p className="mt-4 max-w-4xl text-base leading-7 text-foreground">{scheme.situation}</p>
+          <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <SchemeFact label="Fund size" value={`₹${scheme.aumCrore.toLocaleString("en-IN")} cr`} />
+            <SchemeFact label="NAV per unit" value={`₹${scheme.navRupees.toFixed(2)}`} />
+            <SchemeFact label="Holdings" value={`${scheme.totalHoldings}`} />
+            <SchemeFact label="Open actions" value={`${scheme.contributions.length}`} />
+            <SchemeFact label="Cash available" value={formatInr(scheme.funding.available)} />
+          </dl>
         </div>
       </header>
 

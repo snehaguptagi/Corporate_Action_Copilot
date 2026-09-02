@@ -1,0 +1,130 @@
+The dashboard and the Portfolio page are currently the same page twice. Fix the
+bugs, then give the dashboard its own job and its own visual language.
+
+═══ PART 1 — BUGS ═══
+
+1. THE NAV RENDERS TWICE. A DOM scan finds Dashboard, Portfolio, Corporate
+   actions and Analysis each appearing twice, each with its own icon — the
+   desktop sidebar and the mobile sheet are both mounted at all times. That is
+   the duplicate icon. Render one: mount the mobile nav only below its
+   breakpoint, or share a single list rendered once.
+
+2. THE HEADLINE SENTENCE IS STILL LOGICALLY BROKEN.
+   It reads: "4 notices in the last 24 hours. 31 affect your schemes."
+   There are 31 open corporate actions in total, so "31 affect" is an all-time
+   count inside a sentence about the last 24 hours. It parses as "31 of the 4".
+   Either both numbers describe the same window, or they are separate
+   statements. This is the third time this sentence has shipped broken — add a
+   test asserting the second number can never exceed the first when both
+   describe the same window.
+
+3. THE NEAREST DEADLINE IS THREE MONTHS IN THE PAST.
+   /api/dashboard returns nearestDeadline "15 Jun 2026 · 15:00 IST" and
+   nearestFundingIssuer "Coastal Energy Ltd". Today is 2 Sep 2026. A closed or
+   expired event is being selected as "nearest". Filter to FUTURE deadlines on
+   OPEN events only, and add a test that the nearest deadline is always after
+   now.
+
+4. THE SAME THREE NUMBERS APPEAR THREE TIMES. The sentence says 4 notices, then
+   two tiles say "Last 24 hours 4 / Affect Arka 31", then a "CONTROL PULSE"
+   block says "NOTICES 4 / SCHEMES TOUCHED 8/10 / NEEDS ATTENTION 9". Keep ONE
+   representation. The sentence is the best of the three; delete the duplicate
+   tile strips.
+
+5. REMOVE "YOUR SCHEMES" FROM THE DASHBOARD. It is the Portfolio page,
+   duplicated. The dashboard links to Portfolio; it does not contain it.
+
+6. Materiality is blank on 3 of 5 inbound rows because those events are
+   value-neutral. Blank reads as missing data — show the cash figure or
+   "Neutral", consistently.
+
+═══ PART 2 — WHAT THE DASHBOARD IS FOR ═══
+Rename the H1. "Portfolio operations" says nothing and collides with the
+Portfolio page. Make the H1 state the situation, the way the corporate action
+page already does well:
+
+    "9 corporate actions need you. ₹24.24 cr to fund by 16 Sep."
+
+That is a heading that both names the page's job and is useful. Keep the
+eyebrow as the product name.
+
+The division of labour:
+    DASHBOARD  the whole book at a glance, ORIENTED AROUND TIME AND MONEY.
+               Graphic, wide, few words. Answers "what is coming at me".
+    PORTFOLIO  a dense per-scheme ledger. Tabular, no charts.
+               Answers "is each of my funds okay".
+They must not look the same. Dashboard is a control screen; Portfolio is a
+ledger.
+
+═══ PART 3 — WHAT TO SHOW (charts are now wanted, but earn each one) ═══
+Nothing in this product currently shows TIME, and corporate actions are
+entirely deadline-driven. That is the gap. Build these four, in this order:
+
+A. DEADLINE TIMELINE — next 30 days
+   The single most useful thing missing. A horizontal time axis, today at the
+   left, one marker per open event at its decision deadline. Marker carries the
+   issuer and whether a decision is required. Clustering is the insight — three
+   deadlines landing the same week is invisible in a table and obvious here.
+   One series, so no legend; the title names it.
+
+B. FUNDING BY WEEK
+   Bar chart, one bar per week for the next six weeks, height = rupees due that
+   week. This is liquidity planning, and it is the question a fund manager
+   actually asks. Single series in the accent hue. Label the bars directly; no
+   y-axis gridlines beyond a faint baseline.
+
+C. HEADROOM AGAINST THE SEBI CAP — per scheme
+   Horizontal bars, one per scheme, showing how much of the 10% single-issuer
+   allowance the largest issuer consumes. Sorted descending, so Focused 25 sits
+   at the top near the limit. Draw the 10% limit as a thin rule across the
+   chart. Use the status colours ONLY where a scheme is tight or breaching —
+   everything else in the accent or a neutral.
+
+D. VOLUME VERSUS ATTENTION — the insight, not a pie
+   Two stacked horizontal bars, one above the other:
+     by COUNT           dividends dominate
+     by VALUE AT RISK   rights issues dominate
+   Same five event-type categories, same fixed colour order in both bars, so
+   the reader sees the inversion: the majority of arrivals need no decision,
+   and a small minority carries all the money. State that in one line beneath.
+   Do NOT use a donut or a pie for this.
+
+Then, unchanged in purpose: the attention queue (what needs a decision, ranked)
+and the inbound corporate actions table.
+
+CHART RULES — these are not stylistic preferences:
+   - No dual-axis charts, ever. Two measures of different scale become two
+     charts, as in D above.
+   - Categorical colours assigned in a FIXED order and never cycled; if event
+     types exceed the palette, fold the tail into "Other".
+   - Sequential magnitude = one hue, light to dark. Never a rainbow.
+   - Status colours (good / tight / breach) are reserved for state and must
+     never be reused as a series colour.
+   - Every chart with two or more series carries a legend; identity is never
+     conveyed by colour alone. Text stays in ink tokens, never the series
+     colour.
+   - Thin marks, recessive grid and axes, 2px gaps between adjacent fills,
+     direct labels on selected points only — never a number on every point.
+   - Each chart gets a hover tooltip.
+   - Provide a table fallback for each chart, and verify the palette works in
+     the warm light theme rather than assuming it does.
+   - If a number is better as a single figure than a plot, make it a stat tile.
+     The captured/forfeited/at-stake scoreboard is tiles, not a chart.
+
+═══ DO NOT ═══
+- Do not add charts to the Portfolio page. It stays a ledger.
+- Do not touch the corporate action page's sections or any Stage 1 figure.
+- Do not re-add a scheme table to the dashboard.
+- Do not use a pie or donut anywhere.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- each nav item appears exactly once in the DOM at desktop width;
+- the headline sentence's numbers share one window, with a test enforcing it;
+- the nearest deadline is always in the future, with a test;
+- the dashboard shows the three KPI numbers once, not three times;
+- no scheme table on the dashboard;
+- all four charts render with a legend where they have multiple series, a
+  tooltip, and a table fallback;
+- no dual-axis chart and no pie exists anywhere;
+- dashboard and Portfolio are visibly different kinds of page.

@@ -1,5 +1,5 @@
-import { useListSchemes } from "@workspace/api-client-react";
-import { ArrowRight, AlertCircle, CheckCircle2, CircleDollarSign, Layers3, ShieldAlert } from "lucide-react";
+import { useListSchemes, type SchemeSummary } from "@workspace/api-client-react";
+import { ArrowRight, AlertCircle, Layers3 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,9 +15,13 @@ export default function Portfolio() {
   const openActionCount = schemes.reduce((total, scheme) => total + scheme.openActions.length, 0);
   const flaggedSchemeCount = schemes.filter((scheme) => Boolean(scheme.flag)).length;
   const totalShortfall = schemes.reduce((total, scheme) => total + scheme.shortfall, 0);
-  const exceptionSchemes = schemes.filter((scheme) => scheme.shortfall > 0);
-  const reviewSchemes = schemes.filter((scheme) => scheme.shortfall <= 0 && Boolean(scheme.flag));
-  const coveredSchemes = schemes.filter((scheme) => scheme.openActions.length > 0 && scheme.shortfall <= 0 && !scheme.flag);
+  const triagedSchemes = [...schemes].sort((a, b) => {
+    const rank = (s: SchemeSummary) => (s.shortfall > 0 ? 0 : s.flag ? 1 : s.openActions.length > 0 ? 2 : 3);
+    if (rank(a) !== rank(b)) return rank(a) - rank(b);
+    if (a.shortfall !== b.shortfall) return b.shortfall - a.shortfall;
+    if (a.distanceToLimitPercent !== b.distanceToLimitPercent) return a.distanceToLimitPercent - b.distanceToLimitPercent;
+    return b.openActions.length - a.openActions.length;
+  });
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
@@ -26,62 +30,25 @@ export default function Portfolio() {
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ten schemes ranked by corporate-action exposure, concentration headroom, and cash readiness. Every row opens into its control view.</p>
       </header>
       <main className="flex-1 p-4 sm:p-5">
-        <section className="mb-4 grid gap-3 md:grid-cols-[1.35fr_0.9fr]">
-          <div className="dashboard-panel dashboard-panel--accent flex flex-col">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-                  <Layers3 className="h-3.5 w-3.5" />
-                  Portfolio control view
-                </div>
-                <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground">Exposure across the live book</h2>
-              </div>
-              <span className="figure-inline text-xs font-medium text-muted-foreground">{schemes.length} schemes</span>
-            </div>
-            <div className="mt-3 grid flex-1 content-center grid-cols-2 gap-2 sm:grid-cols-4">
-              <PortfolioMetric label="Schemes touched" value={`${impactedSchemeCount}/${schemes.length}`} icon={<Layers3 className="h-4 w-4" />} />
-              <PortfolioMetric label="Open actions" value={openActionCount} icon={<CheckCircle2 className="h-4 w-4" />} />
-              <PortfolioMetric label="Flagged" value={flaggedSchemeCount} icon={<ShieldAlert className="h-4 w-4" />} />
-              <PortfolioMetric label="Funding shortfall" value={totalShortfall > 0 ? formatInr(totalShortfall) : "None"} icon={<CircleDollarSign className="h-4 w-4" />} />
-            </div>
-            <div className="mt-auto pt-3">
-              <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-muted-foreground">
-                <span>Scheme coverage</span>
-                <span className="figure-inline">{impactedSchemeCount} impacted · {schemes.length - impactedSchemeCount} clear</span>
-              </div>
-              <div className="flex h-3 gap-1" aria-label={`${impactedSchemeCount} of ${schemes.length} schemes have open corporate actions`}>
-                {schemes.map((scheme) => (
-                  <div key={scheme.id} title={`${scheme.name}: ${scheme.openActions.length ? "Open actions" : "No open actions"}`} className={`min-w-2 flex-1 rounded-sm ${scheme.openActions.length ? "bg-primary" : "bg-border"}`} />
-                ))}
-              </div>
-            </div>
+        <section className="dashboard-panel mb-4" aria-labelledby="scheme-control-board">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 id="scheme-control-board" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <Layers3 className="h-3.5 w-3.5" />
+              Scheme control board
+            </h2>
+            <p className="figure-inline text-xs text-muted-foreground">
+              {impactedSchemeCount} of {schemes.length} touched · {openActionCount} open actions · {flaggedSchemeCount} flagged · {totalShortfall > 0 ? `${formatInr(totalShortfall)} short` : "fully funded"}
+            </p>
           </div>
-          <div className="dashboard-panel">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Where to focus first</div>
-            <div className="mt-3 space-y-2">
-              <TriageRow
-                icon={<ShieldAlert className="h-4 w-4" />}
-                toneClass="border-destructive/30 bg-destructive/5 text-destructive"
-                label="Exception"
-                hint="Funding shortfall blocks settlement"
-                schemes={exceptionSchemes}
-              />
-              <TriageRow
-                icon={<AlertCircle className="h-4 w-4" />}
-                toneClass="border-warning/40 bg-warning/5 text-warning"
-                label="Review"
-                hint="Flagged for concentration or eligibility"
-                schemes={reviewSchemes}
-              />
-              <TriageRow
-                icon={<CheckCircle2 className="h-4 w-4" />}
-                toneClass="border-success/30 bg-success/5 text-success"
-                label="Covered"
-                hint="Open actions funded and within limits"
-                schemes={coveredSchemes}
-              />
-            </div>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">Work from the top down. Each scheme name opens its control view.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            {triagedSchemes.map((scheme) => <SchemeTile key={scheme.id} scheme={scheme} />)}
+          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-destructive" /> Exception, funding short</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-warning" /> Review, flagged</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-success" /> Covered</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-border" /> Nothing open</span>
+            <span className="ml-auto">Track shows the largest issuer position against the 10% SEBI cap. Ordered worst first.</span>
           </div>
         </section>
         <Card className="overflow-hidden border border-stone-200 shadow-sm">
@@ -197,34 +164,48 @@ export default function Portfolio() {
   );
 }
 
-function TriageRow({ icon, toneClass, label, hint, schemes }: { icon: React.ReactNode; toneClass: string; label: string; hint: string; schemes: { id: string; name: string }[] }) {
-  return (
-    <div className={`flex items-start gap-3 rounded-md border px-3 py-2.5 ${toneClass}`}>
-      <span className="mt-0.5 shrink-0">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-sm font-semibold">{label}</span>
-          <span className="figure-inline text-sm font-semibold">{schemes.length}</span>
-        </div>
-        <div className="text-xs text-muted-foreground">{hint}</div>
-        {schemes.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs">
-            {schemes.slice(0, 3).map((scheme) => (
-              <Link key={scheme.id} href={`/schemes/${scheme.id}`} className="font-medium text-primary hover:underline">{scheme.name}</Link>
-            ))}
-            {schemes.length > 3 && <span className="text-muted-foreground">+{schemes.length - 3} more</span>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+function SchemeTile({ scheme }: { scheme: SchemeSummary }) {
+  const state = scheme.shortfall > 0 ? "exception" : scheme.flag ? "review" : scheme.openActions.length > 0 ? "covered" : "clear";
+  const toneClass = {
+    exception: "border-destructive/40 bg-destructive/5 hover:border-destructive/70",
+    review: "border-warning/50 bg-warning/5 hover:border-warning",
+    covered: "border-success/30 bg-success/5 hover:border-success/60",
+    clear: "border-border bg-stone-50/60 hover:border-stone-300",
+  }[state];
+  const statusLine = {
+    exception: <span className="figure-inline font-semibold text-destructive">Short {formatInr(scheme.shortfall)}</span>,
+    review: <span className="font-semibold text-warning">{scheme.flag}</span>,
+    covered: <span className="font-semibold text-success">Funded, within limits</span>,
+    clear: <span className="text-muted-foreground">Nothing open</span>,
+  }[state];
+  const shortName = scheme.name.replace(/^Arka /, "").replace(/ Fund$/, "");
+  const capUsedPercent = Math.min(100, (scheme.largestExposurePercent / 10) * 100);
+  const gaugeTone = scheme.distanceToLimitPercent < 1 ? "bg-destructive" : scheme.distanceToLimitPercent < 2 ? "bg-warning" : "bg-primary";
 
-function PortfolioMetric({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-border/80 bg-background/70 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{icon}{label}</div>
-      <div className="figure mt-1 text-left text-xl font-semibold tracking-tight text-foreground">{value}</div>
-    </div>
+    <Link
+      href={`/schemes/${scheme.id}`}
+      className={`group flex flex-col rounded-md border px-3 py-2.5 transition-colors ${toneClass}`}
+      aria-label={`${scheme.name}: ${scheme.openActions.length} open actions`}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-sm font-semibold text-foreground group-hover:text-primary">{shortName}</span>
+        <span className="figure-inline shrink-0 text-xs text-muted-foreground">{scheme.openActions.length ? `${scheme.openActions.length} open` : ""}</span>
+      </div>
+      <div className="mt-0.5 truncate text-[11px] leading-4">{statusLine}</div>
+      {scheme.largestExposurePercent > 0 ? (
+        <div className="mt-2">
+          <div className="h-1 overflow-hidden rounded-full bg-border/70" title={`${scheme.largestExposureIssuer}: ${scheme.largestExposurePercent.toFixed(2)}% of the 10% cap`}>
+            <div className={`h-full rounded-full ${gaugeTone}`} style={{ width: `${capUsedPercent}%` }} />
+          </div>
+          <div className="mt-1 flex items-baseline justify-between gap-2 text-[10px] text-muted-foreground">
+            <span className="truncate">{scheme.largestExposureIssuer}</span>
+            <span className="figure-inline shrink-0">{scheme.largestExposurePercent.toFixed(1)}%</span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 text-[10px] text-muted-foreground">No concentrated issuer position</div>
+      )}
+    </Link>
   );
 }

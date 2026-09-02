@@ -133,7 +133,7 @@
   --ring: 21 100% 41%;
   
   --app-font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  --app-font-mono: 'IBM Plex Mono', monospace;
+  --app-font-mono: var(--app-font-sans);
   --app-font-serif: Georgia, serif;
   
   --radius: 0.25rem;

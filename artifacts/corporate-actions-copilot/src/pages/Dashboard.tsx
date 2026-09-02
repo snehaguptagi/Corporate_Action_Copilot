@@ -63,7 +63,7 @@ function shortDeadline(display: string) {
 
 function StatTile({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: string }) {
   return (
-    <div className="px-4 py-3.5">
+    <div className="flex flex-col items-center justify-center px-4 py-4 text-center">
       <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
       <p className={`figure mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</p>
       <p className="figure-inline mt-0.5 text-xs text-muted-foreground">{sub}</p>

@@ -1,0 +1,106 @@
+Fix the page a fund manager lands on when they open a corporate action. Today it
+is incoherent, and it contradicts itself on a single screen.
+
+═══ EVIDENCE, verified against GET /api/events/evt-bharat-rights ═══
+  schemeImpacts     10 schemes, 6 affected     <- populated
+  impacts[]         empty                      <- what the page reads
+  affectedAccounts  6                          <- ignored by the page
+  amount            0 INR                      <- what the page shows
+  status            "Validated"
+  validation        { missingTerms: [], isReady: true }
+  calculationRunAt  undefined
+
+And on the rendered page, all at once:
+  header badge      "22.00 paise materiality" and "SEBI 10% headroom"
+  event profile     "IMPACT SCOPE: 0 accounts affected"
+  impact table      "Validate required terms, then run calculation to produce
+                     impacts."  (while the status badge says Validated)
+  a button          "Calculate Impacts"
+  footer            "Last run: 13/09/2026, 12:00:00"
+
+So the page displays the materiality and the SEBI constraint it derived from the
+scheme impacts, then two lines later claims nothing is affected and asks the
+fund manager to press a button to find out. The dashboard shows ₹22.44 cr and
+6 of 10 schemes for this same event.
+
+═══ 1. ONE IMPACT MODEL, COMPUTED ON ARRIVAL ═══
+- Delete impacts[] entirely. It is a second, empty impact model.
+- affectedAccounts, amount, exposure and the impact table all read the scheme
+  impacts.
+- Compute impact when the corporate action is created or seeded, never on a
+  button press. Remove the "Calculate Impacts" and "Calculate eligibility and
+  impact" controls from the fund-manager view. A fund manager does not press a
+  button to learn whether their funds are affected.
+
+═══ 2. THE PAGE YOU LAND ON IS THE DESK, GENERALISED ═══
+FundManagerDesk.tsx is already the right page but is hardcoded to Bharat
+Renewables and sits in the nav as a separate destination. Generalise it to work
+for any event id, serve it at /events/:id, and remove "Fund Manager Desk" from
+the nav. Delete EventWorkbench.tsx as a route — it and the desk are two views of
+the same thing.
+
+═══ 3. SIX SECTIONS, ONE SCROLL, NO TABS ═══
+  a. What it is       issuer, ISIN, action, terms (ratio/rate/price), arrived
+                      when + channel, deadline
+  b. What it touches   affected schemes: share quantity, money + direction,
+                      NAV paise per unit where the type has one
+  c. Options          exercise / sell entitlement / lapse, with the cost of each
+  d. Constraints      SEBI 10% headroom, cash budget, mandate
+  e. Decision         one submission to Compliance
+  f. History          short trail inline
+
+═══ 4. THE PAGE MUST ADAPT TO EVENT TYPE ═══
+Right now every event gets the same seven stages including Decision and Execute
+even when nothing can be decided. Sections c, d and e apply ONLY to events with
+a real choice (rights, buyback, merger-with-options). For a mandatory cash
+dividend, a split or a bonus issue there is nothing to decide — omit those
+sections entirely rather than rendering them empty or disabled. A split's page
+should show what it touches and what the new quantities will be, and stop.
+
+═══ 5. RETIRE THE SEVEN-STAGE RAIL ═══
+Notice / Validate / Exposure / Impact / Decision / Execute / Reconcile is the
+operations pipeline, not how a fund manager thinks. Replace it as page
+navigation with a single status line. Move term validation with evidence, the
+instruction, and reconciliation into a COLLAPSED "Operations detail" section
+that expands for the Operations Analyst and Reviewer roles only.
+
+═══ 6. FIX THESE EXACT STRINGS ═══
+- Status badge "Validated" alongside "Validate required terms, then run
+  calculation" — contradictory. Once impact is computed on arrival, the table
+  always has content.
+- "Last run: 13/09/2026, 12:00:00" — a FUTURE date in DD/MM/YYYY while every
+  other date on the page reads "15 Sep 2026 · 15:00 IST". calculationRunAt is
+  undefined, so this timestamp is fabricated. Render nothing when there is no
+  run, and use one date format across the product.
+- "BLOCKING REASON: Normal operational monitoring" — a field labelled blocking
+  reason containing a non-reason. Show the field only when something is
+  genuinely blocked, with the real reason.
+- "NEXT ACTION: Ready for Calculation / All terms validated. Run deterministic
+  impact calculation." — delete. There is no calculation for the user to run.
+- "OWNER: Operations Analyst" and the actor line "Aisha Mehta · Operations
+  Analyst" — default this page to the Fund Manager (Rohan Iyer).
+- Column header "Fund / account" -> "Scheme".
+- "IMPACT SCOPE: 0 accounts affected" -> schemes affected, from scheme impacts.
+
+═══ DO NOT ═══
+- Do not add tabs or sub-navigation.
+- Do not change the Dashboard.
+- Do not change any seeded figure. The Bharat Renewables event must still show
+  6 of 10 schemes, 26,40,000 rights, ₹22.44 cr, the Focused 25 SEBI breach and
+  the Small Cap cash shortfall.
+- Do not render a section with no content. Omit it.
+
+Declare any new fields in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ VERIFY ═══
+pnpm run typecheck and pnpm test pass, plus:
+- opening each of the seven events shows its scheme impact immediately, with no
+  button anywhere to produce it;
+- the figures on /events/:id equal the figures the dashboard shows for the same
+  event — today they read ₹22.44 cr and ₹0 respectively;
+- grep confirms impacts[] no longer exists;
+- the Deccan Grid split page has no Options, Constraints or Decision section;
+- no date rendered on the page is in the future;
+- a Fund Manager opening the page sees no "Operations detail" expanded, and an
+  Operations Analyst can expand it.

@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import {
   AlertTriangle,
+  ChevronDown,
   Landmark,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -31,13 +32,28 @@ function Figure({ children }: { children: React.ReactNode }) {
   return <span className="figure-inline">{children}</span>;
 }
 
-function SectionHeading({ index, eyebrow, title, description }: { index: string; eyebrow: string; title: string; description: string; }) {
-  void eyebrow;
-  void description;
+function Section({ index, title, summary, defaultOpen = true, children }: { index: string; title: string; summary?: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">{index}</div>
-      <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+    <section className="overflow-hidden rounded-md border border-border bg-card shadow-sm">
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-stone-50 sm:px-5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-xs font-bold text-primary-foreground">{index}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg font-semibold tracking-tight text-foreground">{title}</span>
+          {summary && <span className="block truncate text-xs text-muted-foreground">{summary}</span>}
+        </span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && <div className="border-t border-border/60 p-4 sm:p-5">{children}</div>}
+    </section>
+  );
+}
+
+function ImpactStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/70 bg-stone-50 px-3 py-2.5">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
+      <div className="figure mt-1 text-left text-base font-semibold text-foreground">{value}</div>
     </div>
   );
 }
@@ -76,10 +92,7 @@ function daysUntil(isoInstant: string) {
   return Math.ceil((deadline - Date.now()) / 86_400_000);
 }
 
-const MANDATORY_EVENT_TYPES = ["Cash dividend", "Stock split", "Bonus issue", "Merger / demerger"];
-
-function deadlineStatement(data: EventDetail, daysLeft: number | null) {
-  const isMandatory = MANDATORY_EVENT_TYPES.includes(data.eventType) || (data.options ?? []).length === 0;
+function deadlineStatement(data: EventDetail, daysLeft: number | null, isMandatory: boolean) {
   if (isMandatory) {
     return <>No election is required. The desk tracks settlement against <Figure>{data.internalDeadline}</Figure>.</>;
   }
@@ -199,8 +212,16 @@ export default function FundManagerDesk() {
   const isPublicWebDiscovery = data.source === "Public web discovery";
   const isPocScenario = !data.id.startsWith("evt-intake-");
   const daysLeft = daysUntil(data.internalDeadlineAt);
+  const receivedMs = Date.parse(data.receivedAt);
+  const deadlineMs = Date.parse(data.internalDeadlineAt);
+  const deadlineProgress = Number.isFinite(receivedMs) && Number.isFinite(deadlineMs) && deadlineMs > receivedMs
+    ? Math.min(100, Math.max(2, ((Date.now() - receivedMs) / (deadlineMs - receivedMs)) * 100))
+    : 0;
+  const totalEligibleQuantity = affectedSchemes.reduce((total, scheme: any) => total + Number(scheme.eligibleQuantity ?? 0), 0);
+  const totalExpectedCash = affectedSchemes.reduce((total, scheme: any) => total + Number(scheme.cashAmount ?? 0), 0);
+  const largestNavImpactPaise = affectedSchemes.reduce((largest, scheme: any) => Math.max(largest, Number(scheme.navImpactPaise ?? 0)), 0);
   const statement1 = actionStatement(data);
-  const statement2 = deadlineStatement(data, daysLeft);
+  const statement2 = deadlineStatement(data, daysLeft, isMandatory);
   const statement3 = isPocScenario
     ? <>Simulated POC scenario. The issuer, notice, holdings and source records on this screen are not live fetched data.</>
     : primarySource
@@ -237,105 +258,120 @@ export default function FundManagerDesk() {
               <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
             </div>
           )}
-          <section>
-            <SectionHeading index="01" eyebrow="Confirmed event" title="What it is" description="Notice terms, calendar, and security details extracted from the source document." />
-            <Card className="rounded border-border bg-card shadow-none">
-              <CardContent className="p-6">
-                <div className="space-y-3 text-base leading-7 text-foreground">
-                  <p>{statement1}</p>
-                  <p>{statement2}</p>
-                  <p>{statement3}</p>
+          <Section index="01" title="What it is" summary="Terms, deadline and security identifiers">
+            <div className="space-y-3 text-base leading-7 text-foreground">
+              <p>{statement1}</p>
+              <p>{statement2}</p>
+              <p>{statement3}</p>
+            </div>
+            {!isMandatory && daysLeft !== null && (
+              <div className="mt-5 rounded-md border border-border/60 bg-stone-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+                  <span>Received <span className="figure-inline">{formatIstDate(data.receivedAt)}</span></span>
+                  <span className={daysLeft <= 3 ? "font-semibold text-destructive" : "font-semibold text-foreground"}>
+                    {daysLeft < 0 ? "Deadline passed" : daysLeft === 0 ? "Due today" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}
+                  </span>
+                  <span>Decide by <span className="figure-inline">{data.internalDeadline}</span></span>
                 </div>
-                <div className="mt-6 flex gap-4 border-t border-border/50 pt-4 text-xs font-mono text-muted-foreground">
-                  <span>ISIN: {data.securityMaster?.isin ?? "N/A"}</span>
-                  <span>Ticker: {data.securityMaster?.ticker ?? "N/A"}</span>
-                  <span>Ref: {data.reference}</span>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-border" aria-hidden="true">
+                  <div className={`h-full rounded-full ${daysLeft <= 3 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${deadlineProgress}%` }} />
                 </div>
-              </CardContent>
-            </Card>
-          </section>
+              </div>
+            )}
+            <div className="mt-5 flex flex-wrap gap-4 border-t border-border/50 pt-4 text-xs text-muted-foreground">
+              <span>ISIN: {data.securityMaster?.isin ?? "N/A"}</span>
+              <span>Ticker: {data.securityMaster?.ticker ?? "N/A"}</span>
+              <span>Ref: {data.reference}</span>
+            </div>
+          </Section>
 
-          <section>
-            <SectionHeading index="02" eyebrow="Scheme impact" title="What it touches" description="Affected schemes and expected financial impacts." />
-            <Card className="rounded border-border bg-card shadow-none">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted hover:bg-muted">
-                      <TableHead>Scheme</TableHead>
-                      <TableHead className="text-right">Eligible Quantity</TableHead>
-                      <TableHead className="text-right">Expected Cash</TableHead>
-                       <TableHead>Direction</TableHead>
-                       <TableHead className="text-right">NAV impact / unit</TableHead>
+          <Section index="02" title="What it touches" summary={`${affectedSchemes.length} affected scheme${affectedSchemes.length === 1 ? "" : "s"}${totalExpectedCash > 0 ? ` · ${formatInr(totalExpectedCash)} expected` : ""}`}>
+            {affectedSchemes.length > 0 && (
+              <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <ImpactStat label="Affected schemes" value={String(affectedSchemes.length)} />
+                <ImpactStat label="Eligible quantity" value={integer.format(totalEligibleQuantity)} />
+                <ImpactStat label="Expected cash" value={totalExpectedCash > 0 ? formatInr(totalExpectedCash) : "None"} />
+                <ImpactStat label="Largest NAV impact" value={largestNavImpactPaise > 0 ? `${largestNavImpactPaise.toFixed(2)} p / unit` : "Neutral"} />
+              </div>
+            )}
+            <div className="overflow-hidden rounded-md border border-border/70">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted hover:bg-muted">
+                    <TableHead>Scheme</TableHead>
+                    <TableHead className="text-right">Eligible Quantity</TableHead>
+                    <TableHead className="text-right">Expected Cash</TableHead>
+                     <TableHead>Direction</TableHead>
+                     <TableHead className="text-right">NAV impact / unit</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {affectedSchemes.map((scheme) => (
+                    <TableRow key={scheme.id} className="text-xs">
+                      <TableCell><Link href={`/schemes/${scheme.schemeId}`} className="font-semibold text-primary hover:underline">{scheme.schemeName}</Link></TableCell>
+                      <TableCell className="figure">{integer.format(scheme.eligibleQuantity)}</TableCell>
+                      <TableCell className="figure">{scheme.cashAmount ? formatInr(scheme.cashAmount) : "No cash movement"}</TableCell>
+                       <TableCell>{scheme.direction}</TableCell>
+                        <TableCell className="figure">{scheme.navImpactPaise == null ? "Neutral" : `${scheme.navImpactPaise.toFixed(2)} paise`}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {affectedSchemes.map((scheme) => (
-                      <TableRow key={scheme.id} className="text-xs">
-                        <TableCell><Link href={`/schemes/${scheme.schemeId}`} className="font-semibold text-primary hover:underline">{scheme.schemeName}</Link></TableCell>
-                        <TableCell className="figure">{integer.format(scheme.eligibleQuantity)}</TableCell>
-                        <TableCell className="figure">{scheme.cashAmount ? formatInr(scheme.cashAmount) : "No cash movement"}</TableCell>
-                         <TableCell>{scheme.direction}</TableCell>
-                          <TableCell className="figure">{scheme.navImpactPaise == null ? "Neutral" : `${scheme.navImpactPaise.toFixed(2)} paise`}</TableCell>
-                      </TableRow>
-                    ))}
-                     {affectedSchemes.length === 0 && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">{isPublicWebDiscovery ? "No portfolio impact calculated. Match holdings and confirm authoritative evidence first." : "No affected schemes."}</TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </section>
+                  ))}
+                   {affectedSchemes.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">{isPublicWebDiscovery ? "No portfolio impact calculated. Match holdings and confirm authoritative evidence first." : "No affected schemes."}</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            {totalExpectedCash > 0 && affectedSchemes.length > 1 && (
+              <div className="mt-4">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Cash distribution across schemes</div>
+                <div className="space-y-2">
+                  {affectedSchemes.map((scheme: any) => (
+                    <div key={scheme.id} className="flex items-center gap-3 text-xs">
+                      <span className="w-44 truncate text-muted-foreground sm:w-56">{scheme.schemeName}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-border">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(2, (Number(scheme.cashAmount ?? 0) / totalExpectedCash) * 100)}%` }} />
+                      </div>
+                      <span className="figure w-12 text-right font-medium">{Math.round((Number(scheme.cashAmount ?? 0) / totalExpectedCash) * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Section>
 
           {!isMandatory && (
             <>
               {isRightsHero ? (
-                <section>
-                  <SectionHeading index={optionsIndex} eyebrow="Elections" title="Options" description="Compare the three ways to treat the rights entitlement." />
-                  <Card className="rounded border-border bg-card shadow-none">
-                    <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
+                <Section index={optionsIndex} title="Options" summary="Three ways to treat the rights entitlement">
+                  <div className="grid gap-3 text-sm md:grid-cols-3">
                       <div><strong className="text-foreground">Exercise</strong><p className="mt-1 text-muted-foreground">Subscribe at {formatInr(subscriptionPrice)}. Costs cash and keeps your holding whole.</p><p className="figure mt-2 text-left font-semibold">Pay {formatInr(totalEntitlementRights * subscriptionPrice)}, receive {integer.format(totalEntitlementRights)} shares</p></div>
                       <div><strong className="text-foreground">Sell entitlement</strong><p className="mt-1 text-muted-foreground">Sell the RE on NSE/BSE before the RE window closes.</p><p className="figure mt-2 text-left font-semibold">Recover about {formatInr(totalEntitlementRights * rightsValue)}, no funding needed</p></div>
                       <div><strong className="text-foreground">Let lapse</strong><p className="mt-1 text-muted-foreground">Do nothing and allow the entitlement to expire.</p><p className="figure mt-2 text-left font-semibold">Forfeit {formatInr(totalEntitlementRights * rightsValue)}</p></div>
-                    </CardContent>
-                  </Card>
-                </section>
+                  </div>
+                </Section>
               ) : data.options && data.options.length > 0 && (
-                <section>
-                  <SectionHeading index={optionsIndex} eyebrow="Elections" title="Options" description="Available choices provided by the issuer." />
-                  <Card className="rounded border-border bg-card shadow-none">
-                    <CardContent className="p-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-muted hover:bg-muted">
-                            <TableHead>Label</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Expected result</TableHead>
-                            <TableHead>Funding Formula</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {data.options.map((opt) => (
-                            <TableRow key={opt.id} className="text-xs">
-                              <TableCell className="font-semibold text-foreground">{opt.label} {opt.default && <Badge variant="secondary" className="ml-2">Default</Badge>}</TableCell>
-                              <TableCell>{opt.description}</TableCell>
-                              <TableCell>{opt.result || "-"}</TableCell>
-                              <TableCell className="font-mono">{opt.fundingFormula || "-"}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                </section>
+                <Section index={optionsIndex} title="Options" summary={`${data.options.length} choices · default is ${data.options.find((opt) => opt.default)?.label.toLowerCase() ?? "not set"}`}>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {data.options.map((opt) => (
+                      <div key={opt.id} className={`rounded-md border p-4 ${opt.default ? "border-primary/40 bg-accent-soft" : "border-border/70 bg-stone-50"}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-foreground">{opt.label}</span>
+                          {opt.default && <Badge variant="secondary">Default</Badge>}
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground">{opt.description}</p>
+                        <div className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs">
+                          <div><span className="font-semibold text-foreground">Result:</span> {opt.result || "-"}</div>
+                          <div><span className="font-semibold text-foreground">Funding:</span> {opt.fundingFormula || "-"}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
               )}
 
               {isRightsHero ? (
-                <section>
-                  <SectionHeading index={constraintsIndex} eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
-                  <Card className="rounded border-border bg-warning/5 shadow-none">
-                    <CardContent className="space-y-3 p-4 text-xs">
+                <Section index={constraintsIndex} title="Constraints" summary="Headroom and liquidity limits that block full exercise">
+                  <div className="space-y-3 rounded-md border border-warning/40 bg-warning/5 p-4 text-xs">
                       {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
                         <div key={row.id} className="text-foreground">
                           <strong>{row.name}</strong>: {row.id === "arka-focused-25"
@@ -343,26 +379,21 @@ export default function FundManagerDesk() {
                             : <>Needs <Figure>{formatInr(row.fullCashCrore * 10_000_000)}</Figure>, has <Figure>{formatInr(row.cashAvailableCrore * 10_000_000)}</Figure>. Short <Figure>{formatInr((row.fullCashCrore - row.cashAvailableCrore) * 10_000_000)}</Figure>. Cash covers <Figure>{integer.format(permittedRights(row))}</Figure> of <Figure>{integer.format(row.entitlementRights)}</Figure> rights.</>}
                         </div>
                       ))}
-                    </CardContent>
-                  </Card>
-                </section>
+                  </div>
+                </Section>
               ) : constraints.length > 0 && (
-                <section>
-                  <SectionHeading index={constraintsIndex} eyebrow="Limits" title="Constraints" description="Headroom and liquidity limits that block full exercise." />
-                  <Card className="rounded border-border bg-warning/5 shadow-none">
-                    <CardContent className="p-4 space-y-2">
-                      {constraints.map(c => (
-                        <div key={c.id} className="flex items-center gap-2 text-xs text-destructive font-medium">
-                          <AlertTriangle className="h-4 w-4" /> {c.schemeName}: {c.flag}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </section>
+                <Section index={constraintsIndex} title="Constraints" summary={`${constraints.length} scheme${constraints.length === 1 ? "" : "s"} flagged`}>
+                  <div className="space-y-2 rounded-md border border-warning/40 bg-warning/5 p-4">
+                    {constraints.map(c => (
+                      <div key={c.id} className="flex items-center gap-2 text-xs text-destructive font-medium">
+                        <AlertTriangle className="h-4 w-4" /> {c.schemeName}: {c.flag}
+                      </div>
+                    ))}
+                  </div>
+                </Section>
               )}
 
-              <section>
-                <SectionHeading index={decisionIndex} eyebrow="Your decision" title="Decision" description="Set scheme elections and submit for checker approval." />
+              <Section index={decisionIndex} title="Decision" summary="Set scheme elections and submit for checker approval">
                 <div className="space-y-4">
                   {isRightsHero ? rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => (
                     <Card key={row.id} className={`rounded border shadow-none ${row.blockers.length ? "border-warning/50 bg-warning/5" : "border-border bg-card"}`}>
@@ -429,35 +460,22 @@ export default function FundManagerDesk() {
                   ))}
                   {isRightsHero && <Card className="rounded border-border bg-warning/5 shadow-none"><CardContent className="space-y-3 p-5"><div className="grid gap-2 text-sm sm:grid-cols-4"><span className="figure text-left">Exercise <strong>{integer.format(totals.exercise)}</strong></span><span className="figure text-left">ASBA funding <strong>{formatInr(totals.cash)}</strong></span><span className="figure text-left">Sell <strong>{integer.format(totals.sell)}</strong> rights</span><span className="figure text-left">Value forfeited <strong>{formatInr(totals.forfeited * rightsValue)}</strong></span></div><Button disabled={blockedRights.length > 0 || saveArka.isPending || submitArka.isPending} onClick={() => saveArka.mutate({ data: { decisions: rightsRows.filter((row: any) => row.eligibilityStatus === "Eligible").map((row: any) => ({ schemeId: row.id, rights: rightsOption(row.id) === "exercise" ? rightsQty(row) : 0 })) } }, { onSuccess: () => submitArka.mutate() })}>{blockedRights.length > 0 ? `Resolve blocked schemes: ${blockedRights.map((row: any) => row.name).join(", ")}` : "Submit to Compliance"}</Button></CardContent></Card>}
                 </div>
-              </section>
+              </Section>
             </>
           )}
 
-          <section>
-            <SectionHeading index={historyIndex} eyebrow="History" title="History" description="A short record of what has happened." />
-            <Card className="rounded border-border bg-card shadow-none">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted hover:bg-muted">
-                      <TableHead>Time</TableHead>
-                      <TableHead>Actor</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(data.audit ?? []).map((entry: any) => (
-                      <TableRow key={entry.id} className="text-xs">
-                        <TableCell className="figure">{formatIstDate(entry.timestamp)}</TableCell>
-                        <TableCell>{entry.actor}</TableCell>
-                        <TableCell>{entry.action}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </section>
+          <Section index={historyIndex} title="History" summary={`${(data.audit ?? []).length} recorded step${(data.audit ?? []).length === 1 ? "" : "s"}`} defaultOpen={false}>
+            <ol className="space-y-5 border-l-2 border-border/70 pl-5">
+              {(data.audit ?? []).map((entry: any) => (
+                <li key={entry.id} className="relative">
+                  <span className={`absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-card ${entry.actorType === "user" ? "bg-primary" : "bg-stone-400"}`} aria-hidden="true" />
+                  <div className="text-sm font-semibold text-foreground">{entry.action}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">{entry.actor} · <span className="figure-inline">{formatIstDate(entry.timestamp)}</span></div>
+                  {entry.detail && <div className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{entry.detail}</div>}
+                </li>
+              ))}
+            </ol>
+          </Section>
         </div>
       </div>
     </div>

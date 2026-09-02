@@ -233,6 +233,9 @@ export const GetDashboardResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "category": zod.string(),
+  "aumCrore": zod.number(),
+  "navRupees": zod.number(),
+  "holdingCount": zod.number(),
   "openActions": zod.array(zod.object({
   "eventId": zod.string(),
   "issuer": zod.string(),
@@ -315,6 +318,9 @@ export const ListSchemesResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "category": zod.string(),
+  "aumCrore": zod.number(),
+  "navRupees": zod.number(),
+  "holdingCount": zod.number(),
   "openActions": zod.array(zod.object({
   "eventId": zod.string(),
   "issuer": zod.string(),

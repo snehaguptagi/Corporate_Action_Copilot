@@ -73,6 +73,7 @@ export default function Portfolio() {
                 <TableHeader>
                   <TableRow className="bg-muted hover:bg-muted">
                     <TableHead>Scheme</TableHead>
+                    <TableHead className="text-right">Fund Size & NAV</TableHead>
                     <TableHead>Open Actions & Deadlines</TableHead>
                     <TableHead className="text-right">Concentration Risk</TableHead>
                     <TableHead className="text-right">NAV Impact</TableHead>
@@ -90,7 +91,11 @@ export default function Portfolio() {
                       <TableRow key={scheme.id} className="group">
                         <TableCell>
                           <Link href={`/schemes/${scheme.id}`} className="font-semibold text-primary hover:underline">{scheme.name}</Link>
-                          <div className="mt-1 text-xs text-slate-500">{scheme.category}</div>
+                          <div className="mt-1 text-xs text-slate-500">{scheme.category} · {scheme.holdingCount} holdings</div>
+                        </TableCell>
+                        <TableCell className="figure text-right">
+                          <div className="font-semibold text-slate-900">₹{scheme.aumCrore.toLocaleString("en-IN")} cr</div>
+                          <div className="mt-1 text-xs text-slate-500">NAV ₹{scheme.navRupees.toFixed(2)}</div>
                         </TableCell>
                         <TableCell>
                           {scheme.openActions.length > 0 ? (

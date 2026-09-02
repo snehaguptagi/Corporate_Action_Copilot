@@ -907,11 +907,14 @@ components:
         reconciliationStatus: { type: string }
     SchemeSummary:
       type: object
-      required: [id, name, category, openActions, totalNavImpactPaise, fundingNeeded, cashAvailable, shortfall, closestDeadline, largestExposureIssuer, largestExposureEventId, largestExposureEventName, largestExposurePercent, distanceToLimitPercent, flag]
+      required: [id, name, category, aumCrore, navRupees, holdingCount, openActions, totalNavImpactPaise, fundingNeeded, cashAvailable, shortfall, closestDeadline, largestExposureIssuer, largestExposureEventId, largestExposureEventName, largestExposurePercent, distanceToLimitPercent, flag]
       properties:
         id: { type: string }
         name: { type: string }
         category: { type: string }
+        aumCrore: { type: number }
+        navRupees: { type: number }
+        holdingCount: { type: number }
         openActions:
           type: array
           items:

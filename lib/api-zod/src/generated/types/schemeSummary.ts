@@ -11,6 +11,9 @@ export interface SchemeSummary {
   id: string;
   name: string;
   category: string;
+  aumCrore: number;
+  navRupees: number;
+  holdingCount: number;
   openActions: SchemeOpenAction[];
   totalNavImpactPaise: number;
   fundingNeeded: number;

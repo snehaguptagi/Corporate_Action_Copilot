@@ -8,7 +8,7 @@ import {
   roundCalculation,
 } from "./calculations";
 import { SEED_DATE_ANCHOR as sharedSeedDateAnchor } from "./seed-clock";
-import { ARKA_SCHEME_SEED, ARKA_EVENT, calculateArkaRightsTerms, calculateIssuerExposure, projectArkaBharatPositions } from "./arka-desk";
+import { ARKA_SCHEME_SEED, ARKA_SCHEME_HOLDING_COUNTS, ARKA_EVENT, calculateArkaRightsTerms, calculateIssuerExposure, projectArkaBharatPositions } from "./arka-desk";
 
 export type EventData = Record<string, any>;
 
@@ -1577,6 +1577,9 @@ export function buildSchemeSummaries(events: EventData[], desk: EventData): Even
       id: scheme.id,
       name: scheme.name,
       category: scheme.category,
+      aumCrore: Number(scheme.aumCrore ?? 0),
+      navRupees: Number((Number(scheme.navPaise ?? 0) / 100).toFixed(2)),
+      holdingCount: ARKA_SCHEME_HOLDING_COUNTS[scheme.id] ?? 0,
       openActions: open.map(({ event, impact }) => ({ eventId: event.id, issuer: event.issuer, eventType: event.eventType, materialityPaise: Number(impact.navImpactPaise ?? 0) }))
         .sort((left, right) => right.materialityPaise - left.materialityPaise),
       totalNavImpactPaise: Number(open.reduce((total, { impact }) => total + Number(impact.navImpactPaise ?? 0), 0).toFixed(2)),

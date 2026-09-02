@@ -48,6 +48,19 @@ export const ARKA_SCHEME_SEED = [
   { id: "arka-banking-financial", schemeCode: "ARKA-BF", schemeName: "Arka Banking & Financial", category: "Banking", aumPaise: 1_900_000_000_000n, navPaise: 4_470, cashBudgetPaise: null, eligibilityStatus: "Excluded", exclusionReason: "Failed folio-active test: folio inactive", quantity: 0n },
 ] as const;
 
+export const ARKA_SCHEME_HOLDING_COUNTS: Record<string, number> = {
+  "arka-large-cap": 112,
+  "arka-flexi-cap": 84,
+  "arka-small-cap": 58,
+  "arka-focused-25": 34,
+  "arka-infrastructure": 42,
+  "arka-nifty-50": 53,
+  "arka-value": 61,
+  "arka-elss-tax-saver": 47,
+  "arka-mid-cap": 76,
+  "arka-banking-financial": 38,
+};
+
 export const ARKA_EVENT = {
   reference: "CA-IN-2026-0901-BR",
   issuer: "Bharat Renewables Ltd",

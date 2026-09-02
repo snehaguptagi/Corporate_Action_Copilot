@@ -40,6 +40,7 @@ export * from './eventSourceRecord';
 export * from './eventSourceRecordAssertedFields';
 export * from './eventSummary';
 export * from './eventSummaryCashDirection';
+export * from './eventSummarySourceDisagreementsItem';
 export * from './eventUpdate';
 export * from './extractionResult';
 export * from './handleBrowserLoginCallbackParams';

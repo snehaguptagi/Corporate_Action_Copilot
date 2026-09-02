@@ -61,7 +61,7 @@ import {
   sortCorporateActionEvents,
   toSummary,
 } from "../lib/corporate-actions-v2";
-import { ARKA_SCHEME_SEED, getArkaDesk } from "../lib/arka-desk";
+import { ARKA_SCHEME_HOLDING_COUNTS, ARKA_SCHEME_SEED, getArkaDesk } from "../lib/arka-desk";
 import {
   createCaseFromIntakeDraft,
   createIntakeDraft,
@@ -89,6 +89,12 @@ function withCurrentResponseFields(event: any) {
     primary: true,
   }];
   event.sourceAgreement ??= "No second source has been received yet.";
+  event.isEarlySighting ??= false;
+  event.impactBasis ??= "Confirmed";
+  event.decisionBlockedReason ??= "";
+  event.mergedFromSightingId ??= "";
+  event.sourceDisagreements ??= [];
+  event.teachingScenario ??= "";
   return event;
 }
 
@@ -179,6 +185,7 @@ router.get("/schemes/:schemeId", async (req, res): Promise<void> => {
       name: scheme.name,
       category: scheme.category,
       situation,
+      totalHoldings: ARKA_SCHEME_HOLDING_COUNTS[scheme.id] ?? holdings.length,
       contributions,
       funding: {
         needed: fundingNeeded,

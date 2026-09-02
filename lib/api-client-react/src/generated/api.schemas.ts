@@ -119,6 +119,7 @@ export interface SchemeDetail {
   name: string;
   category: string;
   situation: string;
+  totalHoldings: number;
   contributions: SchemeContribution[];
   funding: SchemeFunding;
   headroom: SchemeHeadroom;
@@ -345,6 +346,13 @@ export const EventSummaryCashDirection = {
   Payable: 'Payable',
 } as const;
 
+export type EventSummarySourceDisagreementsItem = {
+  field: string;
+  sightingValue: string;
+  confirmedValue: string;
+  winner: string;
+};
+
 export type EventSourceRecordAssertedFields = {[key: string]: string};
 
 export interface EventSourceRecord {
@@ -393,6 +401,12 @@ export interface EventSummary {
   cashCurrency?: string;
   shareAmount?: number;
   shareLabel?: string;
+  isEarlySighting?: boolean;
+  impactBasis?: string;
+  decisionBlockedReason?: string;
+  mergedFromSightingId?: string;
+  sourceDisagreements?: EventSummarySourceDisagreementsItem[];
+  teachingScenario?: string;
 }
 
 export interface NoticePage {

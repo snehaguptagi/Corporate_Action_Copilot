@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import test, { after, afterEach, before, beforeEach, describe } from "node:test";
-import { inArray } from "drizzle-orm";
-import { corporateActionEventsTable, db, pool } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
+import { corporateActionEventsTable, corporateActionIntakeDraftsTable, db, pool } from "@workspace/db";
 import app from "../src/app";
-import { demoUsers, ensureCorporateActionSeedData } from "../src/lib/corporate-actions-v2";
+import { demoUsers, ensureCorporateActionSeedData, getSeededEventSnapshot } from "../src/lib/corporate-actions-v2";
 import { ARKA_SCHEME_SEED } from "../src/lib/arka-desk";
 
 process.env.CORPORATE_ACTIONS_POC = "true";
@@ -14,6 +14,7 @@ type Session = { cookie: string };
 
 const runId = crypto.randomUUID().replaceAll("-", "").slice(0, 10);
 const eventId = `test-${runId}-rights`;
+const sightingDraftId = `test-${runId}-sighting-merge`;
 const createdEventIds = new Set<string>([eventId]);
 
 let server: ReturnType<typeof app.listen>;
@@ -135,6 +136,61 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     const response = await request("/not-a-real-route");
     assert.equal(response.status, 404);
     assert.deepEqual(response.body, { error: "API route not found." });
+  });
+
+  test("blocks an early sighting until a matching custodian MT564 merges into it", async () => {
+    const original = getSeededEventSnapshot().find((event) => event.id === "evt-early-sighting");
+    assert.ok(original);
+    const sighting = await request("/events/evt-early-sighting", {}, analystSession);
+    assert.equal(sighting.status, 200);
+    assert.equal(sighting.body.isEarlySighting, true);
+    assert.equal(sighting.body.impactBasis, "Indicative");
+
+    const blocked = await request("/events/evt-early-sighting/election", {
+      method: "POST",
+      body: JSON.stringify({ impactId: sighting.body.schemeImpacts.find((impact: EventData) => impact.affected)?.id ?? "none", optionId: "none", quantityElected: 0, comment: "" }),
+    }, analystSession);
+    assert.equal(blocked.status, 409);
+    assert.match(blocked.body.error, /Awaiting custodian notification/);
+
+    const receivedAt = new Date().toISOString();
+    await db.insert(corporateActionIntakeDraftsTable).values({
+      id: sightingDraftId,
+      data: {
+        id: sightingDraftId,
+        title: "SBI-SG MT564",
+        status: "Ready to create case",
+        source: { type: "structured-feed", label: "SBI-SG MT564", receivedAt, capturedText: "Veda Consumer Products Ltd dividend" },
+        extraction: { status: "Validated", method: "Structured feed", confidence: 1, errors: [] },
+        terms: [
+          { key: "eventType", label: "Event type", value: "Cash dividend", page: "p. 1", evidence: "Cash dividend", confidence: 1, reviewStatus: "Validated", sourceType: "Feed", manuallyCorrected: false, oldValue: "", correctionReason: "" },
+          { key: "issuer", label: "Issuer", value: "Veda Consumer Products Ltd", page: "p. 1", evidence: "Veda Consumer Products Ltd", confidence: 1, reviewStatus: "Validated", sourceType: "Feed", manuallyCorrected: false, oldValue: "", correctionReason: "" },
+          { key: "securityIdentifier", label: "Security identifier", value: "INE0VED01030", page: "p. 1", evidence: "INE0VED01030", confidence: 1, reviewStatus: "Validated", sourceType: "Feed", manuallyCorrected: false, oldValue: "", correctionReason: "" },
+          { key: "rate", label: "Cash rate", value: "₹3.25", page: "p. 1", evidence: "₹3.25", confidence: 1, reviewStatus: "Validated", sourceType: "Feed", manuallyCorrected: false, oldValue: "", correctionReason: "" },
+        ],
+        createdAt: receivedAt,
+        updatedAt: receivedAt,
+        createdBy: { id: "USR-004", name: "Rohan Iyer" },
+        audit: [],
+      },
+    });
+    try {
+      const merged = await request(`/intake/drafts/${sightingDraftId}/create-case`, { method: "POST" }, analystSession);
+      assert.equal(merged.status, 201, JSON.stringify(merged.body));
+      assert.equal(merged.body.id, "evt-early-sighting");
+      assert.equal(merged.body.isEarlySighting, false);
+      assert.equal(merged.body.impactBasis, "Confirmed");
+      assert.ok(merged.body.sourceRecords.some((source: EventData) => source.messageType === "MT564"));
+      assert.deepEqual(merged.body.sourceDisagreements[0], {
+        field: "Cash rate",
+        sightingValue: "₹3.00",
+        confirmedValue: "₹3.25",
+        winner: "Custodian",
+      });
+    } finally {
+      await db.update(corporateActionEventsTable).set({ data: original }).where(eq(corporateActionEventsTable.id, original.id));
+      await db.delete(corporateActionIntakeDraftsTable).where(eq(corporateActionIntakeDraftsTable.id, sightingDraftId));
+    }
   });
 
   test("renders a decomposable accountability view for every Arka scheme", async () => {

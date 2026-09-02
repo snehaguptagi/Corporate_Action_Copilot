@@ -8,6 +8,7 @@
 import type { DashboardSchemeImpact } from './dashboardSchemeImpact';
 import type { EventSourceRecord } from './eventSourceRecord';
 import type { EventSummaryCashDirection } from './eventSummaryCashDirection';
+import type { EventSummarySourceDisagreementsItem } from './eventSummarySourceDisagreementsItem';
 
 export interface EventSummary {
   id: string;
@@ -45,4 +46,10 @@ export interface EventSummary {
   cashCurrency?: string;
   shareAmount?: number;
   shareLabel?: string;
+  isEarlySighting?: boolean;
+  impactBasis?: string;
+  decisionBlockedReason?: string;
+  mergedFromSightingId?: string;
+  sourceDisagreements?: EventSummarySourceDisagreementsItem[];
+  teachingScenario?: string;
 }

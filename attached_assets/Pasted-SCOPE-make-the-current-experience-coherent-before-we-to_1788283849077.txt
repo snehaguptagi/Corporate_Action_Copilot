@@ -1,0 +1,117 @@
+SCOPE: make the current experience coherent before we touch analysis. Three
+things: the portfolio must be reachable, manual entry must stop pretending, and
+the seeded data must teach something. Do not touch the Options or Decision
+sections — that is the next step.
+
+═══ A. THE PORTFOLIO IS NOT A PLACE. MAKE IT ONE. ═══
+Today the nav is Dashboard / Corporate actions / Add manually / Audit trail. The
+ten schemes a fund manager is accountable for have no destination, and only the
+six AFFECTED schemes are links — the four unaffected ones are plain text, so
+they cannot be opened at all.
+
+1. Add "Portfolio" to the nav. It lists all TEN schemes, ranked by NAV impact,
+   with the unaffected ones present and openable at the bottom rather than
+   collapsed into a sentence. Same columns as the dashboard block.
+2. Every scheme is openable, including ones with nothing happening. A scheme
+   with no open corporate actions says so and shows its holdings.
+3. On /schemes/:id, give "securities in play" a denominator. Today it shows 2
+   rows with no sense of the whole:
+     "2 of 34 holdings have open corporate actions."
+   Without the denominator the number means nothing.
+
+═══ B. MANUAL ENTRY MUST STOP PRETENDING ═══
+A manually entered corporate action CANNOT be acted on, and the product should
+say so rather than implying otherwise.
+
+Acting on a corporate action means sending an MT565 instruction to the custodian
+against THE CUSTODIAN'S OWN corporate action reference. No MT564 means no
+reference, so no instruction can be sent. The entitlement quantity also comes
+from the depository's record-date file — it is not something a person types.
+
+So change what manual entry creates:
+1. It creates an EARLY SIGHTING, not a corporate action. Typically from an NSE
+   or BSE filing seen before the custodian's MT564 arrives.
+2. An early sighting computes INDICATIVE impact — which schemes, roughly how
+   much — so the fund manager can plan. Label it indicative everywhere it shows.
+3. An early sighting CANNOT progress to a decision. State the reason plainly on
+   the page:
+     "Awaiting custodian notification. You can review the likely impact now, but
+      an instruction cannot be sent until SBI-SG confirms this action."
+4. When a custodian MT564 arrives matching the same ISIN and event type, the two
+   MERGE. Any field where the sighting and the custodian disagree is surfaced,
+   the custodian value wins for cash, the depository for quantity.
+5. Seed one early sighting in this state so the flow is visible.
+
+Rename "Add manually" to "Log an early sighting" or similar — the label should
+say what it produces.
+
+═══ C. MAKE THE SEEDED DATA TEACH SOMETHING ═══
+Only Bharat Renewables currently demonstrates a risk. The other six show "a
+thing happened to one fund, nothing to decide". Keep the seven, add roughly ten
+more, and make each one demonstrate ONE distinct thing:
+
+MOST IMPORTANT — seed this pair adjacent so the contrast is unavoidable:
+  "Looks small, is not"  a modest dividend on a large position held by a SMALL
+                         scheme: small rupee figure, large NAV paise per unit
+  "Looks big, is not"    a large rupee figure in a very LARGE scheme:
+                         negligible NAV impact per unit
+Together these make the product's core argument: rupees mislead, NAV per unit
+does not. Right now the archive shows "₹55,27,125" beside a mostly-empty
+materiality column, which teaches the opposite.
+
+Also seed:
+  concentration creep    a MANDATORY bonus issue that pushes a scheme's issuer
+                         exposure toward the 10% cap with no decision to make.
+                         Nobody chose it; only a warning would catch it.
+  the near miss          a voluntary event with 2 days left, sitting among
+                         mandatory noise, so ranking has to earn its place
+  source disagreement    the vendor feed carries a record date one day off the
+                         exchange filing
+  overlap                one security held by 4-5 schemes, so "schemes impacted"
+                         stops being 1 for every event
+  ~10 boring ones        mandatory dividends and splits, nothing to decide.
+                         The value of the product is surfacing 3 that matter out
+                         of 20, and that cannot be shown with 7 events all
+                         flagged as interesting.
+
+Holdings must stay believable: a scheme's positions should be a plausible
+fraction of its AUM. No 1-share holdings, no figures chosen to make a column
+populate.
+
+═══ D. FIX THE CORPORATE ACTIONS LIST ═══
+1. It has NO "schemes impacted" column — the single most important fact. Add it.
+2. It has TWO status columns: "Status" (Election required / Validated / Under
+   review / Awaiting settlement / Break identified) and "Open". Keep one, in
+   fund-manager language, not internal workflow vocabulary. The filters have the
+   same problem — seven internal states offered as filter options.
+3. Money renders three different ways across the product: "₹55,27,125" here,
+   "₹15.30 cr" on the scheme page, "₹19.13 lakh" on the dashboard. Pick one
+   convention and apply it everywhere.
+4. Two headings stacked: "Corporate actions" then "Corporate action archive",
+   each with its own subtitle. Keep one.
+5. Materiality is blank on 5 of 7 rows because those events are value-neutral.
+   Blank reads as missing data. Say "Neutral" or show the cash figure in its
+   place, consistently with how the dashboard already does it.
+
+═══ E. DATE FORMAT, AGAIN ═══
+/schemes/:id renders holdings position dates as raw ISO "2026-09-11" while the
+rest of the product uses "15 Sep 2026 · 15:00 IST". One format everywhere.
+
+═══ DO NOT ═══
+- Do not touch section 03 Options or section 05 Decision.
+- Do not add charts.
+- Do not let an early sighting produce an instruction or an election.
+
+Declare new fields in lib/api-spec/openapi.yaml and run
+  pnpm --filter @workspace/api-spec run codegen
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- all ten schemes are reachable from Portfolio, including unaffected ones;
+- an early sighting cannot reach a decision, and says why;
+- a custodian MT564 arriving for a sighting merges them and reports any
+  disagreement;
+- the "looks small" event has higher NAV materiality than the "looks big" event
+  despite a smaller rupee figure — assert this ordering in a test;
+- schemes-impacted varies across events rather than being 1 for nearly all;
+- one money format and one date format across every page.

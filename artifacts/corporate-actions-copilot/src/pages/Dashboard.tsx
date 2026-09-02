@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatInr } from "@/lib/format";
 
 const IST_TIME_ZONE = "Asia/Kolkata";
 const MONTHS: Record<string, number> = {
@@ -28,28 +29,6 @@ function relativeArrival(timestamp: string) {
   if (diffMinutes < 1_440) return `${Math.round(diffMinutes / 60)} hr ago`;
   const days = Math.round(diffMinutes / 1_440);
   return `${days} day${days === 1 ? "" : "s"} ago`;
-}
-
-function formatCrore(amount: number) {
-  return `₹${(amount / 10_000_000).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} cr`;
-}
-
-function formatInr(amount: number) {
-  if (amount >= 10_000_000) return formatCrore(amount);
-  if (amount >= 100_000) {
-    return `₹${(amount / 100_000).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })} lakh`;
-  }
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 function actionName(eventType: string) {
@@ -189,7 +168,7 @@ export default function Dashboard() {
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Portfolio corporate actions</h1>
           </div>
           <Link href="/intake" className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90 gap-2">
-            <FileInput className="h-4 w-4" /> Add manually
+             <FileInput className="h-4 w-4" /> Log an early sighting
           </Link>
         </div>
       </header>

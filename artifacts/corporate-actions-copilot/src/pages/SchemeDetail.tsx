@@ -3,12 +3,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-function formatInr(amount: number) {
-  if (amount >= 10_000_000) return `₹${(amount / 10_000_000).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cr`;
-  if (amount >= 100_000) return `₹${(amount / 100_000).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} lakh`;
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
-}
+import { formatInr } from "@/lib/format";
+import { formatIstDate } from "@/lib/date";
 
 function SectionTitle({ number, children }: { number: string; children: string }) {
   return <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#a32020]">{number}. {children}</h2>;
@@ -25,7 +21,7 @@ export default function SchemeDetail() {
     <div className="flex-1 overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-white px-5 py-6 sm:px-8">
         <div className="mx-auto max-w-6xl">
-          <Link href="/" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+          <Link href="/portfolio" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
             <ArrowLeft className="h-3.5 w-3.5" /> Portfolio
           </Link>
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund · {scheme.category}</p>
@@ -62,7 +58,7 @@ export default function SchemeDetail() {
                         <TableCell>
                           {contribution.cashAmount > 0 ? `${formatInr(contribution.cashAmount)} ${contribution.cashDirection.toLowerCase()}` : "No cash movement"}
                         </TableCell>
-                        <TableCell>Decide by {contribution.deadline.split(" · ")[0]}</TableCell>
+                        <TableCell>{contribution.deadline}</TableCell>
                         <TableCell><Link href={`/events/${contribution.eventId}`}><ArrowRight className="h-4 w-4 text-primary" /></Link></TableCell>
                       </TableRow>
                     ))}
@@ -106,6 +102,9 @@ export default function SchemeDetail() {
           <SectionTitle number="4">Holdings</SectionTitle>
           <Card className="overflow-hidden shadow-sm">
             <CardContent className="p-0">
+              <p className="border-b border-stone-200 bg-stone-50 px-5 py-3 text-sm font-medium text-slate-700">
+                {scheme.holdings.length} of {scheme.totalHoldings} holdings have open corporate actions.
+              </p>
               {scheme.holdings.length > 0 ? (
                 <Table>
                   <TableHeader>
@@ -122,7 +121,7 @@ export default function SchemeDetail() {
                         <TableCell><Link href={`/events/${holding.eventId}`} className="font-semibold text-primary hover:underline">{holding.issuer}</Link></TableCell>
                         <TableCell className="font-mono text-xs">{holding.isin}</TableCell>
                         <TableCell className="text-right font-mono">{holding.quantity.toLocaleString("en-IN")} shares</TableCell>
-                        <TableCell>{holding.asOfDate}</TableCell>
+                        <TableCell>{formatIstDate(`${holding.asOfDate}T00:00:00+05:30`)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

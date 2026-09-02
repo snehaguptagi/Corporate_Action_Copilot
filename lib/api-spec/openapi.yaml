@@ -770,12 +770,13 @@ components:
             $ref: "#/components/schemas/AuditEntry"
     SchemeDetail:
       type: object
-      required: [id, name, category, situation, contributions, funding, headroom, holdings]
+      required: [id, name, category, situation, totalHoldings, contributions, funding, headroom, holdings]
       properties:
         id: { type: string }
         name: { type: string }
         category: { type: string }
         situation: { type: string }
+        totalHoldings: { type: number }
         contributions:
           type: array
           items:
@@ -1095,6 +1096,21 @@ components:
         cashCurrency: { type: string }
         shareAmount: { type: number }
         shareLabel: { type: string }
+        isEarlySighting: { type: boolean }
+        impactBasis: { type: string }
+        decisionBlockedReason: { type: string }
+        mergedFromSightingId: { type: string }
+        sourceDisagreements:
+          type: array
+          items:
+            type: object
+            required: [field, sightingValue, confirmedValue, winner]
+            properties:
+              field: { type: string }
+              sightingValue: { type: string }
+              confirmedValue: { type: string }
+              winner: { type: string }
+        teachingScenario: { type: string }
     EventSourceRecord:
       type: object
       required: [id, channel, provider, messageType, receivedAt, assertedFields, primary]

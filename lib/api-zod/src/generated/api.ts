@@ -173,6 +173,7 @@ export const GetSchemeResponse = zod.object({
   "name": zod.string(),
   "category": zod.string(),
   "situation": zod.string(),
+  "totalHoldings": zod.number(),
   "contributions": zod.array(zod.object({
   "eventId": zod.string(),
   "eventName": zod.string(),
@@ -777,7 +778,18 @@ export const ListEventsResponseItem = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 })
 export const ListEventsResponse = zod.array(ListEventsResponseItem)
 
@@ -864,7 +876,18 @@ export const CreateIntakeResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1291,7 +1314,18 @@ export const CreateCaseFromIntakeDraftResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1532,7 +1566,18 @@ export const GetEventResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1762,7 +1807,18 @@ export const UpdateEventResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -1987,7 +2043,18 @@ export const CalculateEventResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -2215,7 +2282,18 @@ export const SaveElectionResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -2441,7 +2519,18 @@ export const ApproveEventResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -2666,7 +2755,18 @@ export const UpdateInstructionResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),
@@ -2896,7 +2996,18 @@ export const SaveReconciliationResponse = zod.object({
   "cashAmount": zod.number().optional(),
   "cashCurrency": zod.string().optional(),
   "shareAmount": zod.number().optional(),
-  "shareLabel": zod.string().optional()
+  "shareLabel": zod.string().optional(),
+  "isEarlySighting": zod.boolean().optional(),
+  "impactBasis": zod.string().optional(),
+  "decisionBlockedReason": zod.string().optional(),
+  "mergedFromSightingId": zod.string().optional(),
+  "sourceDisagreements": zod.array(zod.object({
+  "field": zod.string(),
+  "sightingValue": zod.string(),
+  "confirmedValue": zod.string(),
+  "winner": zod.string()
+})).optional(),
+  "teachingScenario": zod.string().optional()
 }).and(zod.object({
   "notice": zod.object({
   "documentName": zod.string(),

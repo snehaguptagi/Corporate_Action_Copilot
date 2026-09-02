@@ -19,14 +19,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { formatIstDate } from "@/lib/date";
+import { formatInr } from "@/lib/format";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
-const decimal = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-function crore(value: number) {
-  return `₹${decimal.format(value)} cr`;
-}
-
 function SectionHeading({ index, eyebrow, title, description }: { index: string; eyebrow: string; title: string; description: string; }) {
   void eyebrow;
   void description;
@@ -118,7 +113,7 @@ export default function FundManagerDesk() {
   const statement1 = actionStatement(data);
   const statement2 = `${daysLeft ?? "No"} day${daysLeft === 1 ? "" : "s"} left. Decide by ${data.internalDeadline}.`;
   const statement3 = primarySource
-    ? `Received ${formatIstDate(primarySource.receivedAt)} from your custodian (${primarySource.provider}, ${primarySource.messageType}). ${data.sourceAgreement}`
+    ? `Received ${formatIstDate(primarySource.receivedAt)} from ${data.isEarlySighting ? "the exchange" : "your custodian"} (${primarySource.provider}, ${primarySource.messageType}). ${data.sourceAgreement}`
     : `Received ${formatIstDate(data.receivedAt)} from ${data.source}. ${data.sourceAgreement}`;
   const statusCopy = data.status === "Awaiting approval"
     ? "With Compliance"
@@ -142,7 +137,7 @@ export default function FundManagerDesk() {
               </div>
               <h1 className="text-2xl font-semibold tracking-tight text-[#5b1235] sm:text-3xl">{data.issuer} {data.eventType.toLowerCase()}</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5b1235] font-medium">
-                {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}
+                {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}{data.isEarlySighting ? " · Indicative impact" : ""}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -153,6 +148,11 @@ export default function FundManagerDesk() {
         </header>
 
         <div className="space-y-8">
+          {data.isEarlySighting && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950">
+              <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
+            </div>
+          )}
           <section>
             <SectionHeading index="01" eyebrow="Confirmed event" title="What it is" description="Notice terms, calendar, and security details extracted from the source document." />
             <Card className="rounded-md border-[#d8d1cb] shadow-none bg-white">
@@ -189,7 +189,7 @@ export default function FundManagerDesk() {
                       <TableRow key={scheme.id} className="text-xs">
                         <TableCell><Link href={`/schemes/${scheme.schemeId}`} className="font-semibold text-primary hover:underline">{scheme.schemeName}</Link></TableCell>
                         <TableCell className="text-right font-mono">{integer.format(scheme.eligibleQuantity)}</TableCell>
-                        <TableCell className="text-right font-mono">{scheme.cashAmount ? crore(scheme.cashAmount / 10000000) : "-"}</TableCell>
+                        <TableCell className="text-right font-mono">{scheme.cashAmount ? formatInr(scheme.cashAmount) : "No cash movement"}</TableCell>
                         <TableCell>{scheme.direction}</TableCell>
                       </TableRow>
                     ))}

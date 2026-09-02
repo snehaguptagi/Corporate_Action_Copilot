@@ -15,6 +15,7 @@ export interface SchemeDetail {
   name: string;
   category: string;
   situation: string;
+  totalHoldings: number;
   contributions: SchemeContribution[];
   funding: SchemeFunding;
   headroom: SchemeHeadroom;

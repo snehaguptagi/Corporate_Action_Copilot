@@ -19,6 +19,7 @@ import AuditLog from '@/pages/AuditLog';
 import NoticeIntake from '@/pages/NoticeIntake';
 import FundManagerDesk from '@/pages/FundManagerDesk';
 import SchemeDetail from '@/pages/SchemeDetail';
+import Portfolio from '@/pages/Portfolio';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function Router() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/events" component={EventsList} />
+          <Route path="/portfolio" component={Portfolio} />
           <Route path="/intake" component={NoticeIntake} />
           <Route path="/events/:eventId" component={FundManagerDesk} />
           <Route path="/schemes/:schemeId" component={SchemeDetail} />

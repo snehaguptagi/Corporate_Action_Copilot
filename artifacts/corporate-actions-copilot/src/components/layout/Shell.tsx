@@ -1,6 +1,6 @@
 import { ReactNode } from "react"
 import { Link, useLocation } from "wouter"
-import { LayoutDashboard, FileText, History, ShieldAlert, Upload, LogIn, LogOut } from "lucide-react"
+import { LayoutDashboard, FileText, History, ShieldAlert, Upload, LogIn, LogOut, BriefcaseBusiness } from "lucide-react"
 import { useAuth } from "@workspace/replit-auth-web"
 import {
   getGetSessionQueryKey,
@@ -28,8 +28,9 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/portfolio", label: "Portfolio", icon: BriefcaseBusiness },
     { href: "/events", label: "Corporate actions", icon: FileText },
-    { href: "/intake", label: "Add manually", icon: Upload },
+    { href: "/intake", label: "Log an early sighting", icon: Upload },
     { href: "/audit", label: "Audit trail", icon: History },
   ]
 

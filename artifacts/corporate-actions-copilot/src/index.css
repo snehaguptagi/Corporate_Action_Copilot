@@ -132,7 +132,7 @@
   --input: 30 14% 87%;
   --ring: 21 100% 41%;
   
-  --app-font-sans: 'IBM Plex Sans', sans-serif;
+  --app-font-sans: 'PwC Sans', 'IBM Plex Sans', Arial, sans-serif;
   --app-font-mono: 'IBM Plex Mono', monospace;
   --app-font-serif: Georgia, serif;
   
@@ -193,6 +193,7 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
@@ -228,5 +229,62 @@
   .figure-inline {
     font-family: var(--app-font-mono);
     font-variant-numeric: tabular-nums;
+  }
+
+  .pwc-mark {
+    position: relative;
+    display: inline-flex;
+    height: 1.75rem;
+    width: 1.75rem;
+    flex: 0 0 auto;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 0.2rem;
+    background: linear-gradient(145deg, #f6a800 0%, #e86f00 48%, #d04a00 100%);
+    color: white;
+    box-shadow: 0 5px 14px hsl(var(--primary) / 0.22);
+  }
+
+  .pwc-mark__word {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 0.18rem;
+    font-family: Arial, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: -0.08em;
+    line-height: 1;
+  }
+
+  .pwc-mark__block {
+    position: absolute;
+    top: 0.22rem;
+    height: 0.32rem;
+    width: 0.32rem;
+    border-radius: 0.06rem;
+    background: rgba(255,255,255,0.9);
+  }
+
+  .pwc-mark__block--one {
+    left: 0.35rem;
+  }
+
+  .pwc-mark__block--two {
+    left: 0.76rem;
+    opacity: 0.7;
+  }
+
+  .dashboard-panel {
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.45rem;
+    background: hsl(var(--card));
+    padding: 1.25rem;
+    box-shadow: 0 8px 24px hsl(var(--foreground) / 0.035);
+  }
+
+  .dashboard-panel--accent {
+    border-color: hsl(var(--primary) / 0.26);
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--accent-soft)) 100%);
   }
 }

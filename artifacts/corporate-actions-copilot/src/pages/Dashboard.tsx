@@ -1,5 +1,5 @@
 import { useGetDashboard, type EventSummary } from "@workspace/api-client-react";
-import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarClock, CircleDollarSign, CheckCircle2, CircleAlert, Radio } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,6 +107,7 @@ export default function Dashboard() {
   const unaffectedLabels = unaffectedSchemeRows.map(({ scheme }) => (
     scheme.category === "Banking" ? "Banking & Financial" : scheme.category
   ));
+  const attentionCount = sortedEvents.filter((event) => Boolean(event.attention)).length;
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
@@ -114,7 +115,8 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Arka Mutual Fund</p>
-             <h1 className="mt-2 text-[28px] font-semibold tracking-tight text-foreground">Portfolio corporate actions</h1>
+              <h1 className="mt-2 text-[30px] font-semibold tracking-[-0.03em] text-foreground">Corporate Actions Copilot</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Evidence-led impact control for Arka Mutual Fund. Review what arrived, what is affected, and what needs a controlled decision.</p>
           </div>
         </div>
       </header>
@@ -146,6 +148,67 @@ export default function Dashboard() {
                    <strong className="figure text-left text-lg text-slate-950">{dashboard.portfolioEventCount}</strong>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="control-pulse" className="grid gap-4 xl:grid-cols-[1.35fr_0.9fr]">
+          <div className="dashboard-panel dashboard-panel--accent">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                  <Radio className="h-3.5 w-3.5" />
+                  Control pulse
+                </div>
+                <h2 id="control-pulse" className="mt-2 text-lg font-semibold tracking-tight text-foreground">Portfolio coverage at a glance</h2>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
+                <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                Live ledger
+              </span>
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              <VisualMetric label="Notices" value={dashboard.arrivalCount24h} detail="last 24 hours" />
+              <VisualMetric label="Schemes touched" value={`${dashboard.impactedSchemeCount}/${dashboard.totalSchemeCount}`} detail="portfolio coverage" />
+              <VisualMetric label="Needs attention" value={attentionCount} detail="decision or exception" />
+            </div>
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                <span>Scheme coverage</span>
+                <span className="figure-inline">{dashboard.impactedSchemeCount} impacted · {unaffectedSchemeRows.length} unaffected</span>
+              </div>
+              <div className="flex h-3 gap-1" aria-label={`${dashboard.impactedSchemeCount} of ${dashboard.totalSchemeCount} schemes impacted`}>
+                {schemeRows.map(({ scheme, openActions }) => (
+                  <div key={scheme.id} title={`${scheme.name}: ${openActions.length ? "Impacted" : "Unaffected"}`} className={`min-w-2 flex-1 rounded-sm ${openActions.length ? "bg-primary" : "bg-border"}`} />
+                ))}
+              </div>
+              <div className="mt-2 flex items-center gap-4 text-[11px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-primary" /> Impacted</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-border" /> Unaffected</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-panel">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Action queue</div>
+                <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">What needs a look</h2>
+              </div>
+              <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
+            </div>
+            <div className="mt-4 space-y-1">
+              {sortedEvents.slice(0, 4).map((event) => (
+                <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted">
+                  <span className={`h-8 w-1 rounded-full ${event.attention ? "bg-warning" : "bg-success"}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-foreground">{event.issuer}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{actionName(event.eventType)} · {relativeArrival(event.receivedAt)}</span>
+                  </span>
+                  {event.attention ? <CircleAlert className="h-4 w-4 shrink-0 text-warning" /> : <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />}
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                </Link>
+              ))}
             </div>
           </div>
         </section>
@@ -287,6 +350,16 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function VisualMetric({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+  return (
+    <div className="rounded-md border border-border/80 bg-background/70 px-3 py-3">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
+      <div className="figure mt-2 text-left text-2xl font-semibold tracking-tight text-foreground">{value}</div>
+      <div className="mt-1 text-[11px] text-muted-foreground">{detail}</div>
     </div>
   );
 }

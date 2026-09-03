@@ -2,7 +2,7 @@ import { getGetLastDiscoveryQueryKey, useGetLastDiscovery, useListEvents, useSea
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useMemo, useState } from "react";
-import { AlertCircle, ArrowRight, ExternalLink, Globe2, Landmark, LoaderCircle, Search } from "lucide-react";
+import { AlertCircle, ArrowRight, ChevronDown, ExternalLink, Globe2, Landmark, LoaderCircle, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,6 +24,7 @@ export default function EventsList() {
   const [processingType, setProcessingType] = useState("All");
   const [liveQuery, setLiveQuery] = useState("India corporate actions announced this week");
   const [discovery, setDiscovery] = useState<LiveDiscoveryResponse | null>(null);
+  const [expandedNoticeId, setExpandedNoticeId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const liveSearch = useSearchLiveCorporateActions({
     mutation: {
@@ -113,25 +114,46 @@ export default function EventsList() {
                 <div className="px-5 py-8 text-center text-sm text-slate-500">No supported public notices were found for this search. Try a named issuer, exchange, or event type.</div>
               ) : (
                 <div className="divide-y">
-                  {shown.notices.map((notice) => (
-                    <article key={notice.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[1fr_auto]">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-slate-900">{notice.title}</h3>
-                          <Badge variant="outline">{notice.confidence}</Badge>
-                          {notice.eventType && <Badge variant="secondary">{notice.eventType}</Badge>}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500">{[notice.issuer, notice.publishedAt].filter(Boolean).join(" · ") || "Source date and issuer require review"}</div>
-                        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-700">{notice.summary}</p>
-                        {notice.terms.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{notice.terms.map((term) => <span key={term} className="rounded border bg-white px-2 py-1 text-xs text-slate-600">{term}</span>)}</div>}
-                        <p className="mt-3 text-xs leading-5 text-amber-800">{notice.whyRelevant}</p>
-                      </div>
-                      <div className="flex shrink-0 items-start gap-2 lg:flex-col">
-                        <a href={notice.sourceUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm">Open source <ExternalLink className="ml-2 h-3.5 w-3.5" /></Button></a>
-                        <Link href={`/intake?sourceUrl=${encodeURIComponent(notice.sourceUrl)}`}><Button size="sm">Capture &amp; analyse</Button></Link>
-                      </div>
-                    </article>
-                  ))}
+                  {shown.notices.map((notice) => {
+                    const open = expandedNoticeId === notice.id;
+                    return (
+                      <article key={notice.id} className="px-5 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedNoticeId(open ? null : notice.id)}
+                          aria-expanded={open}
+                          className="flex w-full items-center justify-between gap-3 text-left"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-slate-900">{notice.title}</h3>
+                              <Badge variant="outline">{notice.confidence}</Badge>
+                              {notice.eventType && <Badge variant="secondary">{notice.eventType}</Badge>}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500">{[notice.issuer, notice.publishedAt].filter(Boolean).join(" · ") || "Source date and issuer require review"}</div>
+                          </div>
+                          <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+                        </button>
+                        {open && (
+                          <div className="mt-3 border-t border-amber-100 pt-3">
+                            <p className="max-w-4xl text-sm leading-6 text-slate-700">{notice.summary}</p>
+                            {notice.terms.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Stated terms</p>
+                                <div className="mt-1.5 flex flex-wrap gap-2">{notice.terms.map((term) => <span key={term} className="rounded border bg-white px-2 py-1 text-xs text-slate-600">{term}</span>)}</div>
+                              </div>
+                            )}
+                            <p className="mt-3 max-w-4xl text-xs leading-5 text-amber-800">{notice.whyRelevant}</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <Link href={`/intake?sourceUrl=${encodeURIComponent(notice.sourceUrl)}`}><Button size="sm">Capture &amp; analyse</Button></Link>
+                              <a href={notice.sourceUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm">Open source <ExternalLink className="ml-2 h-3.5 w-3.5" /></Button></a>
+                              <p className="text-xs leading-5 text-slate-500">Capture pulls the source evidence, extracts the relevant facts, then opens the case: Stage 1 deterministic numbers against your schemes, Stage 2 AI judgement, and the decision. The dashboard and portfolio update as soon as the case is created.</p>
+                            </div>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

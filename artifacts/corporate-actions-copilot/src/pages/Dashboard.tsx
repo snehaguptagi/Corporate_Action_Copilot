@@ -180,7 +180,7 @@ export default function Dashboard() {
             </div>
             <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
           </div>
-          <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="-mx-2 mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
             {queue.slice(0, 6).map((event) => (
               <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted">
                 <span className={`h-8 w-1 rounded-full ${event.attention || isDecisionNeeded(event.status) ? "bg-warning" : "bg-success"}`} />
@@ -281,7 +281,7 @@ export default function Dashboard() {
                           <div className="text-sm font-medium text-slate-700">{relativeArrival(event.receivedAt)}</div>
                           <div className="mt-1 max-w-36 text-xs leading-4 text-slate-500">{event.source}</div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-right">
                           <Link href={`/events/${event.id}`} className="font-semibold text-primary hover:underline">
                              {impacted} of {dashboard.totalSchemeCount}
                           </Link>

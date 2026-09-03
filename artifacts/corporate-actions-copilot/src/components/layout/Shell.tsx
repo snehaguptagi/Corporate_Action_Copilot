@@ -169,9 +169,6 @@ function AuthenticatedShell({ children, activeRole, isDesktop, collapsed, setCol
               <LogOut className="h-4 w-4" />
             </button>}
           </div>
-          {!collapsed && <p className="mt-3 border-t border-sidebar-border/50 pt-2.5 text-[10px] leading-4 text-sidebar-muted-foreground/80">
-            Demonstration data for a synthetic asset manager. No real holdings.
-          </p>}
         </div>
       </aside>}
       

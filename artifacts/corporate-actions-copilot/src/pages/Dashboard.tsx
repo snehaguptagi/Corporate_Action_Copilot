@@ -180,6 +180,9 @@ export default function Dashboard() {
             </div>
             <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
           </div>
+          {queue.length === 0 && (
+            <p className="mt-3 text-sm text-muted-foreground">Nothing needs a look. Fetch and capture notices from the Corporate actions page to build the queue.</p>
+          )}
           <div className="-mx-2 mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
             {queue.slice(0, 6).map((event) => (
               <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted">
@@ -224,6 +227,9 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {dashboard.topHouseExposures.length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="h-16 text-center text-xs text-slate-400">No issuer exposures to show yet.</TableCell></TableRow>
+                )}
                 {dashboard.topHouseExposures.map((row) => (
                   <TableRow key={row.issuerId} className="hover:bg-muted">
                     <TableCell className="px-2 py-2">

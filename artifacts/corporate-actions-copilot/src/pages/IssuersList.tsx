@@ -46,6 +46,9 @@ export default function IssuersList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {issuers.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="h-24 text-center text-sm text-slate-500">No issuers with open corporate actions yet. Capture a notice to see house exposure here.</TableCell></TableRow>
+                  )}
                   {issuers.map((issuer) => (
                     <TableRow key={issuer.issuerId} className="group align-top">
                       <TableCell>

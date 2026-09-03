@@ -66,6 +66,9 @@ export default function Portfolio() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {schemes.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="h-24 text-center text-sm text-slate-500">Scheme data is not available yet.</TableCell></TableRow>
+                  )}
                   {schemes.map((scheme) => {
                     const sortedActions = [...scheme.openActions].sort((a, b) => b.materialityPaise - a.materialityPaise);
                     const mostMaterial = sortedActions[0];

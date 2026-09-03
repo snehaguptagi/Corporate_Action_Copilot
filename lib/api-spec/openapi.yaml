@@ -1827,6 +1827,9 @@ components:
           type: string
           minLength: 3
           maxLength: 240
+        window:
+          type: string
+          enum: [today, week, month]
     LiveDiscoveryNotice:
       type: object
       additionalProperties: false
@@ -1849,12 +1852,15 @@ components:
     LiveDiscoveryResponse:
       type: object
       additionalProperties: false
-      required: [mode, query, searchedAt, warning, notices]
+      required: [mode, query, window, searchedAt, warning, notices]
       properties:
         mode:
           type: string
           enum: [Indicative discovery]
         query: { type: string }
+        window:
+          type: string
+          enum: [today, week, month]
         searchedAt: { type: string }
         warning: { type: string }
         notices:
@@ -1863,11 +1869,12 @@ components:
             $ref: "#/components/schemas/LiveDiscoveryNotice"
     LastDiscoveryResponse:
       type: object
-      required: [searched]
+      required: [searches]
       properties:
-        searched: { type: boolean }
-        result:
-          $ref: "#/components/schemas/LiveDiscoveryResponse"
+        searches:
+          type: array
+          items:
+            $ref: "#/components/schemas/LiveDiscoveryResponse"
     RequestUploadUrlInput:
       type: object
       required: [name, size, contentType]

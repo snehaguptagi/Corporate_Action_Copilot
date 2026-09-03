@@ -13,12 +13,21 @@ export type LiveDiscoveryNotice = {
   confidence: "Unverified";
 };
 
+export type LiveDiscoveryWindow = "today" | "week" | "month";
+
 export type LiveDiscoveryResponse = {
   mode: "Indicative discovery";
   query: string;
+  window: LiveDiscoveryWindow;
   searchedAt: string;
   warning: string;
   notices: LiveDiscoveryNotice[];
+};
+
+const windowPhrase: Record<LiveDiscoveryWindow, string> = {
+  today: "announced or published today",
+  week: "announced or published within the last 7 days",
+  month: "announced or published within the last 30 days",
 };
 
 const maxQueryLength = 240;
@@ -84,7 +93,7 @@ function toNotice(item: Record<string, unknown>, citation: { url: string; title:
   };
 }
 
-export async function searchLiveCorporateActions(rawQuery: string): Promise<LiveDiscoveryResponse> {
+export async function searchLiveCorporateActions(rawQuery: string, window: LiveDiscoveryWindow = "week"): Promise<LiveDiscoveryResponse> {
   const query = rawQuery.trim().slice(0, maxQueryLength);
   if (query.length < 3) throw new Error("Enter at least three characters to search live notices.");
   if (!process.env.OPENAI_API_KEY) throw new Error("OpenAI discovery is not configured. Add the OPENAI_API_KEY secret.");
@@ -93,7 +102,7 @@ export async function searchLiveCorporateActions(rawQuery: string): Promise<Live
   const response = await client.responses.create({
     model: "gpt-5.4-mini",
     tools: [{ type: "web_search_preview" } as any],
-    input: `Find recent public corporate-action notices relevant to this search: "${query}".
+    input: `Find public corporate-action notices ${windowPhrase[window]} that are relevant to this search: "${query}".
 
 Use web search and return JSON only in this exact shape:
 {"notices":[{"title":"","sourceUrl":"","publishedAt":"","issuer":"","eventType":"","summary":"","terms":[],"whyRelevant":""}]}
@@ -133,6 +142,7 @@ Rules:
   return {
     mode: "Indicative discovery",
     query,
+    window,
     searchedAt: new Date().toISOString(),
     warning: "Web results are indicative only. They do not confirm terms, quantities, eligibility, or deadlines and cannot generate instructions.",
     notices,

@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import { GetLastDiscoveryResponse, SearchLiveCorporateActionsBody, SearchLiveCorporateActionsResponse } from "@workspace/api-zod";
 import { db, discoverySearchesTable } from "@workspace/db";
-import { searchLiveCorporateActions } from "../lib/live-discovery";
+import { searchLiveCorporateActions, type LiveDiscoveryWindow } from "../lib/live-discovery";
 import { requireActor } from "../lib/actor-context";
 
 const router: IRouter = Router();
 
-const LATEST_SEARCH_ID = "latest";
+const KNOWN_WINDOWS: LiveDiscoveryWindow[] = ["today", "week", "month"];
 
 router.post("/discovery/search", async (req, res): Promise<void> => {
   if (!requireActor(req, res)) return;
@@ -15,11 +15,15 @@ router.post("/discovery/search", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const window: LiveDiscoveryWindow = KNOWN_WINDOWS.includes(parsed.data.window as LiveDiscoveryWindow)
+    ? (parsed.data.window as LiveDiscoveryWindow)
+    : "week";
   try {
-    const result = SearchLiveCorporateActionsResponse.parse(await searchLiveCorporateActions(parsed.data.query));
+    const result = SearchLiveCorporateActionsResponse.parse(await searchLiveCorporateActions(parsed.data.query, window));
     try {
+      // One stored search per window, so each tab remembers its own last fetch.
       await db.insert(discoverySearchesTable)
-        .values({ id: LATEST_SEARCH_ID, data: result, searchedAt: new Date() })
+        .values({ id: window, data: result, searchedAt: new Date() })
         .onConflictDoUpdate({ target: discoverySearchesTable.id, set: { data: result, searchedAt: new Date() } });
     } catch (persistError) {
       // The search itself succeeded; do not turn a persistence failure into a 502.
@@ -35,17 +39,19 @@ router.get("/discovery/last", async (req, res): Promise<void> => {
   if (!requireActor(req, res)) return;
   try {
     const rows = await db.select().from(discoverySearchesTable);
-    const latest = rows.find((row) => row.id === LATEST_SEARCH_ID);
-    const parsed = GetLastDiscoveryResponse.safeParse(latest ? { searched: true, result: latest.data } : { searched: false });
+    const searches = rows
+      .filter((row) => KNOWN_WINDOWS.includes(row.id as LiveDiscoveryWindow))
+      .map((row) => row.data);
+    const parsed = GetLastDiscoveryResponse.safeParse({ searches });
     if (!parsed.success) {
-      console.error("Stored discovery search failed validation", parsed.error);
-      res.json({ searched: false });
+      console.error("Stored discovery searches failed validation", parsed.error);
+      res.json({ searches: [] });
       return;
     }
     res.json(parsed.data);
   } catch (error) {
-    console.error("Failed to load last discovery search", error);
-    res.json({ searched: false });
+    console.error("Failed to load last discovery searches", error);
+    res.json({ searches: [] });
   }
 });
 

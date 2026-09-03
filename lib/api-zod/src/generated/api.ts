@@ -1094,12 +1094,14 @@ export const searchLiveCorporateActionsBodyQueryMax = 240;
 
 
 export const SearchLiveCorporateActionsBody = zod.object({
-  "query": zod.string().min(searchLiveCorporateActionsBodyQueryMin).max(searchLiveCorporateActionsBodyQueryMax)
+  "query": zod.string().min(searchLiveCorporateActionsBodyQueryMin).max(searchLiveCorporateActionsBodyQueryMax),
+  "window": zod.enum(['today', 'week', 'month']).optional()
 })
 
 export const SearchLiveCorporateActionsResponse = zod.object({
   "mode": zod.enum(['Indicative discovery']),
   "query": zod.string(),
+  "window": zod.enum(['today', 'week', 'month']),
   "searchedAt": zod.string(),
   "warning": zod.string(),
   "notices": zod.array(zod.object({
@@ -1121,10 +1123,10 @@ export const SearchLiveCorporateActionsResponse = zod.object({
  * @summary Return the most recent public web discovery search and its results
  */
 export const GetLastDiscoveryResponse = zod.object({
-  "searched": zod.boolean(),
-  "result": zod.object({
+  "searches": zod.array(zod.object({
   "mode": zod.enum(['Indicative discovery']),
   "query": zod.string(),
+  "window": zod.enum(['today', 'week', 'month']),
   "searchedAt": zod.string(),
   "warning": zod.string(),
   "notices": zod.array(zod.object({
@@ -1139,7 +1141,7 @@ export const GetLastDiscoveryResponse = zod.object({
   "whyRelevant": zod.string(),
   "confidence": zod.enum(['Unverified'])
 }))
-}).optional()
+}))
 })
 
 

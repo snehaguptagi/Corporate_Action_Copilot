@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LiveDiscoveryInputWindow } from './liveDiscoveryInputWindow';
 
 export interface LiveDiscoveryInput {
   /**
@@ -12,4 +13,5 @@ export interface LiveDiscoveryInput {
      * @maxLength 240
      */
   query: string;
+  window?: LiveDiscoveryInputWindow;
 }

@@ -7,10 +7,12 @@
  */
 import type { LiveDiscoveryNotice } from './liveDiscoveryNotice';
 import type { LiveDiscoveryResponseMode } from './liveDiscoveryResponseMode';
+import type { LiveDiscoveryResponseWindow } from './liveDiscoveryResponseWindow';
 
 export interface LiveDiscoveryResponse {
   mode: LiveDiscoveryResponseMode;
   query: string;
+  window: LiveDiscoveryResponseWindow;
   searchedAt: string;
   warning: string;
   notices: LiveDiscoveryNotice[];

@@ -8,6 +8,5 @@
 import type { LiveDiscoveryResponse } from './liveDiscoveryResponse';
 
 export interface LastDiscoveryResponse {
-  searched: boolean;
-  result?: LiveDiscoveryResponse;
+  searches: LiveDiscoveryResponse[];
 }

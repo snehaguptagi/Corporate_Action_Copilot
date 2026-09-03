@@ -872,12 +872,22 @@ export interface IntakeInput {
   noticeText?: string;
 }
 
+export type LiveDiscoveryInputWindow = typeof LiveDiscoveryInputWindow[keyof typeof LiveDiscoveryInputWindow];
+
+
+export const LiveDiscoveryInputWindow = {
+  today: 'today',
+  week: 'week',
+  month: 'month',
+} as const;
+
 export interface LiveDiscoveryInput {
   /**
      * @minLength 3
      * @maxLength 240
      */
   query: string;
+  window?: LiveDiscoveryInputWindow;
 }
 
 export type LiveDiscoveryNoticeConfidence = typeof LiveDiscoveryNoticeConfidence[keyof typeof LiveDiscoveryNoticeConfidence];
@@ -907,17 +917,26 @@ export const LiveDiscoveryResponseMode = {
   Indicative_discovery: 'Indicative discovery',
 } as const;
 
+export type LiveDiscoveryResponseWindow = typeof LiveDiscoveryResponseWindow[keyof typeof LiveDiscoveryResponseWindow];
+
+
+export const LiveDiscoveryResponseWindow = {
+  today: 'today',
+  week: 'week',
+  month: 'month',
+} as const;
+
 export interface LiveDiscoveryResponse {
   mode: LiveDiscoveryResponseMode;
   query: string;
+  window: LiveDiscoveryResponseWindow;
   searchedAt: string;
   warning: string;
   notices: LiveDiscoveryNotice[];
 }
 
 export interface LastDiscoveryResponse {
-  searched: boolean;
-  result?: LiveDiscoveryResponse;
+  searches: LiveDiscoveryResponse[];
 }
 
 export interface RequestUploadUrlInput {

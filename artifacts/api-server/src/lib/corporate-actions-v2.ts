@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import {
   calculateDividendWithholding,
   calculateMixedMerger,
@@ -1379,10 +1379,10 @@ export async function ensureCorporateActionSeedData(): Promise<void> {
   if (!seedPromise) {
     seedPromise = (async () => {
       const { corporateActionEventsTable, db } = await import("@workspace/db");
-      const [existing] = await db.select().from(corporateActionEventsTable).limit(1);
-      if (existing && (existing.data as any).seedVersion === SEED_VERSION) return;
-      if (existing) await db.delete(corporateActionEventsTable);
-      await db.insert(corporateActionEventsTable).values(preloadedEvents.map((event) => ({ id: event.id, data: event })));
+      // Sample teaching events are no longer served anywhere; the ledger only
+      // carries cases the user captured themselves. Remove any samples that a
+      // previous seed version left behind.
+      await db.delete(corporateActionEventsTable).where(inArray(corporateActionEventsTable.id, preloadedEvents.map((event) => event.id)));
     })().catch((error) => {
       seedPromise = undefined;
       throw error;

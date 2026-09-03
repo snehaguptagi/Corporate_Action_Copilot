@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import {
+  AlertCircle,
+  Check,
   FileUp,
   LoaderCircle,
-  AlertCircle,
   Radar,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,6 +27,45 @@ async function requestJson<T>(url: string, options: RequestInit = {}): Promise<T
   return body as T;
 }
 
+type StepStatus = "pending" | "active" | "done" | "error";
+
+type PipelineStep = {
+  id: string;
+  label: string;
+  explanation: string;
+  status: StepStatus;
+  detail?: string;
+};
+
+const initialSteps: PipelineStep[] = [
+  { id: "capture", label: "Record the source", explanation: "The notice source is recorded as the case's evidence pointer.", status: "pending" },
+  { id: "extract", label: "Pull and extract the facts", explanation: "The evidence is retrieved and dates, ratios, prices, and identifiers are read out of it.", status: "pending" },
+  { id: "validate", label: "Validate the terms", explanation: "Each extracted term is checked against what the source actually says.", status: "pending" },
+  { id: "create", label: "Create the case", explanation: "Impacts are computed for every scheme and the case opens for analysis.", status: "pending" },
+];
+
+function StepRow({ step, index }: { step: PipelineStep; index: number }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+        step.status === "done" ? "bg-success text-white"
+        : step.status === "active" ? "bg-primary text-primary-foreground"
+        : step.status === "error" ? "bg-destructive text-white"
+        : "border border-slate-300 bg-white text-slate-500"
+      }`}>
+        {step.status === "done" ? <Check className="h-3.5 w-3.5" />
+          : step.status === "active" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+          : step.status === "error" ? <AlertCircle className="h-3.5 w-3.5" />
+          : index + 1}
+      </span>
+      <div className="min-w-0">
+        <p className={`text-sm font-medium ${step.status === "pending" ? "text-slate-400" : "text-slate-900"}`}>{step.label}</p>
+        <p className="text-xs leading-5 text-slate-500">{step.detail ?? step.explanation}</p>
+      </div>
+    </li>
+  );
+}
+
 export default function NoticeIntake() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -36,6 +76,12 @@ export default function NoticeIntake() {
   const [sourceUrl, setSourceUrl] = useState(() => new URLSearchParams(window.location.search).get("sourceUrl") ?? "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [steps, setSteps] = useState<PipelineStep[]>(initialSteps);
+  const cameFromDiscovery = Boolean(new URLSearchParams(window.location.search).get("sourceUrl"));
+
+  const setStep = (id: string, status: StepStatus, detail?: string) => {
+    setSteps((previous) => previous.map((step) => (step.id === id ? { ...step, status, detail: detail ?? step.detail } : step)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +96,11 @@ export default function NoticeIntake() {
 
     setIsProcessing(true);
     setErrorMsg(null);
+    setSteps(initialSteps.map((step) => ({ ...step })));
+    let activeStep = "capture";
 
     try {
+      setStep("capture", "active");
       let objectPath;
       if (file) {
         const destination = await requestJson<{ uploadURL: string; objectPath: string }>("/api/storage/uploads/request-url", {
@@ -63,7 +112,6 @@ export default function NoticeIntake() {
         objectPath = destination.objectPath;
       }
 
-      // 1. Capture source
       const captureBody = {
         sourceType: file ? "upload" : sourceUrl.trim() ? "url" : "text",
         sourceLabel: file ? `NSE/BSE filing · ${file.name}` : sourceUrl.trim() ? "Public web discovery" : "NSE/BSE early sighting",
@@ -76,46 +124,71 @@ export default function NoticeIntake() {
         method: "POST",
         body: JSON.stringify(captureBody)
       });
+      setStep("capture", "done", file ? `Stored ${file.name} as evidence.` : sourceUrl.trim() ? "Source URL recorded. The evidence itself is pulled in the next step." : "Stored the pasted content as evidence.");
 
-      // 2. Extract terms
+      activeStep = "extract";
+      setStep("extract", "active");
       const extracted = await requestJson<{ terms: { key: string; value: string }[] }>(`/api/intake/drafts/${draft.id}/extract`, { method: "POST" });
+      setStep("extract", "done", `Retrieved the evidence and extracted ${extracted.terms.length} term${extracted.terms.length === 1 ? "" : "s"}.`);
 
-      // 3. Validate (auto-approve all extracted terms)
+      activeStep = "validate";
+      setStep("validate", "active");
       await requestJson(`/api/intake/drafts/${draft.id}/validate`, {
         method: "POST",
         body: JSON.stringify({ terms: extracted.terms.map(({ key, value }) => ({ key, value })) }),
       });
+      setStep("validate", "done", "Every term traces back to the captured evidence.");
 
-      // 4. Create case
+      activeStep = "create";
+      setStep("create", "active");
       const event = await requestJson<{ id: string }>(`/api/intake/drafts/${draft.id}/create-case`, { method: "POST" });
+      setStep("create", "done", "Scheme impacts computed. Opening the case.");
 
       queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
 
-      toast({ title: "Early sighting logged" });
-      setLocation(`/events/${event.id}`);
+      toast({ title: "Case created", description: "Stage 1 numbers are ready. Stage 2 judgement runs on demand." });
+      setTimeout(() => setLocation(`/events/${event.id}`), 600);
 
     } catch (error) {
+      setStep(activeStep, "error", error instanceof Error ? error.message : undefined);
       setErrorMsg(error instanceof Error ? error.message : "Failed to process the notice.");
-    } finally {
       setIsProcessing(false);
     }
   };
+
+  const showPipeline = isProcessing || steps.some((step) => step.status !== "pending");
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50/50">
       <header className="border-b bg-card px-5 py-4 sm:px-8">
         <div className="mx-auto max-w-3xl">
-          <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-slate-900"><Radar className="h-6 w-6 text-primary" />Log an early sighting</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Capture an NSE or BSE filing before the custodian notification arrives. The result is indicative and cannot be acted on.</p>
+          <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-slate-900"><Radar className="h-6 w-6 text-primary" />Capture &amp; analyse</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {cameFromDiscovery
+              ? "The fetched notice is only a lead. Capturing it pulls the original source, extracts the facts, and creates a case with deterministic numbers for every scheme."
+              : "Bring in a notice from a URL, a PDF filing, or pasted text. The copilot captures the evidence, extracts the facts, and creates a case with deterministic numbers for every scheme."}
+          </p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-4 sm:px-8">
+      <main className="mx-auto max-w-3xl space-y-4 px-5 py-4 sm:px-8">
         <Card>
           <CardHeader>
-            <CardTitle>Provide exchange evidence</CardTitle>
-            <CardDescription>Upload an NSE/BSE filing or paste its text. SBI-SG must still confirm the action by MT564.</CardDescription>
+            <CardTitle>What happens when you capture</CardTitle>
+            <CardDescription>Four steps, all recorded in the case history. Nothing is acted on until the maker-checker decision.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-4">
+              {steps.map((step, index) => <StepRow key={step.id} step={step} index={index} />)}
+            </ol>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Provide the source</CardTitle>
+            <CardDescription>One input is enough. Prefer the original exchange, issuer, regulator, or custodian notice.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,11 +209,11 @@ export default function NoticeIntake() {
                   onChange={(event) => setSourceUrl(event.target.value)}
                   disabled={isProcessing}
                 />
-                <p className="text-xs leading-5 text-slate-500">Web discoveries remain indicative. Capture the original exchange, issuer, regulator, or custodian notice wherever possible.</p>
+                <p className="text-xs leading-5 text-slate-500">Web discoveries remain indicative until custodian terms are confirmed by MT564.</p>
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="pdf-upload">PDF Notice (Primary)</Label>
+                <Label htmlFor="pdf-upload">Or upload a PDF notice</Label>
                 <div className="flex items-center gap-3">
                   <Input
                     id="pdf-upload"
@@ -155,7 +228,7 @@ export default function NoticeIntake() {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="text-data">Or Paste Text / Feed Payload</Label>
+                <Label htmlFor="text-data">Or paste text / feed payload</Label>
                 <Textarea
                   id="text-data"
                   placeholder="Paste email body, raw text, or JSON payload here..."
@@ -168,11 +241,14 @@ export default function NoticeIntake() {
 
               <Button type="submit" disabled={isProcessing} className="w-full sm:w-auto">
                 {isProcessing ? (
-                  <><LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                  <><LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Working through the steps...</>
                 ) : (
-                   <><FileUp className="mr-2 h-4 w-4" /> Log early sighting</>
+                   <><FileUp className="mr-2 h-4 w-4" /> Capture &amp; analyse</>
                 )}
               </Button>
+              {showPipeline && !isProcessing && errorMsg && (
+                <p className="text-xs leading-5 text-slate-500">The failed step is marked above. Fix the source and try again; nothing was created.</p>
+              )}
             </form>
           </CardContent>
         </Card>

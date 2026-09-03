@@ -119,12 +119,12 @@ test("tightest headroom equals the shared exposure figure the analysis view show
   assert.ok(checked > 0, "at least one issuer must have an open exposure to compare");
 });
 
-test("needs-you and needs-nothing always sum to the open event count", () => {
+test("needs-you, needs-nothing and awaiting-confirmation always sum to the open event count", () => {
   const events = getSeededEventSnapshot();
   const dash = buildDashboard(events, desk) as AnyRecord;
   const openCount = events.filter((event: AnyRecord) => !["Closed", "Reconciled"].includes(event.status)).length;
-  assert.equal(dash.needsYouCount + dash.needsNothingCount, openCount);
-  assert.ok(dash.needsYouCount >= 0 && dash.needsNothingCount >= 0);
+  assert.equal(dash.needsYouCount + dash.needsNothingCount + dash.awaitingConfirmationCount, openCount);
+  assert.ok(dash.needsYouCount >= 0 && dash.needsNothingCount >= 0 && dash.awaitingConfirmationCount >= 0);
 });
 
 test("at-stake reuses the Stage 1 right value against the desk entitlement", () => {

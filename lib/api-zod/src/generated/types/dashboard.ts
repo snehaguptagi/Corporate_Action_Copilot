@@ -22,6 +22,7 @@ export interface Dashboard {
   nearestFundingIssuer: string;
   needsYouCount: number;
   needsNothingCount: number;
+  awaitingConfirmationCount: number;
   atStakeAmount: number;
   dueWithin3DaysCount: number;
   settlementBreakCount: number;

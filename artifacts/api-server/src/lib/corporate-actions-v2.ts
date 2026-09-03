@@ -2056,6 +2056,9 @@ export function buildDashboard(events: EventData[], desk: EventData, asOf = new 
   }).length;
   const openEvents = events.filter(isOpenEvent);
   const needsYouCount = openEvents.filter(needsDecision).length;
+  // Early sightings are genuinely a third state: nothing can be decided until the
+  // custodian confirms, so they are neither "needs you" nor "needs nothing".
+  const awaitingConfirmationCount = openEvents.filter((event) => event.isEarlySighting).length;
   const atStakeAmount = Number(openEvents.reduce((total, event) => total + rightsLapseValue(event, desk), 0).toFixed(2));
   const dueWithin3DaysCount = openEvents.filter((event) => {
     const deadline = Date.parse(event.internalDeadlineAt);
@@ -2084,7 +2087,8 @@ export function buildDashboard(events: EventData[], desk: EventData, asOf = new 
   const history = buildHistory(events);
   return {
     needsYouCount,
-    needsNothingCount: openEvents.length - needsYouCount,
+    needsNothingCount: openEvents.length - needsYouCount - awaitingConfirmationCount,
+    awaitingConfirmationCount,
     atStakeAmount,
     dueWithin3DaysCount,
     settlementBreakCount,

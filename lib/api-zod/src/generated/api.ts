@@ -226,6 +226,7 @@ export const GetDashboardResponse = zod.object({
   "nearestFundingIssuer": zod.string(),
   "needsYouCount": zod.number(),
   "needsNothingCount": zod.number(),
+  "awaitingConfirmationCount": zod.number(),
   "atStakeAmount": zod.number(),
   "dueWithin3DaysCount": zod.number(),
   "settlementBreakCount": zod.number(),

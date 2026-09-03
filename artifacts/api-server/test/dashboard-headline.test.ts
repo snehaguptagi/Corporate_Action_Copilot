@@ -73,3 +73,27 @@ test("closed or past-deadline funding events are never selected as nearest", () 
   assert.notEqual(dash.nearestFundingIssuer, "Open Expired Test Issuer Ltd", "an open event whose deadline already passed must never be the nearest deadline");
   assert.ok(dash.nearestDeadline, "a real future deadline must still be surfaced");
 });
+
+test("early sightings form their own dashboard bucket and never leak into needs-nothing", () => {
+  const events = getSeededEventSnapshot();
+  const dash = buildDashboard(events, desk) as AnyRecord;
+  const openSightings = events.filter((event: AnyRecord) =>
+    !["Closed", "Reconciled"].includes(event.status) && event.isEarlySighting).length;
+  assert.equal(dash.awaitingConfirmationCount, openSightings, "awaitingConfirmationCount must equal the open early sightings");
+  assert.ok(dash.awaitingConfirmationCount >= 1, "seed contains at least one early sighting awaiting custodian confirmation");
+});
+
+test("a voluntary early sighting stays in the awaiting bucket, never needs-you", () => {
+  const asOf = new Date();
+  const events = getSeededEventSnapshot(asOf);
+  const sighting: AnyRecord = {
+    ...events.find((event: AnyRecord) => event.processingType === "Voluntary" && !["Closed", "Reconciled"].includes(event.status)),
+    id: "EVT-TEST-SIGHTING", status: "Early sighting", isEarlySighting: true,
+  };
+  const baseline = buildDashboard(events, desk, asOf) as AnyRecord;
+  const withSighting = buildDashboard([sighting, ...events], desk, asOf) as AnyRecord;
+  assert.equal(withSighting.needsYouCount, baseline.needsYouCount, "a voluntary early sighting must not enter needs-you until the custodian confirms");
+  assert.equal(withSighting.awaitingConfirmationCount, baseline.awaitingConfirmationCount + 1);
+  assert.equal(withSighting.needsNothingCount, baseline.needsNothingCount, "the sighting must not inflate needs-nothing either");
+  assert.ok(withSighting.needsNothingCount >= 0);
+});

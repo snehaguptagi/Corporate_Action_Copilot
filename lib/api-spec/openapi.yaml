@@ -888,7 +888,7 @@ components:
         - status
     Dashboard:
       type: object
-      required: [arrivalCount24h, arrivalsAffectingSchemes24h, portfolioEventCount, impactedSchemeCount, totalSchemeCount, totalFunding, nearestDeadline, nearestFundingIssuer, needsYouCount, needsNothingCount, atStakeAmount, dueWithin3DaysCount, settlementBreakCount, topHouseExposures, dataTrust, lastQuarter, inboundEvents, schemes]
+      required: [arrivalCount24h, arrivalsAffectingSchemes24h, portfolioEventCount, impactedSchemeCount, totalSchemeCount, totalFunding, nearestDeadline, nearestFundingIssuer, needsYouCount, needsNothingCount, awaitingConfirmationCount, atStakeAmount, dueWithin3DaysCount, settlementBreakCount, topHouseExposures, dataTrust, lastQuarter, inboundEvents, schemes]
       properties:
         arrivalCount24h: { type: number }
         arrivalsAffectingSchemes24h: { type: number }
@@ -900,6 +900,7 @@ components:
         nearestFundingIssuer: { type: string }
         needsYouCount: { type: number }
         needsNothingCount: { type: number }
+        awaitingConfirmationCount: { type: number }
         atStakeAmount: { type: number }
         dueWithin3DaysCount: { type: number }
         settlementBreakCount: { type: number }

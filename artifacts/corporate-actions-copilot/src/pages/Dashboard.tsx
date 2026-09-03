@@ -159,7 +159,7 @@ export default function Dashboard() {
             <StatTile
               label="Needs you"
               value={String(dashboard.needsYouCount)}
-              sub={`${dashboard.needsNothingCount} need nothing from you`}
+              sub={`${dashboard.needsNothingCount} need nothing from you${dashboard.awaitingConfirmationCount > 0 ? `, ${dashboard.awaitingConfirmationCount} awaiting custodian confirmation` : ""}`}
               tone={dashboard.needsYouCount > 0 ? "text-amber-700" : "text-foreground"}
               hint="Cases where the next move is yours: a decision to make, a term to confirm, or a break to resolve."
             />

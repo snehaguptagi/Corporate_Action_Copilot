@@ -249,7 +249,9 @@ export default function FundManagerDesk() {
                 <Badge variant="warning">Awaiting custodian confirmation</Badge>
               </div>}
               <h1 className="flex flex-wrap items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground">
-                <span className="min-w-0"><Link href={`/issuers/${issuerIdFor(data.issuer)}`} className="hover:text-primary hover:underline">{data.issuer}</Link> {data.eventType.toLowerCase()}</span>
+                <span className="min-w-0">{data.issuer === "Issuer pending confirmation"
+                  ? <span>{data.issuer}</span>
+                  : <Link href={`/issuers/${issuerIdFor(data.issuer)}`} className="hover:text-primary hover:underline">{data.issuer}</Link>} {data.eventType.toLowerCase()}</span>
                 <InfoHint title="This page">
                   One corporate action from start to finish. The strip below shows which of the five steps this case is on. Then, in order: what the company announced, which schemes it touches and for how much money, the decision if one is needed, and the settlement check at the end.
                 </InfoHint>

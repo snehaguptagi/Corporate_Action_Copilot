@@ -1675,6 +1675,11 @@ function computeIssuers(events: EventData[], desk: EventData): EventData[] {
   const exposuresByScheme = schemes.map((scheme) => ({ scheme, exposures: issuerExposuresForScheme(events, scheme) }));
   const byIssuer = new Map<string, EventData[]>();
   for (const event of events) {
+    // Early sightings can arrive before the company name is parsed; they carry the
+    // "Issuer pending confirmation" placeholder. Grouping those would fabricate an
+    // issuer page with zero exposure and unrelated cases lined up as one holding,
+    // so they stay on the events list only until a real issuer name is confirmed.
+    if (!event.issuer || event.issuer === "Issuer pending confirmation") continue;
     const rows = byIssuer.get(event.issuer) ?? [];
     rows.push(event);
     byIssuer.set(event.issuer, rows);

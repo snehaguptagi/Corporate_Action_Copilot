@@ -244,7 +244,7 @@ export default function Dashboard() {
             </div>
             <Link href="/issuers" className="text-xs font-semibold text-primary hover:underline">All issuers</Link>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid items-start gap-4 lg:grid-cols-2">
             {schemes ? <CapHeadroom schemes={schemes} dense /> : <div className="dashboard-panel text-sm text-muted-foreground">Loading scheme headroom...</div>}
             <div className="dashboard-panel">
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Top house exposures</h3>

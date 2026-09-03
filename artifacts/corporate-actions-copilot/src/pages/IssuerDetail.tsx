@@ -2,6 +2,7 @@ import { useGetIssuer } from "@workspace/api-client-react";
 import { ArrowLeft, ArrowRight, Building2 } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfoHint } from "@/components/InfoHint";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatInr } from "@/lib/format";
 import { formatIstDate } from "@/lib/date";
@@ -28,12 +29,20 @@ export default function IssuerDetail() {
 
   const { summary } = issuer;
   const summaryLine = `${summary.actionsLastQuarter} corporate action${summary.actionsLastQuarter === 1 ? "" : "s"} in the last quarter. ${formatInr(summary.receivedAmount)} received, ${summary.forfeitedAmount > 0 ? formatInr(summary.forfeitedAmount) : "nothing"} forfeited, ${summary.openDecisionCount === 0 ? "no decisions open" : `${summary.openDecisionCount} decision${summary.openDecisionCount === 1 ? "" : "s"} still open`}.`;
+  const timeline = issuer.quarterTimeline ?? [];
+  const showTimeline = timeline.length >= 2;
+  const actionsSectionNumber = showTimeline ? "4" : "3";
+  const summarySectionNumber = showTimeline ? "5" : "4";
 
   return (
     <div className="flex-1 overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
         <Link href="/issuers" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"><ArrowLeft className="h-3.5 w-3.5" />All issuers</Link>
-        <h1 className="mt-2 flex items-center gap-2.5 text-[30px] font-semibold tracking-[-0.03em] text-foreground"><Building2 className="h-7 w-7 text-primary" />{issuer.issuer}</h1>
+        <h1 className="mt-2 flex flex-wrap items-center gap-2.5 text-[30px] font-semibold tracking-[-0.03em] text-foreground"><Building2 className="h-7 w-7 text-primary" />{issuer.issuer}
+          <InfoHint title="This page">
+            Everything Arka holds in this one company, which schemes hold it, and every corporate action against it. When a company runs several actions in a quarter, other pages show them as unrelated rows; this page lines them up in order and shows their cumulative effect on the holding and on the SEBI single-company limit.
+          </InfoHint>
+        </h1>
         <p className="mt-1 font-mono text-xs text-slate-500">{issuer.isin}</p>
         <p className="figure-inline mt-3 max-w-3xl text-sm leading-6 text-slate-700">{issuer.situation}</p>
       </header>
@@ -41,10 +50,11 @@ export default function IssuerDetail() {
       <main className="flex-1 space-y-6 p-4 sm:p-6">
         <section aria-labelledby="house-exposure">
           <SectionTitle number="1">House exposure</SectionTitle>
-          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <IssuerFact label="Total position" value={formatInr(issuer.houseExposure.totalAmount)} />
             <IssuerFact label="Share of house AUM" value={`${issuer.houseExposure.percentOfAum.toFixed(2)}%`} />
             <IssuerFact label="Schemes holding" value={`${issuer.houseExposure.schemeCount} of ${issuer.houseExposure.totalSchemeCount}`} />
+            <IssuerFact label="Affected by open actions" value={`${issuer.houseExposure.affectedSchemeCount} of ${issuer.houseExposure.schemeCount} holders`} />
             <IssuerFact label="Largest position" value={`${issuer.houseExposure.largestSchemeName} · ${formatInr(issuer.houseExposure.largestSchemeAmount)}`} />
           </dl>
         </section>
@@ -93,8 +103,39 @@ export default function IssuerDetail() {
           </Card>
         </section>
 
+        {showTimeline && (
+          <section aria-labelledby="quarter-timeline">
+            <SectionTitle number="3">What this quarter did to the holding</SectionTitle>
+            <Card className="border border-stone-200 shadow-sm">
+              <CardContent className="p-4 sm:p-5">
+                {issuer.cumulativeNote && <p className="figure-inline mb-4 max-w-3xl text-sm leading-6 text-slate-700">{issuer.cumulativeNote}</p>}
+                <ol className="space-y-0">
+                  {timeline.map((row, index) => (
+                    <li key={row.eventId} className="relative flex gap-4 pb-5 last:pb-0">
+                      {index < timeline.length - 1 && <span aria-hidden className="absolute left-[13px] top-7 bottom-0 w-px bg-stone-200" />}
+                      <span className={`figure mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${row.open ? "bg-primary text-primary-foreground" : "bg-stone-200 text-slate-600"}`}>{index + 1}</span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <Link href={`/events/${row.eventId}`} className="text-sm font-semibold text-foreground hover:text-primary hover:underline">{row.eventType}</Link>
+                          <span className="figure-inline text-xs text-slate-500">{formatIstDate(row.receivedAt)}</span>
+                          {row.decisionRequired
+                            ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Decision open</span>
+                            : row.open
+                              ? <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{row.status}</span>
+                              : <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">Settled</span>}
+                        </div>
+                        <p className="figure-inline mt-1 text-sm leading-6 text-slate-700">{row.effect}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
         <section aria-labelledby="issuer-actions">
-          <SectionTitle number="3">Corporate actions from this issuer</SectionTitle>
+          <SectionTitle number={actionsSectionNumber}>Corporate actions from this issuer</SectionTitle>
           <Card className="overflow-hidden border border-stone-200 shadow-sm">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -143,7 +184,7 @@ export default function IssuerDetail() {
         </section>
 
         <section aria-labelledby="issuer-summary">
-          <SectionTitle number="4">What this issuer has done to us</SectionTitle>
+          <SectionTitle number={summarySectionNumber}>What this issuer has done to us</SectionTitle>
           <p className="figure-inline dashboard-panel text-sm leading-6 text-slate-700">{summaryLine}</p>
         </section>
       </main>

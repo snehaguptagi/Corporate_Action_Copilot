@@ -6,7 +6,11 @@ export type OperationalActor = {
   id: string;
   name: string;
   role: "Fund Manager" | "Compliance";
+  desk: string;
 };
+
+// Every operational identity in this POC works the same fictional book.
+const DEFAULT_DESK = "Arka Mutual Fund";
 
 export const actorCookieName = "corporate_actions_actor";
 const operationalRoles = ["Fund Manager", "Compliance"] as const;
@@ -77,6 +81,7 @@ function actorFromRoleDirectory(user: AuthUser): OperationalActor | null {
     id: user.id,
     name: entry.name ?? displayName(user),
     role: entry.role,
+    desk: DEFAULT_DESK,
   };
 }
 
@@ -89,7 +94,7 @@ export function getAuthenticatedActor(req: Request): OperationalActor | null {
         if (typeof session.id === "string") {
           const actor = demoUsers.find((candidate) => candidate.id === session.id);
           if (actor && isOperationalRole(actor.role)) {
-            return { id: actor.id, name: actor.name, role: actor.role };
+            return { id: actor.id, name: actor.name, role: actor.role, desk: actor.desk ?? DEFAULT_DESK };
           }
         }
       } catch {
@@ -100,7 +105,7 @@ export function getAuthenticatedActor(req: Request): OperationalActor | null {
     // Default to Rohan Iyer if no cookie is present in POC
     const defaultActor = demoUsers.find(u => u.id === "USR-004");
     if (defaultActor && isOperationalRole(defaultActor.role)) {
-      return { id: defaultActor.id, name: defaultActor.name, role: defaultActor.role };
+      return { id: defaultActor.id, name: defaultActor.name, role: defaultActor.role, desk: defaultActor.desk ?? DEFAULT_DESK };
     }
   }
 
@@ -121,7 +126,7 @@ export function signInDemoActor(res: Response, actorId: string): OperationalActo
     signed: true,
     maxAge: 8 * 60 * 60 * 1000,
   });
-  return { id: actor.id, name: actor.name, role: actor.role };
+  return { id: actor.id, name: actor.name, role: actor.role, desk: actor.desk ?? DEFAULT_DESK };
 }
 
 export function requireActor(

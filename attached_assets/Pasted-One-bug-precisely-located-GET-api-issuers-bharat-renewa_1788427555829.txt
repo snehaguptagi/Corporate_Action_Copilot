@@ -1,0 +1,40 @@
+One bug, precisely located.
+
+GET /api/issuers/bharat-renewables-ltd returns:
+    houseExposure.schemeCount: 10
+    situation: "Arka holds ₹165.60 cr of Bharat Renewables Ltd across 10 of 10
+                schemes, 0.54% of house AUM."
+and a perScheme array of 10 rows, of which THREE have holdingQuantity 0:
+    Arka ELSS Tax Saver         0
+    Arka Mid Cap Fund           0
+    Arka Banking & Financial    0
+
+So only SEVEN schemes hold this issuer. The count includes non-holders.
+
+1. schemeCount must count schemes with a NON-ZERO holding. Here that is 7.
+2. The situation sentence must say "7 of 10 schemes".
+3. The perScheme array must EXCLUDE zero-holding schemes. An issuer page listing
+   funds with no position in that company is noise.
+4. The same fix applies to the /issuers list column "SCHEMES HOLDING" and to
+   the dashboard's "Top house exposures" table, which both show 10 for Bharat.
+   All three must come from one computation.
+
+5. SEPARATE TWO FACTS THAT ARE CURRENTLY BLURRED. They are different numbers
+   and the product uses them interchangeably:
+       schemes HOLDING the issuer      7   (non-zero position)
+       schemes AFFECTED by an action   6   (eligible for the open rights issue)
+   Arka Value Fund holds 6,00,000 shares and receives no entitlement — that is
+   correct and worth showing, but it must be labelled. Use distinct labels
+   everywhere, for example "7 schemes hold it · 6 affected by open actions",
+   and never use one number where the other is meant.
+
+Add a test asserting an issuer's holder count equals the number of schemes with
+a non-zero holding of it, and that holder count is always greater than or equal
+to affected count.
+
+DO NOT: change house exposure value (₹165.60 cr is correct — it sums to
+1,38,00,002 shares × ₹120), or touch any exposure percentage.
+
+VERIFY: typecheck and tests pass; Bharat reports 7 holders and 6 affected; no
+zero-holding scheme appears on an issuer page; the issuers list, issuer detail
+and dashboard exposures all report the same holder count.

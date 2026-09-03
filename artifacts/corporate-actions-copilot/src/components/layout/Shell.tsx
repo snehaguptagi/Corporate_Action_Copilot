@@ -5,6 +5,7 @@ import { useAuth } from "@workspace/replit-auth-web"
 import {
   getGetSessionQueryKey,
   useGetSession,
+  useListSchemes,
 } from "@workspace/api-client-react"
 
 const DESKTOP_QUERY = "(min-width: 1024px)"
@@ -45,8 +46,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/portfolio", label: "Portfolio", icon: BriefcaseBusiness },
-    { href: "/issuers", label: "Issuers", icon: Building2 },
     { href: "/events", label: "Corporate actions", icon: FileText },
+    { href: "/issuers", label: "Issuers", icon: Building2 },
     { href: "/analysis", label: "Analysis", icon: ChartNoAxesCombined },
   ]
 
@@ -86,6 +87,29 @@ export function Shell({ children }: { children: ReactNode }) {
       />
     )
   }
+
+  return <AuthenticatedShell activeRole={activeRole} isDesktop={isDesktop} collapsed={collapsed} setCollapsed={setCollapsed} logout={logout} location={location} navItems={navItems} isActive={isActive}>{children}</AuthenticatedShell>
+}
+
+function AuthenticatedShell({ children, activeRole, isDesktop, collapsed, setCollapsed, logout, navItems, isActive }: {
+  children: ReactNode
+  activeRole: { name: string; role: string; desk: string }
+  isDesktop: boolean
+  collapsed: boolean
+  setCollapsed: (value: boolean) => void
+  logout: () => void
+  location: string
+  navItems: { href: string; label: string; icon: typeof LayoutDashboard }[]
+  isActive: (href: string) => boolean
+}) {
+  // Identity block: whose money this is. AUM and scheme count come from the same
+  // scheme data the Portfolio page uses, never hardcoded.
+  const { data: schemes } = useListSchemes()
+  const schemeCount = schemes?.length ?? 0
+  const totalAumCrore = (schemes ?? []).reduce((total, scheme) => total + Number(scheme.aumCrore ?? 0), 0)
+  const bookLine = schemeCount > 0
+    ? `₹${Math.round(totalAumCrore).toLocaleString("en-IN")} cr AUM · ${schemeCount} scheme${schemeCount === 1 ? "" : "s"}`
+    : ""
 
   const initials = activeRole.name.split(" ").map((name) => name[0]).join("")
 
@@ -131,19 +155,23 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         <div className={`shrink-0 ${collapsed ? "p-2" : "p-4"}`}>
           <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : "justify-between"}`}>
-            <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`} title={collapsed ? `${activeRole.name}, ${activeRole.role}` : undefined}>
+            <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`} title={collapsed ? `${activeRole.name} · ${activeRole.role} · ${activeRole.desk}` : undefined}>
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium">
                 {initials}
               </div>
               {!collapsed && <div className="flex min-w-0 flex-col text-sm">
                 <span className="font-medium leading-none">{activeRole.name}</span>
-                <span className="text-xs text-sidebar-muted-foreground mt-1">{activeRole.role}</span>
+                <span className="mt-1 text-xs text-sidebar-muted-foreground">{activeRole.role} · {activeRole.desk}</span>
+                {bookLine && <span className="figure-inline mt-1 text-xs text-sidebar-muted-foreground">{bookLine}</span>}
               </div>}
             </div>
             {!collapsed && <button onClick={logout} className="text-sidebar-muted-foreground hover:text-sidebar-foreground" title="Sign out" aria-label="Sign out">
               <LogOut className="h-4 w-4" />
             </button>}
           </div>
+          {!collapsed && <p className="mt-3 border-t border-sidebar-border/50 pt-2.5 text-[10px] leading-4 text-sidebar-muted-foreground/80">
+            Demonstration data for a synthetic asset manager. No real holdings.
+          </p>}
         </div>
       </aside>}
       

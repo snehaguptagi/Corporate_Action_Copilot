@@ -1,6 +1,7 @@
 import { useListTasks, useResolveTask, getListTasksQueryKey, getGetDashboardQueryKey } from "@workspace/api-client-react";
 import { ClipboardCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoHint } from "@/components/InfoHint";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,12 @@ export default function TasksList() {
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto">
       <div className="border-b bg-card px-8 py-4 shrink-0">
-        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-slate-900"><ClipboardCheck className="h-6 w-6 text-primary" />Approvals</h1>
-        <p className="text-sm text-slate-500 mt-1">Review and resolve operational flags and maker-checker tasks.</p>
+        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-slate-900"><ClipboardCheck className="h-6 w-6 text-primary" />Approvals
+          <InfoHint title="This page">
+            No decision goes through on one person's word. The Fund Manager proposes what to do, and Compliance reviews and approves or sends it back. This page lists everything waiting for that second pair of eyes.
+          </InfoHint>
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">Decisions proposed by the Fund Manager wait here for a Compliance sign-off, alongside operational flags to resolve.</p>
       </div>
       
       <div className="p-8">

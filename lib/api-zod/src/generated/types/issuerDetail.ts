@@ -9,6 +9,7 @@ import type { IssuerEventRow } from './issuerEventRow';
 import type { IssuerHouseExposure } from './issuerHouseExposure';
 import type { IssuerQuarterSummary } from './issuerQuarterSummary';
 import type { IssuerSchemeRow } from './issuerSchemeRow';
+import type { IssuerTimelineRow } from './issuerTimelineRow';
 
 export interface IssuerDetail {
   issuerId: string;
@@ -19,4 +20,6 @@ export interface IssuerDetail {
   perScheme: IssuerSchemeRow[];
   events: IssuerEventRow[];
   summary: IssuerQuarterSummary;
+  quarterTimeline: IssuerTimelineRow[];
+  cumulativeNote: string;
 }

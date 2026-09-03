@@ -1,0 +1,41 @@
+Small change. The product never says whose portfolio you are looking at.
+
+CONTEXT: "Arka Mutual Fund" is a FICTIONAL asset manager invented for this
+demo. All ten schemes belong to it, and all 30 issuers (Bharat Renewables,
+Ganga Telecom, Saffron Digital and the rest) are synthetic too, with correctly
+formatted but non-existent ISINs. That is deliberate — attributing fabricated
+holdings and decisions to a real AMC would be wrong.
+
+Right now the shell shows a PwC logo and "Corporate Actions Copilot", and
+"ARKA MUTUAL FUND" appears only as a small eyebrow on some pages. So the user
+cannot tell whose book they are in.
+
+1. ADD AN IDENTITY BLOCK TO THE SHELL, bottom of the sidebar:
+       Rohan Iyer
+       Fund Manager · Arka Mutual Fund
+       ₹30,920 cr AUM · 10 schemes
+   Source: the session actor for name and role; the sum of scheme AUMs and the
+   scheme count for the rest — both already available. Do not hardcode the AUM.
+
+   This is the profile block. It answers "who am I and whose money is this"
+   every time the user looks at the screen.
+
+2. RESOLVE THE TWO BRANDS. The app is branded PwC in the chrome and the tab
+   title while the book belongs to Arka, with nothing explaining the
+   relationship. Pick one and make it explicit:
+       either  keep PwC as the tool's maker and label the data clearly, e.g.
+               a single line in the sidebar footer: "Demonstration data for a
+               synthetic asset manager. No real holdings."
+       or      remove the PwC branding entirely and let the product carry only
+               its own name.
+   Do not leave two unexplained brands in one product. The PwC logo was added
+   without being asked for, so treat this as a deliberate decision either way.
+
+3. DROP THE PER-PAGE "ARKA MUTUAL FUND" EYEBROW where it now duplicates the
+   sidebar identity block. One statement of whose book it is, not one per page.
+
+DO NOT: change any figure, add a page, or touch the dashboard bands work.
+
+VERIFY: typecheck and tests pass; the sidebar shows the user, their role, the
+AMC, and AUM plus scheme count derived from data; the synthetic-data statement
+appears exactly once; no page carries a redundant AMC eyebrow.

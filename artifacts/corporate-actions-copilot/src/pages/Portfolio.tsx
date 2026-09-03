@@ -2,6 +2,7 @@ import { useListSchemes, type SchemeSummary } from "@workspace/api-client-react"
 import { ArrowRight, AlertCircle, Layers3 } from "lucide-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfoHint } from "@/components/InfoHint";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatInr } from "@/lib/format";
 
@@ -26,8 +27,12 @@ export default function Portfolio() {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
-        <h1 className="flex items-center gap-2.5 text-[30px] font-semibold tracking-[-0.03em] text-foreground"><Layers3 className="h-7 w-7 text-primary" />Portfolio</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ten schemes ranked by corporate-action exposure, concentration headroom, and cash readiness. Every row opens into its control view.</p>
+        <h1 className="flex items-center gap-2.5 text-[30px] font-semibold tracking-[-0.03em] text-foreground"><Layers3 className="h-7 w-7 text-primary" />Portfolio
+          <InfoHint title="This page">
+            A scheme is one mutual fund product, like Arka Large Cap Fund. Arka runs ten. This page shows how much of each scheme is touched by open corporate actions, how close it is to the SEBI single-company limit, and whether it has the cash to take up what it wants. Click a row to open that scheme.
+          </InfoHint>
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Ten schemes ranked by how much open corporate actions touch them, how close they run to the SEBI limit, and whether cash is ready. Every row opens into its own view.</p>
       </header>
       <main className="flex-1 p-4 sm:p-5">
         <section className="dashboard-panel mb-4" aria-labelledby="scheme-control-board">

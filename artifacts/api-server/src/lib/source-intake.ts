@@ -7,7 +7,9 @@ import { promisify } from "node:util";
 import OpenAI from "openai";
 import { desc, eq } from "drizzle-orm";
 import { ObjectStorageService } from "./objectStorage";
-import { deriveEventSignals, getCorporateActionEvents, type WorkflowActor } from "./corporate-actions-v2";
+import { buildSchemeImpacts, deriveEventSignals, getCorporateActionEvents, type WorkflowActor } from "./corporate-actions-v2";
+import { ARKA_SCHEME_SEED } from "./arka-desk";
+import { buildIntakePositions, deriveCalculationInputs, matchPortfolioHolding, parseNoticeDeadline } from "./portfolio-holdings";
 
 type IntakeSourceInput = {
   sourceType: "sample" | "upload" | "url" | "text" | "structured-feed";
@@ -435,6 +437,48 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
     audit: [{ id: `audit-${eventId}`, eventId, action: isCustodianNotification ? "Custodian notification received" : "Early sighting logged", actor: actor.name, actorId: actor.id, actorRole: actor.role, actorType: "user", timestamp: new Date().toISOString(), detail: isCustodianNotification ? "SBI-SG MT564 terms were captured." : isPublicWebDiscovery ? "A public web source was captured for verification. No custodian or portfolio facts were inferred." : "Exchange evidence was captured for indicative impact planning.", previousValue: "", newValue: isCustodianNotification ? "Under review" : "Early sighting", reason: "", evidenceId: draft.id, workflowStatus: isCustodianNotification ? "Under review" : "Early sighting" }],
     securityMaster: { securityId: "", isin: values.securityIdentifier || "", ticker: "", securityName: values.issuer || "", currency: "N/A", market: "", status: "Pending match" },
   };
+  const deadlineIso = parseNoticeDeadline(values.marketDeadline ?? "");
+  if (deadlineIso) {
+    event.marketDeadlineAt = deadlineIso;
+    event.internalDeadlineAt = new Date(new Date(deadlineIso).getTime() - 86_400_000).toISOString();
+  }
+
+  if (!isCustodianNotification && !knownHolding) {
+    const holding = matchPortfolioHolding(values.issuer ?? "", isin);
+    if (holding) {
+      const derived = deriveCalculationInputs(eventType, values);
+      const canonicalIsin = holding.isin;
+      const recordDate = typeof derived.inputs.recordDate === "string" ? derived.inputs.recordDate : "";
+      Object.assign(event, {
+        positions: buildIntakePositions(holding, canonicalIsin, recordDate, eventId),
+        calculationInputs: derived.inputs,
+        securityMaster: { securityId: holding.ticker, isin: canonicalIsin, ticker: holding.ticker, securityName: holding.issuer, currency: "INR", market: "NSE/BSE", status: "Matched to portfolio holdings" },
+      });
+      const impacts = buildSchemeImpacts(event as Record<string, any>).map((impact: Record<string, any>) => ({ ...impact, status: "Indicative" }));
+      const affected = impacts.filter((impact: Record<string, any>) => impact.affected);
+      Object.assign(event, {
+        schemeImpacts: impacts,
+        affectedAccounts: affected.length,
+        amount: affected.reduce((total: number, impact: Record<string, any>) => total + Number(impact.cashAmount ?? 0), 0),
+        sourceAgreement: `${event.sourceAgreement} ${holding.issuer} is held by ${affected.length} of the ${ARKA_SCHEME_SEED.length} Arka schemes, so indicative impacts are computed from current holdings.`,
+      });
+      event.calculation.assumptions = [
+        `Indicative Stage 1 estimate matched to portfolio holdings by ${isin && isin.toUpperCase() === holding.isin ? "ISIN" : "issuer name"}.`,
+        derived.missing.length
+          ? `Not quantified yet: confirm the ${derived.missing.join(" and ")} from the original notice, then re-run the calculation.`
+          : "All numeric terms needed for the indicative estimate were read from the source.",
+        ...derived.notes,
+      ].join(" ");
+      event.audit[0].detail = `${event.audit[0].detail} Matched to ${holding.issuer} across ${affected.length} scheme holdings; indicative impacts were computed on arrival.`;
+    } else {
+      Object.assign(event, {
+        sourceAgreement: `${event.sourceAgreement} None of the ${ARKA_SCHEME_SEED.length} Arka schemes hold ${values.issuer || "this issuer"}, so there is no NAV or cash impact for the house.`,
+      });
+      event.calculation.assumptions = "No Arka scheme holds this security, so the case is informational and no scheme impacts apply.";
+      event.audit[0].detail = `${event.audit[0].detail} No Arka scheme holdings matched this issuer; the case is informational.`;
+    }
+  }
+
   const { corporateActionEventsTable, db } = await import("@workspace/db");
   if (matchingSighting) {
     const disagreements = draft.terms.flatMap((confirmed) => {
@@ -449,6 +493,7 @@ export async function createCaseFromIntakeDraft(id: string, actor: WorkflowActor
       sourceRecords: [...(matchingSighting.sourceRecords ?? []), ...event.sourceRecords],
       sourceDisagreements: disagreements,
       positions: matchingSighting.positions ?? event.positions,
+      calculationInputs: matchingSighting.calculationInputs ?? (event as Record<string, any>).calculationInputs,
       schemeImpacts: (matchingSighting.schemeImpacts ?? event.schemeImpacts).map((impact: Record<string, any>) => ({ ...impact, status: "Confirmed" })),
       affectedAccounts: matchingSighting.affectedAccounts ?? event.affectedAccounts,
       audit: [...event.audit, ...(matchingSighting.audit ?? [])],

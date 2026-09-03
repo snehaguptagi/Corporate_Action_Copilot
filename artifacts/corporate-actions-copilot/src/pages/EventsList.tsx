@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { AlertCircle, ArrowRight, Check, ChevronDown, ExternalLink, Globe2, Landmark, LoaderCircle, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InfoHint } from "@/components/InfoHint";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -106,7 +107,11 @@ export default function EventsList() {
       <div className="border-b bg-card px-8 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><Landmark className="h-6 w-6 text-primary" />Corporate actions</h1>
+            <h1 className="flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><Landmark className="h-6 w-6 text-primary" />Corporate actions
+              <InfoHint title="This page">
+                The working list of every notice: fetched from the web or sent by the custodian (the bank that holds the fund's shares). Fetch recent announcements at the top, then capture the ones that matter. Every case walks the same five steps, and opening a case shows exactly where it stands.
+              </InfoHint>
+            </h1>
             <p className="mt-1 text-sm text-slate-500">Fetch public notices, review how each was classified, then capture the ones that matter to your schemes.</p>
           </div>
           <Link href="/intake"><Button variant="outline" size="sm">Add manually</Button></Link>
@@ -122,7 +127,7 @@ export default function EventsList() {
                   <h2 className="text-lg font-semibold text-slate-900">Fetch public notices</h2>
                   <Badge variant="warning">Indicative only</Badge>
                 </div>
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Each tab fetches and remembers its own window. Results are classified as they arrive and stay unverified until you capture the original evidence.</p>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Each tab fetches and remembers its own window. Results are classified as they arrive; capture one to pull the original evidence into a case.</p>
               </div>
               {shown && (
                 <div className="figure-inline shrink-0 text-right text-xs text-slate-500">
@@ -157,7 +162,7 @@ export default function EventsList() {
             >
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <Input className="bg-white pl-9" value={liveQuery} onChange={(event) => setLiveQuery(event.target.value)} placeholder="Issuer, market, security, or corporate-action type" />
+                <Input className="bg-white pl-9" value={liveQuery} onChange={(event) => setLiveQuery(event.target.value)} placeholder="Optional: narrow the fetch, e.g. Reliance dividend or NSE rights issue" />
               </div>
               <Button type="submit" disabled={liveSearch.isPending || liveQuery.trim().length < 3}>
                 {liveSearch.isPending ? <><LoaderCircle className="mr-2 h-4 w-4 animate-spin" />Fetching...</> : `Fetch ${activeMeta.label.toLowerCase()}`}
@@ -230,7 +235,7 @@ export default function EventsList() {
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <Link href={`/intake?sourceUrl=${encodeURIComponent(notice.sourceUrl)}`}><Button size="sm">Capture &amp; analyse</Button></Link>
                               <a href={notice.sourceUrl} target="_blank" rel="noreferrer"><Button variant="outline" size="sm">Open source <ExternalLink className="ml-2 h-3.5 w-3.5" /></Button></a>
-                              <p className="text-xs leading-5 text-slate-500">Capture pulls the source evidence, extracts the relevant facts, then opens the case: Stage 1 deterministic numbers against your schemes, Stage 2 AI judgement, and the decision. The dashboard and portfolio update as soon as the case is created.</p>
+                              <p className="text-xs leading-5 text-slate-500">Capture pulls the source evidence, extracts the relevant facts, then opens the case: the maths against your schemes (Stage 1), an AI read of what it means (Stage 2), and the decision. The dashboard and portfolio update as soon as the case is created.</p>
                             </div>
                           </div>
                         )}
@@ -245,8 +250,8 @@ export default function EventsList() {
         <Card>
           <CardHeader className="border-b bg-card">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-semibold text-slate-900">Captured cases</h2>
-              <p className="text-xs text-slate-500">Only notices you have captured become cases. Nothing here is sample data.</p>
+              <h2 className="text-sm font-semibold text-slate-900">All cases</h2>
+              <p className="text-xs text-slate-500">Every case on the book, whether it arrived from a feed or you captured it above.</p>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               <div className="relative min-w-[260px] flex-1">
@@ -279,7 +284,7 @@ export default function EventsList() {
                     const cashTotal = event.schemeImpacts.filter((impact) => impact.affected).reduce((total, impact) => total + impact.cashAmount, 0);
                     return (
                     <TableRow key={event.id} className="group">
-                      <TableCell><div className="font-medium">{event.issuer}</div><div className="text-xs text-slate-500">{event.reference} · {event.eventType} · {event.security}</div>{event.isEarlySighting && <div className="mt-1 text-xs font-semibold text-amber-700">Indicative impact</div>}<div className="mt-1 text-xs font-semibold text-slate-500">{event.source === "Public web discovery" ? "Fetched from public web source" : "Captured manually"}</div></TableCell>
+                      <TableCell><div className="font-medium">{event.issuer}</div><div className="text-xs text-slate-500">{event.reference} · {event.eventType} · {event.security}</div>{event.isEarlySighting && <div className="mt-1 text-xs font-semibold text-amber-700">Indicative impact</div>}<div className="mt-1 text-xs font-semibold text-slate-500">{event.source === "Public web discovery" ? "Fetched from public web source" : event.id.startsWith("evt-intake-") ? "Captured manually" : event.source}</div></TableCell>
                       <TableCell className="figure"><strong>{impacted}</strong> of 10</TableCell>
                       <TableCell>
                         <Badge variant="outline">{event.processingType}</Badge>

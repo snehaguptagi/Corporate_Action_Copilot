@@ -44,11 +44,17 @@ function valueAtRisk(event: EventSummary) {
     .reduce((total, impact) => total + Math.abs(impact.cashAmount), 0);
 }
 
-function ChartPanel({ title, subtitle, children, fallback }: { title: string; subtitle: string; children: ReactNode; fallback: ReactNode }) {
+function ChartPanel({ title, subtitle, dense = false, children, fallback }: { title: string; subtitle?: string; dense?: boolean; children: ReactNode; fallback: ReactNode }) {
   return (
     <div className="dashboard-panel">
-      <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
-      <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+      {dense ? (
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</h3>
+      ) : (
+        <>
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+        </>
+      )}
       <div className="mt-4">{children}</div>
       <details className="mt-3">
         <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-primary">View as table</summary>
@@ -77,17 +83,21 @@ function FallbackTable({ head, rows }: { head: string[]; rows: (string | ReactNo
   );
 }
 
-/* A. Deadline timeline — next 30 days, one marker per open event deadline. */
-export function DeadlineTimeline({ events, now }: { events: EventSummary[]; now: number }) {
-  const horizon = 30 * DAY_MS;
-  const sorted = openEventsOf(events)
+/* A. Deadlines and funding on one shared six-week time axis.
+   Top row: one dot per open action at its decision deadline (beeswarm on crowded days).
+   Bottom row: bars of cash due that week, vertically aligned under the deadlines that create it. */
+export function DeadlinesAndFunding({ events, now }: { events: EventSummary[]; now: number }) {
+  const horizonDays = 42;
+  const horizon = horizonDays * DAY_MS;
+  const open = openEventsOf(events);
+  const sorted = open
     .map((event) => ({ event, at: Date.parse(event.internalDeadlineAt) }))
     .filter(({ at }) => Number.isFinite(at) && at > now && at <= now + horizon)
     .sort((left, right) => left.at - right.at);
   // Beeswarm layout: dots sit on the axis and stack upward when deadlines crowd together.
   // Only decision-required events get a text label, on two alternating rows with a minimum gap.
-  const STACK_GAP_PERCENT = 2.4;
-  const LABEL_GAP_PERCENT = 14;
+  const STACK_GAP_PERCENT = 1.8;
+  const LABEL_GAP_PERCENT = 11;
   const levels: number[] = [];
   const lastLabelAtRow: number[] = [-Infinity, -Infinity];
   const markers = sorted.map((entry, index) => {
@@ -106,40 +116,64 @@ export function DeadlineTimeline({ events, now }: { events: EventSummary[]; now:
     }
     return { ...entry, left, level, decision, labelRow };
   });
-  const gridDays = [0, 7, 14, 21, 30];
+
+  const buckets = Array.from({ length: 6 }, (_, index) => ({
+    start: new Date(now + index * WEEK_MS),
+    end: new Date(now + (index + 1) * WEEK_MS - DAY_MS),
+    total: 0,
+  }));
+  for (const event of open) {
+    const at = Date.parse(event.internalDeadlineAt);
+    if (!Number.isFinite(at) || at <= now) continue;
+    const index = Math.floor((at - now) / WEEK_MS);
+    if (index >= 0 && index < 6) buckets[index].total += fundingAmount(event);
+  }
+  const max = Math.max(...buckets.map((bucket) => bucket.total), 1);
+  const gridDays = [0, 7, 14, 21, 28, 35, 42];
 
   return (
     <ChartPanel
-      title="Decision deadlines, next 30 days"
-      subtitle="One dot per open action. Stacked dots share a crowded day. Hover any dot for detail."
+      title="Decision deadlines and the cash they demand, next six weeks"
+      subtitle="One shared time axis. Each dot is an open action at its decision deadline; the bars beneath show the cash due that same week. Hover anything for detail."
       fallback={
-        <FallbackTable
-          head={["Deadline", "Issuer", "Action", "Decision"]}
-          rows={markers.map(({ event }) => [
-            event.internalDeadline,
-            <Link key={event.id} href={`/events/${event.id}`} className="text-primary hover:underline">{event.issuer}</Link>,
-            event.eventType,
-            isDecisionNeeded(event.status) ? "Decision required" : "No decision needed",
-          ])}
-        />
+        <div className="space-y-3">
+          <div>
+            <p className="mb-1 text-[11px] font-medium text-muted-foreground">Deadlines</p>
+            <FallbackTable
+              head={["Deadline", "Issuer", "Action", "Decision"]}
+              rows={markers.map(({ event }) => [
+                event.internalDeadline,
+                <Link key={event.id} href={`/events/${event.id}`} className="text-primary hover:underline">{event.issuer}</Link>,
+                event.eventType,
+                isDecisionNeeded(event.status) ? "Decision required" : "No decision needed",
+              ])}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-[11px] font-medium text-muted-foreground">Funding due by week</p>
+            <FallbackTable
+              head={["Week", "Funding due"]}
+              rows={buckets.map((bucket) => [`${shortDay(bucket.start)} – ${shortDay(bucket.end)}`, bucket.total > 0 ? formatInr(bucket.total) : "None"])}
+            />
+          </div>
+        </div>
       }
     >
       {markers.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No open deadlines inside the next 30 days.</p>
+        <p className="text-sm text-muted-foreground">No open deadlines inside the next six weeks.</p>
       ) : (
         <div>
+          {/* Top row: deadline dots */}
           <div className="relative h-24">
-            {/* recessive week grid */}
             {gridDays.map((day) => (
-              <div key={day} className="absolute bottom-5 top-2 w-px bg-border/50" style={{ left: `${(day / 30) * 100}%` }} />
+              <div key={day} className="absolute bottom-0 top-2 w-px bg-border/50" style={{ left: `${(day / horizonDays) * 100}%` }} />
             ))}
-            {/* baseline */}
-            <div className="absolute bottom-5 left-0 right-0 h-px bg-stone-300" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-stone-300" />
             {markers.map(({ event, left, level, decision, labelRow }) => (
               <Link
                 key={event.id}
                 href={`/events/${event.id}`}
-                className="group absolute bottom-5 -translate-x-1/2"
+                className="group absolute bottom-0 -translate-x-1/2"
                 style={{ left: `${left}%` }}
                 title={`${event.issuer} · ${event.eventType}. Deadline ${event.internalDeadline}. ${decision ? "Decision required." : "No decision needed."}`}
               >
@@ -157,16 +191,38 @@ export function DeadlineTimeline({ events, now }: { events: EventSummary[]; now:
                 )}
               </Link>
             ))}
-            {/* axis labels */}
+          </div>
+          {/* Bottom row: funding bars on the same axis */}
+          <div className="relative h-28">
             {gridDays.map((day) => (
-              <span key={day} className={`figure-inline absolute bottom-0 text-[10px] text-muted-foreground ${day === 30 ? "-translate-x-full" : day === 0 ? "" : "-translate-x-1/2"}`} style={{ left: `${(day / 30) * 100}%` }}>
+              <div key={day} className="absolute bottom-5 top-0 w-px bg-border/50" style={{ left: `${(day / horizonDays) * 100}%` }} />
+            ))}
+            <div className="absolute bottom-5 left-0 right-0 h-px bg-stone-300" />
+            {buckets.map((bucket, index) => (
+              <div
+                key={index}
+                className="absolute bottom-5 top-1 flex flex-col items-center justify-end gap-1 px-2"
+                style={{ left: `${(index / 6) * 100}%`, width: `${100 / 6}%` }}
+                title={`${shortDay(bucket.start)} to ${shortDay(bucket.end)}: ${bucket.total > 0 ? `${formatInr(bucket.total)} due` : "no funding due"}`}
+              >
+                {bucket.total > 0 && <span className="figure-inline text-[10px] font-semibold text-foreground">₹{crore(bucket.total)}</span>}
+                <div
+                  className={`w-full max-w-16 rounded-t-sm ${bucket.total > 0 ? "bg-primary" : "bg-stone-200"}`}
+                  style={{ height: bucket.total > 0 ? `${Math.max((bucket.total / max) * 78, 6)}%` : "2px" }}
+                />
+              </div>
+            ))}
+            {gridDays.map((day) => (
+              <span key={day} className={`figure-inline absolute bottom-0 text-[10px] text-muted-foreground ${day === horizonDays ? "-translate-x-full" : day === 0 ? "" : "-translate-x-1/2"}`} style={{ left: `${(day / horizonDays) * 100}%` }}>
                 {day === 0 ? "Today" : shortDay(new Date(now + day * DAY_MS))}
               </span>
             ))}
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[10px] text-muted-foreground">
+          {/* One legend for both rows */}
+          <div className="mt-2 flex flex-wrap items-center gap-4 text-[10px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" /> Decision required</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full border-2 border-stone-400 bg-card" /> No decision, deadline only</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-3 rounded-sm bg-primary" /> Cash due that week</span>
           </div>
         </div>
       )}
@@ -174,54 +230,8 @@ export function DeadlineTimeline({ events, now }: { events: EventSummary[]; now:
   );
 }
 
-/* B. Funding due by week — six weekly buckets of rupees due. */
-export function FundingByWeek({ events, now }: { events: EventSummary[]; now: number }) {
-  const buckets = Array.from({ length: 6 }, (_, index) => ({
-    start: new Date(now + index * WEEK_MS),
-    end: new Date(now + (index + 1) * WEEK_MS - DAY_MS),
-    total: 0,
-  }));
-  for (const event of openEventsOf(events)) {
-    const at = Date.parse(event.internalDeadlineAt);
-    if (!Number.isFinite(at) || at <= now) continue;
-    const index = Math.floor((at - now) / WEEK_MS);
-    if (index >= 0 && index < 6) buckets[index].total += fundingAmount(event);
-  }
-  const max = Math.max(...buckets.map((bucket) => bucket.total), 1);
-
-  return (
-    <ChartPanel
-      title="Funding due by week"
-      subtitle="Cash the schemes must produce, bucketed by deadline week. This is the liquidity plan."
-      fallback={
-        <FallbackTable
-          head={["Week", "Funding due"]}
-          rows={buckets.map((bucket) => [`${shortDay(bucket.start)} – ${shortDay(bucket.end)}`, bucket.total > 0 ? formatInr(bucket.total) : "None"])}
-        />
-      }
-    >
-      <div className="flex h-36 items-end gap-2 border-b border-stone-300 pb-px">
-        {buckets.map((bucket, index) => (
-          <div key={index} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${shortDay(bucket.start)} to ${shortDay(bucket.end)}: ${bucket.total > 0 ? formatInr(bucket.total) : "no funding due"}`}>
-            {bucket.total > 0 && <span className="figure-inline text-[10px] font-semibold text-foreground">₹{crore(bucket.total)}</span>}
-            <div
-              className={`w-full max-w-14 rounded-t-sm ${bucket.total > 0 ? "bg-primary" : "bg-stone-200"}`}
-              style={{ height: bucket.total > 0 ? `${Math.max((bucket.total / max) * 100, 6)}%` : "2px" }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-1.5 flex gap-2">
-        {buckets.map((bucket, index) => (
-          <span key={index} className="figure-inline flex-1 text-center text-[10px] text-muted-foreground">{shortDay(bucket.start)}</span>
-        ))}
-      </div>
-    </ChartPanel>
-  );
-}
-
 /* C. Headroom against the 10% SEBI single-issuer cap, per scheme. */
-export function CapHeadroom({ schemes }: { schemes: SchemeSummary[] }) {
+export function CapHeadroom({ schemes, dense = false }: { schemes: SchemeSummary[]; dense?: boolean }) {
   const scaleMax = 12;
   const rows = [...schemes]
     .filter((scheme) => scheme.largestExposurePercent > 0)
@@ -229,7 +239,8 @@ export function CapHeadroom({ schemes }: { schemes: SchemeSummary[] }) {
 
   return (
     <ChartPanel
-      title="Headroom against the SEBI 10% cap"
+      dense={dense}
+      title={dense ? "Headroom against the SEBI 10% cap, per scheme" : "Headroom against the SEBI 10% cap"}
       subtitle="Largest single-issuer position per scheme. Status colour appears only where a scheme is tight or breaching."
       fallback={
         <FallbackTable
@@ -298,7 +309,7 @@ export function VolumeVersusValue({ events }: { events: EventSummary[] }) {
             key={row.type}
             className="h-full"
             style={{ width: `${(row[measure] / Math.max(total, 1)) * 100}%`, backgroundColor: EVENT_TYPE_COLORS[row.type] }}
-            title={measure === "count" ? `${row.type}: ${row.count} of ${totalCount} open actions` : `${row.type}: ${formatInr(row.value)} at stake`}
+            title={measure === "count" ? `${row.type}: ${row.count} of ${totalCount} open actions` : `${row.type}: ${formatInr(row.value)} in play`}
           />
         ))}
       </div>
@@ -308,10 +319,10 @@ export function VolumeVersusValue({ events }: { events: EventSummary[] }) {
   return (
     <ChartPanel
       title="Volume versus money"
-      subtitle="The same open actions measured two ways. The inversion is the point."
+      subtitle="The same open actions measured two ways. Value in play counts the full cash moving through every open action, incoming and outgoing, so it is larger than the forfeit figure in the tiles above."
       fallback={
         <FallbackTable
-          head={["Event type", "Open actions", "Value at stake"]}
+          head={["Event type", "Open actions", "Value in play"]}
           rows={rows.map((row) => [row.type, String(row.count), row.value > 0 ? formatInr(row.value) : "Neutral"])}
         />
       }
@@ -330,13 +341,13 @@ export function VolumeVersusValue({ events }: { events: EventSummary[] }) {
           <StackedBar measure="count" />
         </div>
         <div>
-          <div className="mb-1 text-[11px] font-medium text-muted-foreground">By value at stake · {formatInr(totalValue)}</div>
+          <div className="mb-1 text-[11px] font-medium text-muted-foreground">By value in play across all open actions · {formatInr(totalValue)}</div>
           <StackedBar measure="value" />
         </div>
       </div>
       {countLeader && valueLeader && countLeader.type !== valueLeader.type && (
         <p className="mt-3 text-xs leading-5 text-muted-foreground">
-          Most arrivals are {countLeader.type.toLowerCase()}s that need no decision; {valueLeader.type.toLowerCase()}s carry {valueLeaderShare}% of the money at stake.
+          Most arrivals are {countLeader.type.toLowerCase()}s that need no decision; {valueLeader.type.toLowerCase()}s carry {valueLeaderShare}% of the value in play.
         </p>
       )}
     </ChartPanel>

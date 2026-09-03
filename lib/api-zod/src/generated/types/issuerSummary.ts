@@ -13,6 +13,7 @@ export interface IssuerSummary {
   houseExposureAmount: number;
   percentOfAum: number;
   schemesHolding: number;
+  schemesAffected: number;
   openActionCount: number;
   /** @nullable */
   tightestHeadroomPercent: number | null;

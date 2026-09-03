@@ -2,6 +2,7 @@ import { useGetScheme } from "@workspace/api-client-react";
 import { ArrowLeft, ArrowRight, Briefcase } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfoHint } from "@/components/InfoHint";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatInr, issuerIdFor } from "@/lib/format";
 import { formatIstDate } from "@/lib/date";
@@ -34,7 +35,11 @@ export default function SchemeDetail() {
             <ArrowLeft className="h-3.5 w-3.5" /> Portfolio
           </Link>
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-primary">{scheme.category}</p>
-           <h1 className="mt-2 flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><Briefcase className="h-6 w-6 text-primary" />{scheme.name}</h1>
+           <h1 className="mt-2 flex flex-wrap items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><Briefcase className="h-6 w-6 text-primary" />{scheme.name}
+             <InfoHint title="This page">
+               Everything the open corporate actions mean for this one scheme: the effect on its NAV (the price of one unit), the cash it must pay or will receive, how close it runs to the SEBI single-company limit, and only the holdings currently in play.
+             </InfoHint>
+           </h1>
            <p className="mt-4 max-w-4xl text-base leading-7 text-foreground">{scheme.situation}</p>
           <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <SchemeFact label="Fund size" value={`₹${scheme.aumCrore.toLocaleString("en-IN")} cr`} />

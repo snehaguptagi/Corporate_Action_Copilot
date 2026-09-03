@@ -921,12 +921,13 @@ components:
             $ref: "#/components/schemas/SchemeSummary"
     DashboardHouseExposure:
       type: object
-      required: [issuerId, issuer, houseExposureAmount, schemesHolding, tightestHeadroomPercent, attention]
+      required: [issuerId, issuer, houseExposureAmount, schemesHolding, schemesAffected, tightestHeadroomPercent, attention]
       properties:
         issuerId: { type: string }
         issuer: { type: string }
         houseExposureAmount: { type: number }
         schemesHolding: { type: number }
+        schemesAffected: { type: number }
         tightestHeadroomPercent: { type: ["number", "null"] }
         attention: { type: ["string", "null"] }
     DashboardDataTrust:
@@ -948,7 +949,7 @@ components:
         deadlinesTotal: { type: number }
     IssuerSummary:
       type: object
-      required: [issuerId, issuer, isin, houseExposureAmount, percentOfAum, schemesHolding, openActionCount, tightestHeadroomPercent, attention]
+      required: [issuerId, issuer, isin, houseExposureAmount, percentOfAum, schemesHolding, schemesAffected, openActionCount, tightestHeadroomPercent, attention]
       properties:
         issuerId: { type: string }
         issuer: { type: string }
@@ -956,12 +957,13 @@ components:
         houseExposureAmount: { type: number }
         percentOfAum: { type: number }
         schemesHolding: { type: number }
+        schemesAffected: { type: number }
         openActionCount: { type: number }
         tightestHeadroomPercent: { type: ["number", "null"] }
         attention: { type: ["string", "null"] }
     IssuerDetail:
       type: object
-      required: [issuerId, issuer, isin, situation, houseExposure, perScheme, events, summary]
+      required: [issuerId, issuer, isin, situation, houseExposure, perScheme, events, summary, quarterTimeline, cumulativeNote]
       properties:
         issuerId: { type: string }
         issuer: { type: string }
@@ -979,13 +981,31 @@ components:
             $ref: "#/components/schemas/IssuerEventRow"
         summary:
           $ref: "#/components/schemas/IssuerQuarterSummary"
+        quarterTimeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssuerTimelineRow"
+        cumulativeNote: { type: string }
+    IssuerTimelineRow:
+      type: object
+      required: [eventId, eventType, receivedAt, status, open, decisionRequired, holdingQuantity, effect]
+      properties:
+        eventId: { type: string }
+        eventType: { type: string }
+        receivedAt: { type: string }
+        status: { type: string }
+        open: { type: boolean }
+        decisionRequired: { type: boolean }
+        holdingQuantity: { type: number }
+        effect: { type: string }
     IssuerHouseExposure:
       type: object
-      required: [totalAmount, percentOfAum, schemeCount, totalSchemeCount, largestSchemeName, largestSchemeAmount]
+      required: [totalAmount, percentOfAum, schemeCount, affectedSchemeCount, totalSchemeCount, largestSchemeName, largestSchemeAmount]
       properties:
         totalAmount: { type: number }
         percentOfAum: { type: number }
         schemeCount: { type: number }
+        affectedSchemeCount: { type: number }
         totalSchemeCount: { type: number }
         largestSchemeName: { type: string }
         largestSchemeAmount: { type: number }
@@ -1801,13 +1821,14 @@ components:
         actorId: { type: string }
     OperationalActor:
       type: object
-      required: [id, name, role]
+      required: [id, name, role, desk]
       properties:
         id: { type: string }
         name: { type: string }
         role:
           type: string
           enum: [Fund Manager, Compliance]
+        desk: { type: string }
     IntakeInput:
       type: object
       required: [sampleId, fileName, source]

@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import {
   calculateDividendWithholding,
   calculateMixedMerger,
@@ -92,6 +92,9 @@ const INDIAN_EVENT_META: Record<string, { deadlineDaysAhead: number; arrivalHour
   "evt-early-sighting": { deadlineDaysAhead: 28, arrivalHoursAgo: 12, recordDaysAhead: 12 },
   "evt-combined-bonus": { deadlineDaysAhead: 19, arrivalHoursAgo: 32 },
   "evt-combined-rights": { deadlineDaysAhead: 23, arrivalHoursAgo: 44 },
+  "evt-tapti-dividend": { deadlineDaysAhead: -70, arrivalHoursAgo: 1800 },
+  "evt-tapti-bonus": { deadlineDaysAhead: -40, arrivalHoursAgo: 1080 },
+  "evt-tapti-rights": { deadlineDaysAhead: 10, arrivalHoursAgo: 96 },
   "evt-history-01": { deadlineDaysAhead: -8, arrivalHoursAgo: 260 },
   "evt-history-02": { deadlineDaysAhead: -15, arrivalHoursAgo: 430 },
   "evt-history-03": { deadlineDaysAhead: -22, arrivalHoursAgo: 600 },
@@ -185,7 +188,7 @@ function closedAnalysisEvent(input: {
       capturedAmount: input.capturedAmount,
       forfeitedAmount: input.forfeitedAmount ?? 0,
       lapsed,
-      deadlineMet: true,
+      deadlineMet: !lapsed,
     },
     reconciliation: {
       expected: input.capturedAmount,
@@ -237,6 +240,13 @@ const preloadedEvents: EventData[] = [
   indianEvent({ id: "evt-early-sighting", reference: "SIGHTING-NSE-001", issuer: "Veda Consumer Products Ltd", security: "ISIN INE0VED01030 · VEDA", eventType: "Cash dividend", processingType: "Mandatory", status: "Early sighting", settlementStage: "Early sighting", isEarlySighting: true, impactBasis: "Indicative", decisionBlockedReason: "Awaiting custodian notification. You can review the likely impact now, but an instruction cannot be sent until SBI-SG confirms this action.", teachingScenario: "Early sighting", amount: 0, securityMaster: indianSecurity("INE0VED01030", "VEDA", "Veda Consumer Products Ltd"), requiredTermKeys: ["rate", "recordDate"], calculationInputs: { rate: 3, withholdingRate: 0 }, source: "Exchange filing · NSE", sourceRecords: [{ id: "evt-early-sighting-nse", channel: "Exchange announcement", provider: "NSE", messageType: "SEBI LODR filing", receivedAt: seedTimestamp(0, "07:50:00"), assertedFields: { recordDate: isoDate(12), rate: "₹3.00" }, primary: true }], sourceAgreement: "Awaiting SBI-SG MT564 confirmation.", notice: notice("veda-nse-filing.pdf", "Indicative dividend sighting from NSE.", ["NSE filing: proposed dividend ₹3.00 per share."], "NSE"), terms: [term("rate", "Cash rate", "₹3.00"), term("recordDate", "Record date", shortDate(12))], positions: [position("POS-VED", "Arka Nifty 50 Index Fund", "ARKA-N50-001", "INE0VED01030", 900_000, isoDate(10))], options: [], instruction: { status: "Unavailable", destination: "SBI-SG", reference: "", generatedAt: "", content: "No MT565 can be sent until SBI-SG supplies its corporate action reference in an MT564.", simulated: false, approvalActor: "" } }),
   indianEvent({ id: "evt-combined-bonus", reference: "CA-IN-BONUS-003", issuer: "Western Circuits Ltd", security: "ISIN INE0WES01031 · WESTERN", eventType: "Bonus issue", processingType: "Mandatory", status: "Monitoring", teachingScenario: "Combined-only concentration breach", analysisCurrentExposurePercent: 8.85, analysisExposureChangePercent: 0.65, securityMaster: indianSecurity("INE0WES01031", "WESTERN", "Western Circuits Ltd"), requiredTermKeys: ["bonusRatio", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 20 }, notice: notice("western-bonus.pdf", "Bonus issue 1:20.", ["One bonus share for every twenty shares."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 20"), term("recordDate", "Record date", shortDate(10))], positions: [position("POS-WES-BONUS", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0WES01031", 4_500_000, isoDate(10))] }),
   indianEvent({ id: "evt-combined-rights", reference: "CA-IN-RIGHTS-004", issuer: "Western Circuits Ltd", security: "ISIN INE0WES01031 · WESTERN", eventType: "Rights issue", processingType: "Voluntary", status: "Validated", teachingScenario: "Combined-only concentration breach", analysisCurrentExposurePercent: 8.85, analysisExposureChangePercent: 0.70, securityMaster: indianSecurity("INE0WES01031", "WESTERN", "Western Circuits Ltd"), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 25, subscriptionPrice: 90 }, notice: notice("western-rights.pdf", "Rights issue 1:25 at ₹90.", ["One rights share for every twenty-five shares at ₹90."]), terms: [term("rightsRatio", "Rights ratio", "1 for 25"), term("subscriptionPrice", "Subscription price", "₹90"), term("recordDate", "Record date", shortDate(10)), term("marketDeadline", "Market deadline", istDeadline(23))], positions: [position("POS-WES-RIGHTS", "Arka Flexi Cap Fund", "ARKA-FC-001", "INE0WES01031", 4_500_000, isoDate(10))], options: [{ id: "exercise", label: "Exercise", description: "Subscribe to the rights.", result: "Cash funding is required.", default: true, fundingFormula: "Rights × ₹90" }, { id: "sell", label: "Sell entitlement", description: "Sell the rights entitlement.", result: "No funding required.", default: false, fundingFormula: "No funding" }] }),
+  // One issuer, three actions in one quarter. Everywhere else these show as three
+  // unrelated rows; the issuer page shows their cumulative effect on the same holding:
+  // dividend cash banked, bonus shares added, and the open rights decision sits on the
+  // enlarged post-bonus holding.
+  indianEvent({ id: "evt-tapti-dividend", reference: "CA-IN-DIV-009", issuer: "Tapti Cements Ltd", security: "ISIN INE0TAP01061 · TAPTI", eventType: "Cash dividend", processingType: "Mandatory", status: "Reconciled", amount: 0, referencePrice: 1240, securityMaster: indianSecurity("INE0TAP01061", "TAPTI", "Tapti Cements Ltd"), requiredTermKeys: ["rate", "recordDate", "paymentDate", "currency"], calculationInputs: { rate: 9, withholdingRate: 0, recordDate: isoDate(-77) }, notice: notice("tapti-dividend-notice.pdf", "Final dividend of ₹9.00.", ["Final dividend of ₹9.00 per equity share."]), terms: [term("rate", "Cash rate", "₹9.00", 1, "₹9.00 per equity share."), term("recordDate", "Record date", shortDate(-77)), term("paymentDate", "Payment date", shortDate(-65)), term("currency", "Payment currency", "INR")], positions: [position("POS-TAP-DIV", "Arka Large Cap Fund", "ARKA-LC-001", "INE0TAP01061", 400_000, isoDate(-77))], historicalOutcome: { capturedAmount: 3_600_000, forfeitedAmount: 0, lapsed: false, deadlineMet: true }, reconciliation: { expected: 3_600_000, actual: 3_600_000, difference: 0, tolerance: 0.01, status: "Matched", classification: "Matched", note: "Expected and actual settlement matched.", expectedCash: 3_600_000, expectedGrossCash: 3_600_000, expectedWithholdingAmount: 0, expectedNetCash: 3_600_000, actualCash: 3_600_000, expectedSecurityQuantity: 0, actualSecurityQuantity: 0, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(-65), actualSettlementDate: isoDate(-65), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: [] } }),
+  indianEvent({ id: "evt-tapti-bonus", reference: "CA-IN-BONUS-004", issuer: "Tapti Cements Ltd", security: "ISIN INE0TAP01061 · TAPTI", eventType: "Bonus issue", processingType: "Mandatory", status: "Closed", amount: 0, unit: "Shares", referencePrice: 1240, securityMaster: indianSecurity("INE0TAP01061", "TAPTI", "Tapti Cements Ltd"), requiredTermKeys: ["bonusRatio", "recordDate"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 4, recordDate: isoDate(-47) }, notice: notice("tapti-bonus-notice.pdf", "Bonus issue 1:4.", ["One bonus share for every four equity shares held."]), terms: [term("bonusRatio", "Bonus ratio", "1 for 4", 1, "1:4 bonus issue."), term("recordDate", "Record date", shortDate(-47)), term("paymentDate", "Credit date", shortDate(-40))], positions: [position("POS-TAP-BON", "Arka Large Cap Fund", "ARKA-LC-001", "INE0TAP01061", 400_000, isoDate(-47))], historicalOutcome: { capturedAmount: 0, forfeitedAmount: 0, lapsed: false, deadlineMet: true }, reconciliation: { expected: 0, actual: 0, difference: 0, tolerance: 0.01, status: "Matched", classification: "Matched", note: "100,000 bonus shares credited as announced.", expectedCash: 0, expectedGrossCash: 0, expectedWithholdingAmount: 0, expectedNetCash: 0, actualCash: 0, expectedSecurityQuantity: 100_000, actualSecurityQuantity: 100_000, expectedCurrency: "INR", actualCurrency: "INR", expectedSettlementDate: isoDate(-40), actualSettlementDate: isoDate(-40), expectedAccount: "ARKA-LC-001", actualAccount: "ARKA-LC-001", investigationSteps: [] } }),
+  indianEvent({ id: "evt-tapti-rights", reference: "CA-IN-RIGHTS-005", issuer: "Tapti Cements Ltd", security: "ISIN INE0TAP01061 · TAPTI", eventType: "Rights issue", processingType: "Voluntary", status: "Election required", amount: 0, referencePrice: 1240, securityMaster: indianSecurity("INE0TAP01061", "TAPTI", "Tapti Cements Ltd"), requiredTermKeys: ["rightsRatio", "subscriptionPrice", "recordDate", "marketDeadline"], calculationInputs: { ratioNumerator: 1, ratioDenominator: 5, subscriptionPrice: 1050 }, notice: notice("tapti-rights-notice.pdf", "Rights issue 1:5 at ₹1,050.", ["One rights share for every five equity shares held, at ₹1,050 per share."]), terms: [term("rightsRatio", "Rights ratio", "1 for 5"), term("subscriptionPrice", "Subscription price", "₹1,050"), term("recordDate", "Record date", shortDate(5)), term("marketDeadline", "Market deadline", istDeadline(10))], positions: [position("POS-TAP-RIGHTS", "Arka Large Cap Fund", "ARKA-LC-001", "INE0TAP01061", 500_000, isoDate(5))], options: [{ id: "exercise", label: "Exercise", description: "Subscribe to the rights.", result: "Cash funding is required.", default: true, fundingFormula: "Rights × ₹1,050" }, { id: "sell", label: "Sell entitlement", description: "Sell the rights entitlement.", result: "No funding required.", default: false, fundingFormula: "No funding" }] }),
   closedAnalysisEvent({ id: "evt-history-01", reference: "CA-IN-HIST-001", issuer: "Ajanta Consumer Ltd", ticker: "AJANTA", isin: "INE0AJN01041", fund: "Arka Large Cap Fund", account: "ARKA-LC-001", quantity: 1_000_000, capturedAmount: 8_500_000 }),
   closedAnalysisEvent({ id: "evt-history-02", reference: "CA-IN-HIST-002", issuer: "Godavari Banks Ltd", ticker: "GODAVARI", isin: "INE0GOD01042", fund: "Arka Nifty 50 Index Fund", account: "ARKA-N50-001", quantity: 1_200_000, capturedAmount: 7_200_000 }),
   closedAnalysisEvent({ id: "evt-history-03", reference: "CA-IN-HIST-003", issuer: "Coromandel Pharma Ltd", ticker: "COROM", isin: "INE0COR01043", fund: "Arka Flexi Cap Fund", account: "ARKA-FC-001", quantity: 700_000, capturedAmount: 6_300_000 }),
@@ -336,7 +346,7 @@ if (rightsEvent) {
   if (nse) Object.assign(nse, { messageType: "SEBI LODR filing · REPL", assertedFields: { ...nse.assertedFields, rightsRatio: "1 for 5", previousRightsRatio: "1 for 6" } });
 }
 
-function buildSchemeImpacts(event: EventData): EventData[] {
+export function buildSchemeImpacts(event: EventData): EventData[] {
   const positions = event.positions ?? [];
   const arkaNames = new Set(ARKA_SCHEME_SEED.map((scheme) => scheme.schemeName));
   const isArkaEvent = positions.some((position: EventData) => arkaNames.has(position.fund));
@@ -470,7 +480,9 @@ function buildSchemeImpacts(event: EventData): EventData[] {
         ? "SEBI 10% headroom"
         : event.eventType === "Rights issue" && scheme.id === "arka-small-cap"
           ? "Cash short"
-          : null,
+          : direction === "Funding" && scheme.cashBudgetPaise != null && cashAmount * 100 > Number(scheme.cashBudgetPaise)
+            ? "Cash short"
+            : null,
     };
   });
 }
@@ -1379,10 +1391,12 @@ export async function ensureCorporateActionSeedData(): Promise<void> {
   if (!seedPromise) {
     seedPromise = (async () => {
       const { corporateActionEventsTable, db } = await import("@workspace/db");
-      // Sample teaching events are no longer served anywhere; the ledger only
-      // carries cases the user captured themselves. Remove any samples that a
-      // previous seed version left behind.
-      await db.delete(corporateActionEventsTable).where(inArray(corporateActionEventsTable.id, preloadedEvents.map((event) => event.id)));
+      // Demo walkthrough cases stay seeded so every pipeline stage is visible
+      // in the product, alongside live captured cases. Existing rows are never
+      // overwritten, so progress made on a demo case survives restarts.
+      await db.insert(corporateActionEventsTable)
+        .values(preloadedEvents.map((event) => ({ id: event.id, data: event })))
+        .onConflictDoNothing();
     })().catch((error) => {
       seedPromise = undefined;
       throw error;
@@ -1621,7 +1635,10 @@ export function closedEventOutcome(event: EventData): EventData {
     capturedAmount: Number(capturedAmount.toFixed(2)),
     forfeitedAmount: Number(Number(outcome.forfeitedAmount ?? 0).toFixed(2)),
     lapsed: Boolean(outcome.lapsed),
-    deadlineOutcome: outcome.deadlineMet === false ? "Missed" : "Met",
+    // A lapsed entitlement means the deadline passed without an instruction, so it can
+    // never count as a met deadline; otherwise the history would claim every deadline
+    // was met while also reporting lapses and forfeited value.
+    deadlineOutcome: outcome.deadlineMet === false || Boolean(outcome.lapsed) ? "Missed" : "Met",
     reconciliationStatus: event.reconciliation?.classification ?? event.reconciliation?.status ?? "Closed",
   };
 }
@@ -1674,6 +1691,9 @@ function computeIssuers(events: EventData[], desk: EventData): EventData[] {
       if (held.length === 0) return [];
       const best = held.reduce((left, right) => positionQuantity(right.position) > positionQuantity(left.position) ? right : left);
       const quantity = positionQuantity(best.position);
+      // Seeded events may carry zero-quantity position rows for schemes that do not hold the
+      // issuer at all; those are not holdings and must not count towards schemesHolding.
+      if (quantity <= 0) return [];
       const seed = ARKA_SCHEME_SEED.find((candidate) => candidate.id === scheme.id);
       const aumRupees = seed ? Number(seed.aumPaise) / 100 : Number(scheme.aumCrore ?? 0) * 10_000_000;
       const valueAmount = Number((quantity * issuerPriceRupees(best.event)).toFixed(2));
@@ -1701,6 +1721,14 @@ function computeIssuers(events: EventData[], desk: EventData): EventData[] {
     const attention = tightest && ["Tight", "Critical", "Breach"].includes(String(tightest.exposureStatus))
       ? String(tightest.exposureStatus)
       : null;
+    // Two different facts, never interchangeable: schemes HOLDING the issuer (non-zero
+    // position) versus schemes AFFECTED by an open action (eligible impact). A scheme can
+    // hold shares yet receive no entitlement, so affected is always <= holding.
+    const holdingSchemeIds = new Set(perScheme.map((row) => String(row.schemeId)));
+    const schemesAffected = new Set(issuerEvents.filter(isOpenEvent)
+      .flatMap((event) => (event.schemeImpacts ?? [])
+        .filter((impact: EventData) => impact.affected && holdingSchemeIds.has(String(impact.schemeId)))
+        .map((impact: EventData) => String(impact.schemeId)))).size;
     return {
       issuerId: issuerIdFor(issuer),
       issuer,
@@ -1708,6 +1736,7 @@ function computeIssuers(events: EventData[], desk: EventData): EventData[] {
       houseExposureAmount,
       percentOfAum: totalAumRupees > 0 ? Number((houseExposureAmount / totalAumRupees * 100).toFixed(2)) : 0,
       schemesHolding: perScheme.length,
+      schemesAffected,
       totalSchemeCount: schemes.length,
       openActionCount: issuerEvents.filter(isOpenEvent).length,
       tightestHeadroomPercent: tightest ? (tightest.sharedHeadroom as number) : null,
@@ -1727,6 +1756,7 @@ export function buildIssuerSummaries(events: EventData[], desk: EventData): Even
     houseExposureAmount: row.houseExposureAmount,
     percentOfAum: row.percentOfAum,
     schemesHolding: row.schemesHolding,
+    schemesAffected: row.schemesAffected,
     openActionCount: row.openActionCount,
     tightestHeadroomPercent: row.tightestHeadroomPercent,
     attention: row.attention,
@@ -1765,8 +1795,64 @@ export function buildIssuerDetail(events: EventData[], desk: EventData, issuerId
     forfeitedAmount: Number(closedInQuarter.reduce((total: number, outcome: EventData) => total + outcome.forfeitedAmount, 0).toFixed(2)),
     openDecisionCount: row.events.filter(needsDecision).length,
   };
+  // The quarter timeline is the issuer page's core argument: everywhere else these
+  // actions are unrelated rows, but here they line up against one holding in order,
+  // so the cumulative effect (cash banked, shares added, decisions on the enlarged
+  // base) is visible in one place.
+  const inrShort = (amount: number) => amount >= 10_000_000 ? `₹${(amount / 10_000_000).toFixed(2)} cr` : `₹${(amount / 100_000).toFixed(2)} lakh`;
+  const sharesText = (quantity: number) => quantity.toLocaleString("en-IN");
+  const quarterTimeline = [...inQuarter]
+    .sort((left: EventData, right: EventData) => Date.parse(left.receivedAt ?? "") - Date.parse(right.receivedAt ?? ""))
+    .map((event: EventData) => {
+      const quantity = Math.max(0, ...(event.positions ?? []).map((current: EventData) => positionQuantity(current)));
+      const open = isOpenEvent(event);
+      const ratioNumerator = Number(event.calculationInputs?.ratioNumerator ?? 1);
+      const ratioDenominator = Number(event.calculationInputs?.ratioDenominator ?? 1);
+      let effect = String(event.status ?? "");
+      if (event.eventType === "Cash dividend") {
+        effect = open
+          ? `Dividend pending on ${sharesText(quantity)} shares.`
+          : `${inrShort(closedEventOutcome(event).capturedAmount)} received in cash on ${sharesText(quantity)} shares. The holding itself did not change.`;
+      } else if (event.eventType === "Bonus issue") {
+        const delta = Math.floor(quantity * ratioNumerator / ratioDenominator);
+        effect = open
+          ? `${sharesText(delta)} free shares due (${ratioNumerator} for ${ratioDenominator}). The holding will grow from ${sharesText(quantity)} to ${sharesText(quantity + delta)} shares.`
+          : `${sharesText(delta)} free shares credited (${ratioNumerator} for ${ratioDenominator}). The holding grew from ${sharesText(quantity)} to ${sharesText(quantity + delta)} shares.`;
+      } else if (event.eventType === "Rights issue") {
+        const entitlement = Math.floor(quantity * ratioNumerator / ratioDenominator);
+        const cost = entitlement * Number(event.calculationInputs?.subscriptionPrice ?? 0);
+        if (open) {
+          effect = `Decision open: subscribe ${sharesText(entitlement)} new shares for ${inrShort(cost)}, or sell the entitlement. The entitlement is calculated on the current holding of ${sharesText(quantity)} shares.`;
+        } else {
+          const outcome = closedEventOutcome(event);
+          effect = outcome.forfeitedAmount > 0
+            ? `The entitlement lapsed. ${inrShort(outcome.forfeitedAmount)} of value was forfeited.`
+            : outcome.capturedAmount > 0
+              ? `${inrShort(outcome.capturedAmount)} realised from the entitlement.`
+              : "The rights entitlement closed with no cash effect.";
+        }
+      }
+      return {
+        eventId: event.id,
+        eventType: event.eventType,
+        receivedAt: event.receivedAt ?? "",
+        status: event.status,
+        open,
+        decisionRequired: needsDecision(event),
+        holdingQuantity: quantity,
+        effect,
+      };
+    });
+  const cumulativeNote = quarterTimeline.length >= 2
+    ? `Every other screen shows these as ${quarterTimeline.length} separate cases. Lined up in order they act on one holding: it started the quarter at ${sharesText(quarterTimeline[0].holdingQuantity)} shares, and each later action was calculated on the result of the earlier ones.`
+    : "";
   const crore = (amount: number) => `₹${(amount / 10_000_000).toFixed(2)} cr`;
-  const parts = [`Arka holds ${crore(row.houseExposureAmount)} of ${row.issuer} across ${row.schemesHolding} of ${row.totalSchemeCount} schemes, ${row.percentOfAum.toFixed(2)}% of house AUM.`];
+  const affectedPhrase = row.openActionCount === 0
+    ? ""
+    : row.schemesAffected === 0
+      ? " None of them is affected by the open actions."
+      : ` ${row.schemesAffected} of them ${row.schemesAffected === 1 ? "is" : "are"} affected by the open actions.`;
+  const parts = [`Arka holds ${crore(row.houseExposureAmount)} of ${row.issuer} across ${row.schemesHolding} of ${row.totalSchemeCount} schemes, ${row.percentOfAum.toFixed(2)}% of house AUM.${affectedPhrase}`];
   if (row.attention === "Breach") {
     parts.push(`${row.tightestSchemeName} breaches the SEBI single-issuer cap if the open actions complete in full.`);
   } else if (row.attention) {
@@ -1785,6 +1871,7 @@ export function buildIssuerDetail(events: EventData[], desk: EventData, issuerId
       totalAmount: row.houseExposureAmount,
       percentOfAum: row.percentOfAum,
       schemeCount: row.schemesHolding,
+      affectedSchemeCount: row.schemesAffected,
       totalSchemeCount: row.totalSchemeCount,
       largestSchemeName: largest?.schemeName ?? "",
       largestSchemeAmount: largest?.valueAmount ?? 0,
@@ -1799,6 +1886,8 @@ export function buildIssuerDetail(events: EventData[], desk: EventData, issuerId
     })),
     events: eventRows,
     summary,
+    quarterTimeline,
+    cumulativeNote,
   };
 }
 
@@ -1834,7 +1923,15 @@ export function buildSchemeSummaries(events: EventData[], desk: EventData): Even
       largestExposureEventName: exposure ? `${exposure.issuer} ${open.find(({ event }) => event.id === exposure.eventIds[0])?.event.eventType.toLowerCase() ?? ""}` : "",
       largestExposurePercent: exposure?.postActionPercent ?? 0,
       distanceToLimitPercent: exposure?.distanceToCapPercent ?? 10,
-      flag: exposure?.combinedOnly ? "Combined issuer breach" : open.find(({ impact }) => impact.flag)?.impact.flag ?? null,
+      // The scheme-level cash flag must agree with the row's own numbers: it is set
+      // exactly when total funding needed exceeds total cash available. Per-decision
+      // cash budget constraints stay on the decision desk where they apply, so an
+      // impact-level "Cash short" never leaks up beside a fully funded row.
+      flag: exposure?.combinedOnly
+        ? "Combined issuer breach"
+        : fundingNeeded > cashAvailable
+          ? "Cash short"
+          : open.map(({ impact }) => impact.flag).find((flag) => flag && flag !== "Cash short") ?? null,
     };
   }).sort((left: EventData, right: EventData) => right.totalNavImpactPaise - left.totalNavImpactPaise || right.openActions.length - left.openActions.length);
 }
@@ -1934,7 +2031,9 @@ export function buildDashboard(events: EventData[], desk: EventData, asOf = new 
   const schemes = buildSchemeSummaries(events, desk);
   const inboundEvents = sortCorporateActionEvents(events, asOf).map(toSummary);
   const portfolioEvents = events.filter((event) => event.schemeImpacts?.some((impact: EventData) => impact.affected));
-  const totalFunding = events.flatMap((event) => event.schemeImpacts ?? [])
+  // Funding is a live obligation figure: closed or reconciled events no longer demand cash,
+  // so only open events count, matching the six-week chart and nearest-funding semantics.
+  const totalFunding = events.filter(isOpenEvent).flatMap((event) => event.schemeImpacts ?? [])
     .filter((impact: EventData) => impact.affected && impact.direction === "Funding")
     .reduce((total: number, impact: EventData) => total + Number(impact.cashAmount ?? 0), 0);
   // "Nearest" must be a live obligation: open events with a future deadline only.
@@ -1964,6 +2063,7 @@ export function buildDashboard(events: EventData[], desk: EventData, asOf = new 
     issuer: row.issuer,
     houseExposureAmount: row.houseExposureAmount,
     schemesHolding: row.schemesHolding,
+    schemesAffected: row.schemesAffected,
     tightestHeadroomPercent: row.tightestHeadroomPercent,
     attention: row.attention,
   }));

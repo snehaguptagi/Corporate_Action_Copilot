@@ -105,7 +105,8 @@ export const LogoutMobileSessionResponse = zod.object({
 export const GetSessionResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['Fund Manager', 'Compliance'])
+  "role": zod.enum(['Fund Manager', 'Compliance']),
+  "desk": zod.string()
 })
 
 
@@ -120,7 +121,8 @@ export const SignInSessionBody = zod.object({
 export const SignInSessionResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['Fund Manager', 'Compliance'])
+  "role": zod.enum(['Fund Manager', 'Compliance']),
+  "desk": zod.string()
 })
 
 
@@ -143,6 +145,7 @@ export const ListIssuersResponseItem = zod.object({
   "houseExposureAmount": zod.number(),
   "percentOfAum": zod.number(),
   "schemesHolding": zod.number(),
+  "schemesAffected": zod.number(),
   "openActionCount": zod.number(),
   "tightestHeadroomPercent": zod.number().nullable(),
   "attention": zod.string().nullable()
@@ -166,6 +169,7 @@ export const GetIssuerResponse = zod.object({
   "totalAmount": zod.number(),
   "percentOfAum": zod.number(),
   "schemeCount": zod.number(),
+  "affectedSchemeCount": zod.number(),
   "totalSchemeCount": zod.number(),
   "largestSchemeName": zod.string(),
   "largestSchemeAmount": zod.number()
@@ -193,7 +197,18 @@ export const GetIssuerResponse = zod.object({
   "receivedAmount": zod.number(),
   "forfeitedAmount": zod.number(),
   "openDecisionCount": zod.number()
-})
+}),
+  "quarterTimeline": zod.array(zod.object({
+  "eventId": zod.string(),
+  "eventType": zod.string(),
+  "receivedAt": zod.string(),
+  "status": zod.string(),
+  "open": zod.boolean(),
+  "decisionRequired": zod.boolean(),
+  "holdingQuantity": zod.number(),
+  "effect": zod.string()
+})),
+  "cumulativeNote": zod.string()
 })
 
 
@@ -219,6 +234,7 @@ export const GetDashboardResponse = zod.object({
   "issuer": zod.string(),
   "houseExposureAmount": zod.number(),
   "schemesHolding": zod.number(),
+  "schemesAffected": zod.number(),
   "tightestHeadroomPercent": zod.number().nullable(),
   "attention": zod.string().nullable()
 })),

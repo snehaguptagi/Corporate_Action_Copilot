@@ -11,4 +11,5 @@ export interface OperationalActor {
   id: string;
   name: string;
   role: OperationalActorRole;
+  desk: string;
 }

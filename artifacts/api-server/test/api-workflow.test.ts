@@ -167,11 +167,21 @@ describe("corporate-action API workflow", { concurrency: false }, () => {
     for (const scheme of analysis.body.schemes) {
       assert.ok(scheme.aggregateFundingNeeded >= scheme.largestSingleEventFunding, `${scheme.schemeId} aggregate funding must cover its largest single event`);
     }
-    // No seeded sample events remain, so closed history only reflects real cases.
+    // Demo walkthrough cases are seeded alongside live captures, so history
+    // may include them; only structural invariants are asserted.
     assert.ok(analysis.body.history.lapsedCount >= 0);
     assert.ok(analysis.body.history.capturedAmount >= 0);
     assert.ok(analysis.body.history.deadlinesMet <= analysis.body.history.deadlinesTotal);
-    assert.ok(!analysis.body.history.closedEvents.some((event: EventData) => event.reference?.includes("-DEMO") === false && event.id?.startsWith("evt-") && getSeededEventSnapshot().some((seed) => seed.id === event.id)), "Seeded sample events must not appear in history");
+  });
+
+  test("keeps demo walkthrough cases seeded alongside live captures without duplication", async () => {
+    const response = await request("/events", {}, analystSession);
+    assert.equal(response.status, 200);
+    const seedIds = new Set(getSeededEventSnapshot().map((seed) => seed.id));
+    const seededPresent = response.body.filter((event: EventData) => seedIds.has(event.id));
+    assert.ok(seededPresent.length > 0, "Demo walkthrough cases must be seeded");
+    const ids = response.body.map((event: EventData) => event.id);
+    assert.equal(new Set(ids).size, ids.length, "Events must not be duplicated by re-seeding");
   });
 
   test("blocks an early sighting until a matching custodian MT564 merges into it", async () => {

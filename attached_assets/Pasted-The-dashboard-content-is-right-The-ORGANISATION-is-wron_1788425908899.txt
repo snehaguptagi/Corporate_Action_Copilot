@@ -1,0 +1,129 @@
+The dashboard content is right. The ORGANISATION is wrong: it is a flat list of
+seven equal-weight sections, each with its own heading and subtitle, so nothing
+tells the reader what to read first. This step reorganises it and fixes four
+bugs found in the current build. No new data, no new charts.
+
+═══ PART 1 — MERGE THE TWO TIME CHARTS INTO ONE ═══
+This is the most important change here.
+
+"Decision deadlines, next 30 days" and "Funding due by week" share the SAME
+x-axis — time. They are currently two separate full-width sections, and worse,
+funding appears BEFORE the deadlines it is derived from.
+
+Combine them into ONE chart with one shared time axis and two stacked rows:
+    top row     one dot per open action at its decision deadline
+    bottom row  bars showing cash due that week
+Same axis, same tick labels, aligned vertically so the reader sees that the
+deadline cluster on 17 Sep sits directly above the ₹22.44 cr due that week.
+That relationship is the insight and it is invisible today.
+
+One heading for the combined chart. One legend covering both rows. One "view as
+table" that shows both series. Keep the hover tooltips.
+
+═══ PART 2 — GROUP INTO FIVE BANDS ═══
+Replace the flat list of seven sections with five bands. A band is a visual
+group, not just a heading — give each band a clear boundary so the eye can see
+where one ends. Order matters; it is the fund manager's reading order.
+
+BAND 1 · NOW
+    the H1 situation sentence (keep as is)
+    the arrival sentence (keep as is)
+    the four stat tiles (keep as is)
+    then fold the two ORPHAN SENTENCES in here as a single quiet footnote line
+    beneath the tiles. Currently they float between the tiles and the first
+    section with no heading and no home:
+        "Last quarter: ₹4.24 cr captured, ₹18.00 lakh forfeited, 2 lapsed,
+         16 of 16 deadlines met."
+        "2 notices with disagreeing sources · latest delivery 3 hr ago via
+         custodian · synthetic teaching data"
+    Combine them into one line, smaller, muted, one rule above.
+
+BAND 2 · ACT
+    "What needs a look" — the ranked queue. Unchanged except for bug 4 below.
+
+BAND 3 · PLAN
+    the merged time chart from Part 1. Full width. This band is one chart.
+
+BAND 4 · RISK
+    "Headroom against the SEBI 10% cap" and "Top house exposures" SIDE BY SIDE,
+    two columns, not stacked full width. Both answer the same question — where
+    is concentration risk — so they belong in one band, adjacent. Give the band
+    one heading, e.g. "Concentration risk", with the two panels beneath it
+    carrying only small labels rather than full headings and subtitles.
+
+BAND 5 · EVERYTHING
+    "Inbound corporate actions" — the full table. Unchanged.
+
+MOVE "Volume versus money" OUT of the middle of the page. It is context, not
+action, and it currently interrupts the path from "what needs me" to "here is
+the list". Put it either at the very bottom, after the inbound table, or on the
+Analysis page. Your call, but it must not sit between Bands 2 and 5.
+
+Reduce heading noise while doing this. Right now every section carries a
+heading AND a subtitle. Inside a band, panels get a short label only; the band
+carries the heading.
+
+═══ PART 3 — FOUR BUGS ═══
+
+1. BHARAT RENEWABLES SAYS IT IS IN 10 SCHEMES.
+   /api/dashboard returns for topHouseExposures:
+       issuer "Bharat Renewables Ltd", schemesHolding: 10
+   But this issuer affects 6 of 10 schemes everywhere else in the product — the
+   corporate action page, the scheme pages and the analysis view all say 6.
+   Find why the house-exposure count differs and make it come from the same
+   source as the rest. Add a test asserting the schemes-holding count for an
+   issuer equals the count of schemes with a non-zero holding of it.
+
+2. TWO DIFFERENT "AT STAKE" NUMBERS ON ONE PAGE.
+   The stat tile shows "AT STAKE IF YOU DO NOTHING ₹7.70 cr".
+   The volume chart shows "By value at stake · ₹32.63 cr".
+   Same words, different definitions, no explanation, sitting on the same
+   screen. Either make them the same number, or rename one so the difference is
+   explicit — for example the tile is "forfeited if every entitlement lapses"
+   while the chart is "total value in play across all open actions". Whichever
+   you choose, the labels must make the difference obvious without the reader
+   having to work it out.
+
+3. NEGATIVE HEADROOM RENDERS AS PLAIN TEXT.
+   The house-exposure table shows "-0.77%" for Bharat Renewables and "-0.20%"
+   for Western Circuits. Negative headroom means the cap is BREACHED. The API
+   already knows — the payload carries attention "Breach" and "Critical" — but
+   the table prints bare numbers with no status treatment.
+   Render the status the API supplies, using the reserved status colours, and
+   keep the numeric headroom in its own column.
+
+4. AN OVERDUE ITEM SITS IN THE QUEUE UNDECORATED.
+   "What needs a look" is described as "ranked by urgency, then deadline" and
+   its first row is:
+       "Bundelkhand Power Ltd · Dividend · 9 days ago · 31 Aug"
+   31 Aug is in the PAST. An overdue action must be visibly overdue — label it
+   as such with the breach colour, and say by how long. If it should not be in
+   this queue at all, exclude it and say why. Silently listing a passed
+   deadline alongside future ones is the worst option.
+
+═══ ALSO CHECK ═══
+The headroom chart now shows Flexi Cap at 10.2%, a SECOND scheme above the cap,
+alongside Focused 25 at 10.8%. Two breaches plus Saffron Digital at 0.21%
+headroom is a lot. Confirm this is deliberate seeding and not calculation
+drift, and that all three figures come from the one shared exposure function.
+
+═══ DO NOT ═══
+- Do not add a new chart or a new stat tile.
+- Do not add a pie or donut, or a dual-axis chart.
+- Do not re-add a scheme table to the dashboard.
+- Do not touch the Portfolio page, the Issuers pages, or the corporate action
+  page in this step.
+
+═══ VERIFY ═══
+typecheck and tests pass, plus:
+- the dashboard has five visually distinct bands in the order Now, Act, Plan,
+  Risk, Everything;
+- deadlines and funding share one chart with one time axis and one legend;
+- "Volume versus money" is not between the queue and the inbound table;
+- the last-quarter and data-trust sentences appear once, together, inside
+  Band 1;
+- an issuer's schemes-holding count matches the count used elsewhere, with a
+  test;
+- the two "at stake" figures are either identical or distinctly labelled;
+- a negative headroom row carries its status colour and label;
+- the overdue queue item is visibly overdue or excluded with a reason.

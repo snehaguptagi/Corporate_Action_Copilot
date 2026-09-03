@@ -56,6 +56,7 @@ export interface DashboardHouseExposure {
   issuer: string;
   houseExposureAmount: number;
   schemesHolding: number;
+  schemesAffected: number;
   /** @nullable */
   tightestHeadroomPercent: number | null;
   /** @nullable */
@@ -254,6 +255,7 @@ export interface IssuerSummary {
   houseExposureAmount: number;
   percentOfAum: number;
   schemesHolding: number;
+  schemesAffected: number;
   openActionCount: number;
   /** @nullable */
   tightestHeadroomPercent: number | null;
@@ -265,6 +267,7 @@ export interface IssuerHouseExposure {
   totalAmount: number;
   percentOfAum: number;
   schemeCount: number;
+  affectedSchemeCount: number;
   totalSchemeCount: number;
   largestSchemeName: string;
   largestSchemeAmount: number;
@@ -300,6 +303,17 @@ export interface IssuerQuarterSummary {
   openDecisionCount: number;
 }
 
+export interface IssuerTimelineRow {
+  eventId: string;
+  eventType: string;
+  receivedAt: string;
+  status: string;
+  open: boolean;
+  decisionRequired: boolean;
+  holdingQuantity: number;
+  effect: string;
+}
+
 export interface IssuerDetail {
   issuerId: string;
   issuer: string;
@@ -309,6 +323,8 @@ export interface IssuerDetail {
   perScheme: IssuerSchemeRow[];
   events: IssuerEventRow[];
   summary: IssuerQuarterSummary;
+  quarterTimeline: IssuerTimelineRow[];
+  cumulativeNote: string;
 }
 
 export interface IssuerExposure {
@@ -851,6 +867,7 @@ export interface OperationalActor {
   id: string;
   name: string;
   role: OperationalActorRole;
+  desk: string;
 }
 
 export type IntakeInputSampleId = typeof IntakeInputSampleId[keyof typeof IntakeInputSampleId];

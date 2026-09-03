@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InfoHint } from "@/components/InfoHint";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { formatIstDate } from "@/lib/date";
 import { formatInr, issuerIdFor } from "@/lib/format";
-import { fundManagerStatus } from "@/lib/status";
+import { fundManagerStatus, journeyStageIndex } from "@/lib/status";
+import { JourneyStrip } from "@/components/CaseJourney";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 function Figure({ children }: { children: React.ReactNode }) {
@@ -220,7 +222,6 @@ export default function FundManagerDesk() {
 
   const primarySource = data.sourceRecords.find((source) => source.primary);
   const isPublicWebDiscovery = data.source === "Public web discovery";
-  const isPocScenario = !data.id.startsWith("evt-intake-");
   const daysLeft = daysUntil(data.internalDeadlineAt);
   const receivedMs = Date.parse(data.receivedAt);
   const deadlineMs = Date.parse(data.internalDeadlineAt);
@@ -232,9 +233,7 @@ export default function FundManagerDesk() {
   const largestNavImpactPaise = affectedSchemes.reduce((largest, scheme: any) => Math.max(largest, Number(scheme.navImpactPaise ?? 0)), 0);
   const statement1 = actionStatement(data);
   const statement2 = deadlineStatement(data, daysLeft, isMandatory);
-  const statement3 = isPocScenario
-    ? <>Simulated POC scenario. The issuer, notice, holdings and source records on this screen are not live fetched data.</>
-    : primarySource
+  const statement3 = primarySource
     ? <>Received <Figure>{formatIstDate(primarySource.receivedAt)}</Figure> from {isPublicWebDiscovery ? "a public web source" : data.isEarlySighting ? "the exchange" : "your custodian"} ({primarySource.provider}, {primarySource.messageType}). {data.sourceAgreement}</>
     : <>Received <Figure>{formatIstDate(data.receivedAt)}</Figure> from {data.source}. {data.sourceAgreement}</>;
   const statusCopy = fundManagerStatus(data.status, data.isEarlySighting);
@@ -245,20 +244,30 @@ export default function FundManagerDesk() {
         <header className="mb-3 border-b border-border pb-3">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              {isPublicWebDiscovery && <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">
                 <Landmark className="h-3.5 w-3.5" />
-                {(data.provenance?.synthetic ?? isPocScenario) && <Badge variant="outline">Synthetic data</Badge>}
-                {isPublicWebDiscovery && <Badge variant="warning">Unverified web discovery</Badge>}
-              </div>
-              <h1 className="text-[28px] font-semibold tracking-tight text-foreground">
-                <Link href={`/issuers/${issuerIdFor(data.issuer)}`} className="hover:text-primary hover:underline">{data.issuer}</Link> {data.eventType.toLowerCase()}
+                <Badge variant="warning">Awaiting custodian confirmation</Badge>
+              </div>}
+              <h1 className="flex flex-wrap items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground">
+                <span className="min-w-0"><Link href={`/issuers/${issuerIdFor(data.issuer)}`} className="hover:text-primary hover:underline">{data.issuer}</Link> {data.eventType.toLowerCase()}</span>
+                <InfoHint title="This page">
+                  One corporate action from start to finish. The strip below shows which of the five steps this case is on. Then, in order: what the company announced, which schemes it touches and for how much money, the decision if one is needed, and the settlement check at the end.
+                </InfoHint>
               </h1>
               <p className="mt-2 max-w-3xl text-sm font-medium leading-6 text-foreground">
-                {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}{data.isEarlySighting ? " · Indicative impact" : ""}
+                {statusCopy} · {affectedSchemes.length} affected scheme{affectedSchemes.length === 1 ? "" : "s"}
+                {data.isEarlySighting && (
+                  <>
+                    {" "}· Indicative impact
+                    <InfoHint title="Indicative impact" className="ml-1 align-middle">
+                      Estimated from current holdings before the custodian confirms the final terms. The numbers can change when confirmation arrives, and no decision can be submitted until then.
+                    </InfoHint>
+                  </>
+                )}
               </p>
               {data.provenance && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  As of <span className="figure-inline">{formatIstDate(data.provenance.asOf)}</span> · Arrived via {data.provenance.channel} ({data.provenance.provider}){data.provenance.synthetic ? (data.provenance.fetchedAt ? " · Synthetic provider fetch, not live market data" : " · Synthetic record, nothing has been fetched yet") : ""}
+                  As of <span className="figure-inline">{formatIstDate(data.provenance.asOf)}</span> · Arrived via {data.provenance.channel} ({data.provenance.provider})
                 </p>
               )}
             </div>
@@ -270,6 +279,9 @@ export default function FundManagerDesk() {
         </header>
 
         <div className="space-y-3">
+          <div className="rounded-md border border-border/60 bg-card px-4 py-3">
+            <JourneyStrip activeIndex={journeyStageIndex(data.status, data.isEarlySighting)} />
+          </div>
           {data.isEarlySighting && (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950">
               <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
@@ -302,7 +314,7 @@ export default function FundManagerDesk() {
             </div>
           </Section>
 
-          <Section index="02" title="Stage 1 · Deterministic" summary={`The maths, computed and reproducible, no model call · ${affectedSchemes.length} affected scheme${affectedSchemes.length === 1 ? "" : "s"}${totalExpectedCash > 0 ? ` · ${formatInr(totalExpectedCash)} expected` : ""}`}>
+          <Section index="02" title="Stage 1 · Deterministic" summary={`Plain arithmetic from the notice terms and your holdings, no AI involved; the same inputs always give the same numbers · ${affectedSchemes.length} affected scheme${affectedSchemes.length === 1 ? "" : "s"}${totalExpectedCash > 0 ? ` · ${formatInr(totalExpectedCash)} expected` : ""}`}>
             {affectedSchemes.length > 0 && (
               <div className="mb-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
                 <ImpactStat label="Affected schemes" value={String(affectedSchemes.length)} />
@@ -359,7 +371,7 @@ export default function FundManagerDesk() {
           <Section
             index={judgementIndex}
             title="Stage 2 · AI judgement"
-            summary={data.judgement?.status === "ok" ? `Interpretation by ${data.judgement.model}, generated ${formatIstDate(data.judgement.generatedAt)}` : "Interpretation of the Stage 1 output. Advisory only, cannot change a figure."}
+            summary={data.judgement?.status === "ok" ? `Interpretation by ${data.judgement.model}, generated ${formatIstDate(data.judgement.generatedAt)}` : "The AI explains what the Stage 1 numbers mean. Advice only; it cannot change a figure."}
           >
             {data.judgement?.status === "ok" && data.judgement.summary ? (
               <>

@@ -6,9 +6,11 @@ import {
   buildHistory,
   buildIssuerDetail,
   buildIssuerSummaries,
+  buildSchemeSummaries,
   getSeededEventSnapshot,
   issuerExposuresForScheme,
   issuerIdFor,
+  rightsLapseValue,
 } from "../src/lib/corporate-actions-v2";
 
 type AnyRecord = Record<string, any>;
@@ -40,6 +42,29 @@ test("issuers are ranked by house exposure and cover every held issuer", () => {
   assert.equal(summaries.length, expectedIssuers.size, "every issuer that appears in the book must be listed");
   for (const summary of summaries) {
     assert.equal(summary.issuerId, issuerIdFor(summary.issuer));
+  }
+});
+
+test("schemes-holding counts exactly the schemes with a non-zero holding of the issuer", () => {
+  const events = getSeededEventSnapshot();
+  const summaries = buildIssuerSummaries(events, desk) as AnyRecord[];
+  for (const summary of summaries) {
+    const issuerEvents = events.filter((event: AnyRecord) => event.issuer === summary.issuer);
+    const schemesWithHolding = (desk.schemes as AnyRecord[]).filter((scheme) =>
+      issuerEvents.some((event: AnyRecord) => (event.positions ?? []).some(
+        (position: AnyRecord) => position.fund === scheme.name && Number(position.eligibleQuantity ?? position.settledQuantity ?? 0) > 0,
+      )),
+    );
+    assert.equal(
+      summary.schemesHolding,
+      schemesWithHolding.length,
+      `${summary.issuer} schemesHolding must equal the count of schemes with a non-zero holding`,
+    );
+    const detail = buildIssuerDetail(events, desk, summary.issuerId) as AnyRecord;
+    for (const row of detail.perScheme) {
+      assert.ok(row.holdingQuantity > 0, `${summary.issuer}/${row.schemeId} zero-quantity rows must not appear as holdings`);
+    }
+    assert.equal(detail.perScheme.length, summary.schemesHolding, `${summary.issuer} detail rows must match schemesHolding`);
   }
 });
 
@@ -107,8 +132,70 @@ test("at-stake reuses the Stage 1 right value against the desk entitlement", () 
   const dash = buildDashboard(events, desk) as AnyRecord;
   const heroOpen = events.some((event: AnyRecord) => event.id === "evt-bharat-rights" && !["Closed", "Reconciled"].includes(event.status));
   assert.ok(heroOpen, "seed must keep the Bharat rights issue open");
-  const expected = Number((TOTAL_ENTITLEMENT_FIXTURE * calculateArkaRightsTerms().rightValue).toFixed(2));
-  assert.equal(dash.atStakeAmount, expected, "at-stake must be entitlement times the Stage 1 right value");
+  const bharatComponent = TOTAL_ENTITLEMENT_FIXTURE * calculateArkaRightsTerms().rightValue;
+  const otherOpenRights = events
+    .filter((event: AnyRecord) => event.id !== "evt-bharat-rights" && !["Closed", "Reconciled"].includes(event.status))
+    .reduce((total: number, event: AnyRecord) => total + rightsLapseValue(event, { totals: {} }), 0);
+  const expected = Number((bharatComponent + otherOpenRights).toFixed(2));
+  assert.equal(dash.atStakeAmount, expected, "at-stake must be the Stage 1 right value on the desk entitlement plus every other open rights lapse value");
+  assert.ok(otherOpenRights >= 0, "non-desk lapse values must never be negative");
+});
+
+test("total funding counts only open events, never closed or reconciled carryover", () => {
+  const events = getSeededEventSnapshot();
+  const closed = events.filter((event: AnyRecord) => ["Closed", "Reconciled"].includes(event.status));
+  const closedFunding = closed.flatMap((event: AnyRecord) => event.schemeImpacts ?? [])
+    .filter((impact: AnyRecord) => impact.affected && impact.direction === "Funding")
+    .reduce((total: number, impact: AnyRecord) => total + Number(impact.cashAmount ?? 0), 0);
+  assert.ok(closedFunding > 0, "seed must contain a closed event with a funding impact for this regression to bite");
+  const withClosed = buildDashboard(events, desk) as AnyRecord;
+  const openOnly = buildDashboard(events.filter((event: AnyRecord) => !["Closed", "Reconciled"].includes(event.status)), desk) as AnyRecord;
+  assert.equal(withClosed.totalFunding, openOnly.totalFunding, "closed events must not add to the live funding obligation");
+});
+
+test("issuer holder counts come from non-zero holdings and never fall below the affected count", () => {
+  const events = getSeededEventSnapshot();
+  const summaries = buildIssuerSummaries(events, desk) as AnyRecord[];
+  for (const summary of summaries) {
+    const detail = buildIssuerDetail(events, desk, summary.issuerId) as AnyRecord;
+    const nonZeroHolders = detail.perScheme.filter((row: AnyRecord) => row.holdingQuantity > 0).length;
+    assert.equal(detail.perScheme.length, nonZeroHolders, `${summary.issuer} lists a zero-holding scheme on its issuer page`);
+    assert.equal(summary.schemesHolding, nonZeroHolders, `${summary.issuer} holder count must equal schemes with a non-zero holding`);
+    assert.equal(detail.houseExposure.schemeCount, nonZeroHolders, `${summary.issuer} detail holder count must match the list`);
+    assert.ok(summary.schemesHolding >= summary.schemesAffected, `${summary.issuer} cannot have more affected schemes than holders`);
+    assert.equal(detail.houseExposure.affectedSchemeCount, summary.schemesAffected, `${summary.issuer} affected count must match between list and detail`);
+  }
+});
+
+test("Bharat Renewables separates holders from schemes affected by the open rights issue", () => {
+  const events = getSeededEventSnapshot();
+  const summaries = buildIssuerSummaries(events, desk) as AnyRecord[];
+  const bharat = summaries.find((row) => row.issuer === "Bharat Renewables Ltd") as AnyRecord;
+  assert.equal(bharat.schemesHolding, 7, "seven schemes hold Bharat");
+  assert.equal(bharat.schemesAffected, 6, "six holders are eligible for the open rights issue; Arka Value Fund holds shares without an entitlement");
+});
+
+test("lapsed historical outcomes never count as met deadlines", () => {
+  const events = getSeededEventSnapshot();
+  const history = buildHistory(events) as AnyRecord;
+  const lapsedRows = history.closedEvents.filter((row: AnyRecord) => row.lapsed);
+  assert.ok(lapsedRows.length > 0, "seed must contain a lapsed closed event for this regression to bite");
+  for (const row of lapsedRows) {
+    assert.equal(row.deadlineOutcome, "Missed", `${row.eventId} lapsed, so its deadline cannot read as met`);
+  }
+  assert.equal(history.deadlinesMet + lapsedRows.length <= history.deadlinesTotal, true, "met plus lapsed must fit inside the total");
+});
+
+test("scheme cash flag agrees with the scheme row's own funding numbers", () => {
+  const events = getSeededEventSnapshot();
+  const schemes = buildSchemeSummaries(events, desk) as AnyRecord[];
+  for (const scheme of schemes) {
+    if (scheme.shortfall > 0) {
+      assert.equal(scheme.flag, "Cash short", `${scheme.name} has a shortfall, so the row must say Cash short`);
+    } else {
+      assert.notEqual(scheme.flag, "Cash short", `${scheme.name} is fully funded, so the row must not say Cash short`);
+    }
+  }
 });
 
 test("due-within-3-days is zero-safe and counts only live deadlines inside the window", () => {

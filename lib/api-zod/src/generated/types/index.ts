@@ -72,6 +72,7 @@ export * from './issuerHouseExposure';
 export * from './issuerQuarterSummary';
 export * from './issuerSchemeRow';
 export * from './issuerSummary';
+export * from './issuerTimelineRow';
 export * from './judgement';
 export * from './judgementStatus';
 export * from './lastDiscoveryResponse';

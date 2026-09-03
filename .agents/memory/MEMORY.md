@@ -13,3 +13,4 @@
 - [Warm operations palette](warm-operations-palette.md) — Use named warm tokens only; sidebar foregrounds are solid and semantic colors signal status.
 - [Cross-event issuer exposure](cross-event-issuer-exposure.md) — Group concurrent events by issuer and scheme; count the shared holding baseline once, then sum action deltas.
 - [Stage 2 numeric guardrail](stage2-numeric-guardrail.md) — The model's prompt snapshot is the validator allow-list; no numeric exceptions, or they become hallucination bypasses.
+- [Real intake portfolio analysis](real-intake-portfolio-analysis.md) — Real notices match a static holdings master (ISIN before name aliases); custodian merges must carry calculation inputs forward.

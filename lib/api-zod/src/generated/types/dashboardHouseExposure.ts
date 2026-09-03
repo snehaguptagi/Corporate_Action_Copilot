@@ -11,6 +11,7 @@ export interface DashboardHouseExposure {
   issuer: string;
   houseExposureAmount: number;
   schemesHolding: number;
+  schemesAffected: number;
   /** @nullable */
   tightestHeadroomPercent: number | null;
   /** @nullable */

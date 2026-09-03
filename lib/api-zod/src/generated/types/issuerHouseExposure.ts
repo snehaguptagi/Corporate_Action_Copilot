@@ -10,6 +10,7 @@ export interface IssuerHouseExposure {
   totalAmount: number;
   percentOfAum: number;
   schemeCount: number;
+  affectedSchemeCount: number;
   totalSchemeCount: number;
   largestSchemeName: string;
   largestSchemeAmount: number;

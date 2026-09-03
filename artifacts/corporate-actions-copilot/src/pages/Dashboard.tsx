@@ -1,13 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useGetDashboard, useListSchemes, type EventSummary } from "@workspace/api-client-react";
 import { AlertCircle, ArrowRight, CalendarClock } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CapHeadroom, DeadlineTimeline, FundingByWeek, VolumeVersusValue, openEventsOf } from "@/components/dashboard/charts";
+import { CapHeadroom, DeadlinesAndFunding, VolumeVersusValue, openEventsOf } from "@/components/dashboard/charts";
 import { formatInr } from "@/lib/format";
-import { fundManagerStatus, isComplete, isDecisionNeeded } from "@/lib/status";
+import { fundManagerStatus, isComplete, isDecisionNeeded, journeyStageIndex } from "@/lib/status";
+import { JourneyStrip } from "@/components/CaseJourney";
+import { InfoHint } from "@/components/InfoHint";
 
 function relativeArrival(timestamp: string) {
   const arrival = new Date(timestamp);
@@ -61,15 +63,18 @@ function shortDeadline(display: string) {
   return parts.length >= 2 ? `${parts[0]} ${parts[1]}` : display;
 }
 
-function StatTile({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: string }) {
+function StatTile({ label, value, sub, tone, hint }: { label: string; value: string; sub: string; tone: string; hint?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center bg-card px-4 py-4 text-center">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+      <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}{hint && <InfoHint title={label}>{hint}</InfoHint>}</p>
       <p className={`figure mt-1.5 text-2xl font-semibold tracking-tight ${tone}`}>{value}</p>
       <p className="figure-inline mt-0.5 text-xs text-muted-foreground">{sub}</p>
     </div>
   );
 }
+
+/** A band is a visual reading group. Every band after the first opens with a rule so the eye can see where one ends. */
+const BAND = "mt-7 border-t border-stone-300/80 pt-6";
 
 export default function Dashboard() {
   const { data: dashboard, isLoading, isError, refetch } = useGetDashboard();
@@ -107,11 +112,23 @@ export default function Dashboard() {
   const sortedEvents = dashboard.inboundEvents;
   const openEvents = openEventsOf(sortedEvents);
   const queue = [...openEvents].sort((left, right) => {
+    // Overdue work outranks everything, then urgency, then the nearest deadline.
+    const leftAt = Date.parse(left.internalDeadlineAt);
+    const rightAt = Date.parse(right.internalDeadlineAt);
+    const leftOverdue = Number.isFinite(leftAt) && leftAt < now ? 0 : 1;
+    const rightOverdue = Number.isFinite(rightAt) && rightAt < now ? 0 : 1;
+    if (leftOverdue !== rightOverdue) return leftOverdue - rightOverdue;
     const leftUrgent = left.attention || isDecisionNeeded(left.status) ? 0 : 1;
     const rightUrgent = right.attention || isDecisionNeeded(right.status) ? 0 : 1;
     if (leftUrgent !== rightUrgent) return leftUrgent - rightUrgent;
-    return Date.parse(left.internalDeadlineAt) - Date.parse(right.internalDeadlineAt);
+    return leftAt - rightAt;
   });
+
+  const stageCounts = [0, 0, 0, 0, 0];
+  for (const event of sortedEvents) {
+    const stage = journeyStageIndex(event.status, event.isEarlySighting);
+    if (stage < 5) stageCounts[stage] += 1; // only open cases; settled ones live in history
+  }
 
   const headline = dashboard.needsYouCount > 0
     ? `${dashboard.needsYouCount} corporate action${dashboard.needsYouCount === 1 ? " needs" : "s need"} you.${dashboard.totalFunding > 0 && dashboard.nearestDeadline ? ` ${formatInr(dashboard.totalFunding)} to fund by ${shortDeadline(dashboard.nearestDeadline)}.` : ""}`
@@ -121,16 +138,22 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-y-auto bg-stone-50">
-      <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Corporate Actions Copilot</p>
-        <h1 className="figure mt-1.5 text-[28px] font-semibold leading-9 tracking-[-0.03em] text-foreground">{headline}</h1>
-        <p className="mt-1.5 flex items-center gap-2 text-sm leading-6 text-muted-foreground">
+      <header className="border-b border-stone-200 bg-card px-5 py-6 text-center sm:px-8">
+        <p className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+          Corporate Actions Copilot
+          <InfoHint title="This dashboard">
+            Your morning summary. It reads every open corporate action and tells you whether anything needs a decision, how much money is at stake, and what arrived recently. A corporate action is something a company does that affects its shareholders, such as paying a dividend, issuing new shares, or buying shares back.
+          </InfoHint>
+        </p>
+        <h1 className="figure mx-auto mt-1.5 max-w-3xl text-[28px] font-semibold leading-9 tracking-[-0.03em] text-foreground">{headline}</h1>
+        <p className="mt-1.5 flex items-center justify-center gap-2 text-sm leading-6 text-muted-foreground">
           <CalendarClock className="h-4 w-4 shrink-0 text-primary" />
-          {dashboard.arrivalCount24h} notices arrived in the last 24 hours; {dashboard.arrivalsAffectingSchemes24h} of them touch your schemes.
+          {dashboard.arrivalCount24h} notice{dashboard.arrivalCount24h === 1 ? "" : "s"} arrived in the last 24 hours; {dashboard.arrivalsAffectingSchemes24h} of them touch{dashboard.arrivalsAffectingSchemes24h === 1 ? "es" : ""} your schemes.
         </p>
       </header>
 
-      <main className="flex-1 space-y-4 px-5 py-5 sm:px-8">
+      <main className="flex-1 px-5 py-5 sm:px-8">
+        {/* Band 1 · Now */}
         <section aria-label="Today's numbers" className="overflow-hidden rounded-lg border border-stone-200 bg-card shadow-sm">
           <div className="grid grid-cols-2 gap-px bg-stone-200 lg:grid-cols-4">
             <StatTile
@@ -138,41 +161,44 @@ export default function Dashboard() {
               value={String(dashboard.needsYouCount)}
               sub={`${dashboard.needsNothingCount} need nothing from you`}
               tone={dashboard.needsYouCount > 0 ? "text-amber-700" : "text-foreground"}
+              hint="Cases where the next move is yours: a decision to make, a term to confirm, or a break to resolve."
             />
             <StatTile
-              label="At stake if you do nothing"
+              label="Forfeited if you do nothing"
               value={dashboard.atStakeAmount > 0 ? formatInr(dashboard.atStakeAmount) : "Nothing"}
-              sub="Open voluntary entitlements left to lapse"
+              sub="Entitlement value lost if every optional deadline lapses"
               tone={dashboard.atStakeAmount > 0 ? "text-rose-700" : "text-foreground"}
+              hint="Some corporate actions are optional, like a rights issue or a buyback. Each has a deadline. If the deadline passes with no decision, the offer lapses and this value is forfeited. This is narrower than the value in play figure at the bottom of the page, which counts all cash moving through every open action."
             />
             <StatTile
               label="Due within 3 days"
               value={String(dashboard.dueWithin3DaysCount)}
               sub={dashboard.dueWithin3DaysCount > 0 ? "Internal deadlines inside 72 hours" : "No deadline inside 72 hours"}
               tone={dashboard.dueWithin3DaysCount > 0 ? "text-amber-700" : "text-foreground"}
+              hint="Arka sets its own internal deadline earlier than the market deadline, to leave time for approval and submission. This counts cases whose internal deadline is within the next three days."
             />
             <StatTile
               label="Open settlement breaks"
               value={String(dashboard.settlementBreakCount)}
               sub={dashboard.settlementBreakCount > 0 ? "Custodian cash does not match" : "Settlements match"}
               tone={dashboard.settlementBreakCount > 0 ? "text-rose-700" : "text-foreground"}
+              hint="The custodian is the bank that holds the fund's shares and receives the money. A settlement break means the cash or shares that arrived do not match what was calculated, and someone must find out why."
             />
           </div>
-          <div className="flex flex-col gap-1 border-t border-stone-200 bg-stone-50 px-4 py-2.5 text-xs leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <p className="figure-inline">
-              Last quarter: {formatInr(dashboard.lastQuarter.capturedAmount)} captured, {dashboard.lastQuarter.forfeitedAmount > 0 ? formatInr(dashboard.lastQuarter.forfeitedAmount) : "nothing"} forfeited, {dashboard.lastQuarter.lapsedCount} lapsed, {dashboard.lastQuarter.deadlinesMet} of {dashboard.lastQuarter.deadlinesTotal} deadlines met.
-            </p>
-            <p className="figure-inline sm:text-right">
+          <div className="border-t border-stone-200 bg-stone-50 px-4 py-2">
+            <p className="figure-inline text-[11px] leading-5 text-muted-foreground">
+              Last quarter: {formatInr(dashboard.lastQuarter.capturedAmount)} captured, {dashboard.lastQuarter.forfeitedAmount > 0 ? formatInr(dashboard.lastQuarter.forfeitedAmount) : "nothing"} forfeited, {dashboard.lastQuarter.lapsedCount} lapsed, {dashboard.lastQuarter.deadlinesMet} of {dashboard.lastQuarter.deadlinesTotal} deadlines met
+              {" · "}
               {dashboard.dataTrust.conflictingSourceCount > 0
                 ? `${dashboard.dataTrust.conflictingSourceCount} notice${dashboard.dataTrust.conflictingSourceCount === 1 ? "" : "s"} with disagreeing sources`
-                : "No source disagreements"}
+                : "no source disagreements"}
               {dashboard.dataTrust.lastDeliveryChannel ? ` · latest delivery ${relativeArrival(dashboard.dataTrust.lastDeliveryAt)} via ${dashboard.dataTrust.lastDeliveryChannel.toLowerCase()}` : ""}
-              {dashboard.dataTrust.allSynthetic ? " · synthetic teaching data" : ""}
             </p>
           </div>
         </section>
 
-        <section aria-label="Attention queue" className="dashboard-panel">
+        {/* Band 2 · Act */}
+        <section aria-label="What needs a look" className={`${BAND} dashboard-panel`}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold tracking-tight text-foreground">What needs a look</h2>
@@ -181,75 +207,90 @@ export default function Dashboard() {
             <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
           </div>
           {queue.length === 0 && (
-            <p className="mt-3 text-sm text-muted-foreground">Nothing needs a look. Fetch and capture notices from the Corporate actions page to build the queue.</p>
+            <p className="mt-6 pb-3 text-center text-sm text-muted-foreground">Nothing needs a look. Fetch and capture notices from the Corporate actions page to build the queue.</p>
           )}
           <div className="-mx-2 mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-            {queue.slice(0, 6).map((event) => (
-              <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted">
-                <span className={`h-8 w-1 rounded-full ${event.attention || isDecisionNeeded(event.status) ? "bg-warning" : "bg-success"}`} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-foreground">{event.issuer}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{actionName(event.eventType)} · {relativeArrival(event.receivedAt)}</span>
-                </span>
-                <span className="figure-inline shrink-0 text-xs text-muted-foreground">{shortDeadline(event.internalDeadline)}</span>
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-              </Link>
-            ))}
+            {queue.slice(0, 6).map((event) => {
+              const deadlineAt = Date.parse(event.internalDeadlineAt);
+              const overdueDays = Number.isFinite(deadlineAt) && deadlineAt < now ? Math.max(1, Math.floor((now - deadlineAt) / (24 * 60 * 60 * 1000))) : 0;
+              return (
+                <Link key={event.id} href={`/events/${event.id}`} className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted">
+                  <span className={`h-8 w-1 rounded-full ${overdueDays > 0 ? "bg-destructive" : event.attention || isDecisionNeeded(event.status) ? "bg-warning" : "bg-success"}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-foreground">{event.issuer}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{actionName(event.eventType)} · {relativeArrival(event.receivedAt)}</span>
+                  </span>
+                  {overdueDays > 0
+                    ? <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] font-semibold text-destructive">Overdue by {overdueDays} day{overdueDays === 1 ? "" : "s"}</span>
+                    : <span className="figure-inline shrink-0 text-xs text-muted-foreground">{shortDeadline(event.internalDeadline)}</span>}
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                </Link>
+              );
+            })}
           </div>
         </section>
 
-        <section aria-label="Funding and headroom" className="grid gap-4 lg:grid-cols-2">
-          <FundingByWeek events={sortedEvents} now={now} />
-          {schemes ? <CapHeadroom schemes={schemes} /> : <div className="dashboard-panel text-sm text-muted-foreground">Loading scheme headroom...</div>}
+        {/* Band 3 · Plan: one chart, one time axis */}
+        <section aria-label="Deadlines and funding" className={BAND}>
+          <DeadlinesAndFunding events={sortedEvents} now={now} />
         </section>
 
-        <section aria-label="Deadline timeline">
-          <DeadlineTimeline events={sortedEvents} now={now} />
-        </section>
-
-        <section aria-label="Volume versus money and top exposures" className="grid gap-4 lg:grid-cols-2">
-          <VolumeVersusValue events={sortedEvents} />
-          <div className="dashboard-panel">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">Top house exposures</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Largest issuer positions across all ten schemes.</p>
-              </div>
-              <Link href="/issuers" className="text-xs font-semibold text-primary hover:underline">All issuers</Link>
+        {/* Band 4 · Risk */}
+        <section aria-label="Concentration risk" className={BAND}>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Concentration risk</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Where a single company runs close to, or past, the SEBI 10% single-issuer cap.</p>
             </div>
-            <Table className="mt-2">
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="h-8 px-2">Issuer</TableHead>
-                  <TableHead className="h-8 px-2 text-right">Exposure</TableHead>
-                  <TableHead className="h-8 px-2 text-right">Schemes</TableHead>
-                  <TableHead className="h-8 px-2 text-right">Cap headroom</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dashboard.topHouseExposures.length === 0 && (
-                  <TableRow><TableCell colSpan={4} className="h-16 text-center text-xs text-slate-400">No issuer exposures to show yet.</TableCell></TableRow>
-                )}
-                {dashboard.topHouseExposures.map((row) => (
-                  <TableRow key={row.issuerId} className="hover:bg-muted">
-                    <TableCell className="px-2 py-2">
-                      <Link href={`/issuers/${row.issuerId}`} className="font-semibold text-foreground hover:text-primary hover:underline">{row.issuer}</Link>
-                    </TableCell>
-                    <TableCell className="figure px-2 py-2 text-right font-semibold text-slate-800">{formatInr(row.houseExposureAmount)}</TableCell>
-                    <TableCell className="figure px-2 py-2 text-right text-slate-600">{row.schemesHolding}</TableCell>
-                    <TableCell className="px-2 py-2 text-right">
-                      {row.tightestHeadroomPercent === null
-                        ? <span className="text-xs text-slate-400">No open exposure</span>
-                        : <span className={`figure font-semibold ${row.attention === "Breach" || row.attention === "Critical" ? "text-rose-700" : row.attention === "Tight" ? "text-amber-700" : "text-slate-700"}`}>{row.tightestHeadroomPercent.toFixed(2)}%</span>}
-                    </TableCell>
+            <Link href="/issuers" className="text-xs font-semibold text-primary hover:underline">All issuers</Link>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {schemes ? <CapHeadroom schemes={schemes} dense /> : <div className="dashboard-panel text-sm text-muted-foreground">Loading scheme headroom...</div>}
+            <div className="dashboard-panel">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Top house exposures</h3>
+              <Table className="mt-2">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-8 px-2">Issuer</TableHead>
+                    <TableHead className="h-8 px-2 text-right">Exposure</TableHead>
+                    <TableHead className="h-8 px-2 text-right">Schemes</TableHead>
+                    <TableHead className="h-8 px-2 text-right">Cap headroom</TableHead>
+                    <TableHead className="h-8 px-2 text-right">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {dashboard.topHouseExposures.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="h-16 text-center text-xs text-slate-400">No issuer exposures to show yet.</TableCell></TableRow>
+                  )}
+                  {dashboard.topHouseExposures.map((row) => (
+                    <TableRow key={row.issuerId} className="hover:bg-muted">
+                      <TableCell className="px-2 py-2">
+                        <Link href={`/issuers/${row.issuerId}`} className="font-semibold text-foreground hover:text-primary hover:underline">{row.issuer}</Link>
+                      </TableCell>
+                      <TableCell className="figure px-2 py-2 text-right font-semibold text-slate-800">{formatInr(row.houseExposureAmount)}</TableCell>
+                      <TableCell className="px-2 py-2 text-right text-slate-600"><span className="figure">{row.schemesHolding}</span> hold{row.schemesAffected > 0 ? <span className="text-xs text-slate-500"> · <span className="figure">{row.schemesAffected}</span> affected</span> : null}</TableCell>
+                      <TableCell className="px-2 py-2 text-right">
+                        {row.tightestHeadroomPercent === null
+                          ? <span className="text-xs text-slate-400">No open exposure</span>
+                          : <span className={`figure font-semibold ${row.attention === "Breach" || row.attention === "Critical" ? "text-destructive" : row.attention === "Tight" ? "text-amber-700" : "text-slate-700"}`}>{row.tightestHeadroomPercent.toFixed(2)}%</span>}
+                      </TableCell>
+                      <TableCell className="px-2 py-2 text-right">
+                        {row.attention === "Breach" || row.attention === "Critical"
+                          ? <span className="inline-flex rounded bg-destructive/10 px-1.5 py-0.5 text-[11px] font-semibold text-destructive">{row.attention === "Breach" ? "Cap breached" : "Critical"}</span>
+                          : row.attention === "Tight"
+                            ? <span className="inline-flex rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">Tight</span>
+                            : <span className="text-xs text-slate-400">Within cap</span>}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </section>
 
-        <section aria-labelledby="inbound-actions">
+        {/* Band 5 · Everything */}
+        <section aria-labelledby="inbound-actions" className={BAND}>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <h2 id="inbound-actions" className="text-sm font-semibold tracking-tight text-foreground">Inbound corporate actions</h2>
@@ -316,6 +357,18 @@ export default function Dashboard() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+          </div>
+        </section>
+
+        {/* Context, after everything: background reading, not part of the action path */}
+        <section aria-label="Context" className={BAND}>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <VolumeVersusValue events={sortedEvents} />
+            <div className="dashboard-panel">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">How a corporate action moves</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Every case walks the same five steps, left to right. Open a case to see exactly where it stands.</p>
+              <JourneyStrip counts={stageCounts} className="mt-3" />
             </div>
           </div>
         </section>

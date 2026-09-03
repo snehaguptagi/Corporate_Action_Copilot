@@ -2,6 +2,7 @@ import { useGetAnalysis } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { AlertTriangle, Download, GitCompareArrows, ShieldAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { InfoHint } from "@/components/InfoHint";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatInr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,12 @@ export default function Analysis() {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto bg-stone-50">
       <header className="border-b border-stone-200 bg-card px-5 py-4 sm:px-8">
-        <h1 className="mt-2 flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><GitCompareArrows className="h-6 w-6 text-primary" />Cross-event analysis</h1>
-        <p className="mt-2 text-sm text-slate-600">Aggregate concentration risk, cross-event funding obligations, and historical execution performance per scheme.</p>
+        <h1 className="mt-2 flex items-center gap-2.5 text-[28px] font-semibold tracking-tight text-foreground"><GitCompareArrows className="h-6 w-6 text-primary" />Cross-event analysis
+          <InfoHint title="This page">
+            Each case is checked on its own when it arrives. This page checks them all together: whether several actions in the same company would push a scheme past the SEBI 10% single-company limit, how much cash you would need if everything completes at once, and how past cases went.
+          </InfoHint>
+        </h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Use this page to check all open corporate actions together: whether any scheme is getting too concentrated in one company, how much cash you would need if everything completes at once, and how past cases went.</p>
       </header>
       
       <main className="flex-1 space-y-5 p-4 sm:p-5">

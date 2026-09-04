@@ -6,6 +6,7 @@ import {
   calculateEventImpacts,
   reconcileEvent,
   recordElection,
+  simulateInstruction,
 } from "../src/lib/corporate-actions-v2.js";
 
 const analyst = { id: "USR-004", name: "Rohan Iyer", role: "Fund Manager" };
@@ -155,6 +156,35 @@ test("election prevents quantity above entitlement and requires an independent r
   assert.equal(event.status, "Approved");
   assert.equal(event.audit[0].actorId, reviewer.id);
   assert.equal(event.audit[0].actorRole, reviewer.role);
+});
+
+test("approved instruction carries deterministic expectations into settlement and can complete the case", () => {
+  const event = rightsEvent();
+  calculateEventImpacts(event, analyst);
+  const affectedImpact = event.schemeImpacts.find((impact: EventData) => impact.affected);
+  recordElection(event, { impactId: affectedImpact.id, optionId: "exercise", quantityElected: 20000, comment: "Exercise all" }, analyst);
+  approveControlledEvent(event, true, "Independent check complete", reviewer);
+
+  event.reconciliation.expected = 0;
+  event.reconciliation.expectedCash = 0;
+  event.reconciliation.expectedSecurityQuantity = 0;
+  simulateInstruction(event, "SIMULATED - NOT SENT", analyst);
+
+  assert.equal(event.status, "Awaiting settlement");
+  assert.equal(event.reconciliation.expectedCash, 170000);
+  assert.equal(event.reconciliation.expectedSecurityQuantity, 20000);
+  assert.equal(event.reconciliation.expectedAccount, "CUST-6632");
+
+  reconcileEvent(event, {
+    actual: 170000,
+    actualSecurityQuantity: 20000,
+    actualCurrency: event.reconciliation.expectedCurrency,
+    actualSettlementDate: event.reconciliation.expectedSettlementDate,
+    actualAccount: "CUST-6632",
+    note: "Receipt matched",
+  }, analyst);
+  assert.equal(event.status, "Reconciled", JSON.stringify(event.reconciliation));
+  assert.equal(event.reconciliation.classification, "Matched");
 });
 
 test("a term editor cannot approve the same event under a checker role", () => {

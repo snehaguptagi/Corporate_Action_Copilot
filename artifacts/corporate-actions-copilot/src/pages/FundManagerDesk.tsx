@@ -1,14 +1,21 @@
 import { useState } from "react";
 import {
+  approveEvent,
   getGetEventQueryKey,
   getGetArkaDeskQueryKey,
+  getGetDashboardQueryKey,
+  getGetSessionQueryKey,
+  getListEventsQueryKey,
+  signInSession,
   useGetEvent,
   useGetArkaDesk,
   useCalculateEvent,
   useGenerateJudgement,
+  useSaveReconciliation,
   useSaveArkaDeskDecisions,
   useSubmitArkaDesk,
   useSaveElection,
+  useUpdateInstruction,
   type EventDetail,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,7 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { formatIstDate } from "@/lib/date";
 import { formatInr, issuerIdFor } from "@/lib/format";
-import { fundManagerStatus, journeyStageIndex, isComplete } from "@/lib/status";
+import { fundManagerStatus, journeyStageIndex, journeyStages, isComplete } from "@/lib/status";
 import { JourneyStrip } from "@/components/CaseJourney";
 
 const integer = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
@@ -248,9 +255,9 @@ function getNextStepsText(data: EventDetail, isMandatory: boolean, daysLeft: num
     ].filter(Boolean);
     return `Resolve the ${differences.join(" and ") || "settlement difference"} with the custodian, then rerun the match.`;
   }
-  if (data.status === "Approved") return "Decision approved. Track settlement.";
+  if (data.status === "Approved") return "Compliance review complete. Create the simulated instruction to begin settlement.";
   if (data.status === "Awaiting approval" || data.status === "Election submitted") return "Awaiting Compliance approval.";
-  if (data.status === "Awaiting settlement") return "Awaiting settlement from custodian.";
+  if (data.status === "Awaiting settlement") return "Instruction released. Record the custodian receipt and run the settlement match.";
   if (isMandatory) return "No election required. Track settlement.";
   if (daysLeft === null) return <>Submit decision by <span className="figure-inline">{data.internalDeadline}</span>.</>;
   if (daysLeft < 0) return <span className="text-destructive font-semibold">The internal deadline has passed. Contact the custodian.</span>;
@@ -271,6 +278,7 @@ export default function FundManagerDesk() {
   const [rightsChoices, setRightsChoices] = useState<Record<string, string>>({});
   const [rightsQuantities, setRightsQuantities] = useState<Record<string, string>>({});
   const [rightsRemainders, setRightsRemainders] = useState<Record<string, string>>({});
+  const [demoReviewPending, setDemoReviewPending] = useState(false);
 
   const saveElection = useSaveElection({
     mutation: { onSuccess: () => { toast({ title: "Election submitted" }); queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }); } }
@@ -304,6 +312,28 @@ export default function FundManagerDesk() {
         queryClient2.invalidateQueries({ queryKey: getGetArkaDeskQueryKey() });
       },
       onError: (error: any) => toast({ title: error?.message ?? "Submission blocked", variant: "destructive" }),
+    },
+  });
+  const updateInstruction = useUpdateInstruction({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Instruction prepared", description: "The case is now in settlement." });
+        queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
+        queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+      },
+      onError: (error: any) => toast({ title: error?.message ?? "Instruction could not be prepared", variant: "destructive" }),
+    },
+  });
+  const saveReconciliation = useSaveReconciliation({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Settlement matched", description: "The receipt matches the expected entitlement and the case is complete." });
+        queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) });
+        queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+      },
+      onError: (error: any) => toast({ title: error?.message ?? "Settlement could not be matched", variant: "destructive" }),
     },
   });
 
@@ -410,6 +440,40 @@ export default function FundManagerDesk() {
   const expectedSettlementCurrency = reconciliation.expectedCurrency || data.currency;
   const actualSettlementCurrency = reconciliation.actualCurrency || expectedSettlementCurrency;
   const settlementCurrencyMismatch = hasSettlementCash && expectedSettlementCurrency !== actualSettlementCurrency;
+  const currentJourneyIndex = journeyStageIndex(data.status, data.isEarlySighting);
+  const currentJourneyLabel = isComplete(data.status)
+    ? "Complete"
+    : journeyStages[Math.min(currentJourneyIndex, journeyStages.length - 1)].label;
+
+  const completeDemoComplianceReview = async () => {
+    setDemoReviewPending(true);
+    let switchedToCompliance = false;
+    try {
+      await signInSession({ actorId: "USR-005" });
+      switchedToCompliance = true;
+      await approveEvent(eventId, {
+        approved: true,
+        note: "Demo Compliance review completed after checking the validated terms, scheme elections and control limits.",
+      });
+      toast({
+        title: "Compliance review completed",
+        description: "Nisha Kapoor approved the decision. The case is ready for instruction preparation.",
+      });
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Compliance review could not be completed", variant: "destructive" });
+    } finally {
+      if (switchedToCompliance) {
+        await signInSession({ actorId: "USR-004" }).catch(() => undefined);
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetEventQueryKey(eventId) }),
+        queryClient.invalidateQueries({ queryKey: getListEventsQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() }),
+      ]);
+      setDemoReviewPending(false);
+    }
+  };
   const cashSettlementDifference = actualSettlementCash - expectedSettlementCash;
   const cashDifferenceLabel = cashSettlementDifference < 0 ? "Cash shortfall" : cashSettlementDifference > 0 ? "Excess cash" : "Cash difference";
   const securitySettlementDifference = actualSettlementSecurities - expectedSettlementSecurities;
@@ -521,7 +585,16 @@ export default function FundManagerDesk() {
 
         <div className="flex flex-col gap-4">
           <div className="rounded-md border border-border/60 bg-card px-4 py-3">
-            <JourneyStrip activeIndex={journeyStageIndex(data.status, data.isEarlySighting)} />
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Current workflow stage</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{currentJourneyLabel}</p>
+              </div>
+              <Badge variant="outline" className="border-primary/35 bg-accent-soft text-primary">
+                {isComplete(data.status) ? "All 5 stages complete" : `Stage ${currentJourneyIndex + 1} of 5`}
+              </Badge>
+            </div>
+            <JourneyStrip activeIndex={currentJourneyIndex} />
           </div>
           
           <div className="grid grid-cols-1 gap-0 divide-y divide-border/60 rounded-md border border-border/70 bg-card shadow-sm md:grid-cols-3 md:divide-x md:divide-y-0">
@@ -793,6 +866,31 @@ export default function FundManagerDesk() {
             <div className="mt-3 rounded-md border border-primary/25 bg-accent-soft px-4 py-3 text-sm text-foreground">
               <span className="font-semibold">Your next action: </span>{nextSteps}
             </div>
+            {data.status === "Awaiting approval" && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/35 bg-card px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Demo Compliance handoff</p>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Run the independent checker step using the seeded Compliance reviewer, then return to the Fund Manager view.</p>
+                </div>
+                <Button onClick={completeDemoComplianceReview} disabled={demoReviewPending}>
+                  {demoReviewPending ? "Completing review" : "Complete demo Compliance review"}
+                </Button>
+              </div>
+            )}
+            {data.status === "Approved" && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/35 bg-card px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Compliance review is complete</p>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Prepare the approved simulated instruction to move this case into settlement monitoring.</p>
+                </div>
+                <Button
+                  onClick={() => updateInstruction.mutate({ eventId, data: { status: "SIMULATED - NOT SENT" } })}
+                  disabled={updateInstruction.isPending}
+                >
+                  {updateInstruction.isPending ? "Preparing instruction" : "Prepare instruction and start settlement"}
+                </Button>
+              </div>
+            )}
           </Section>
 
           {showSettlement && (
@@ -813,6 +911,36 @@ export default function FundManagerDesk() {
                 ? "What was expected, what arrived, the difference and the actions needed to close the break"
                 : "Expected versus actual cash and shares from the custodian"}
             >
+              {(data.status === "Awaiting settlement" || data.status === "Break identified") && (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/35 bg-accent-soft px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {data.status === "Break identified" ? "Record the corrected receipt" : "Record the demo custodian receipt"}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                      Use the expected cash and share quantities as the received values, run the match, and complete the case.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => saveReconciliation.mutate({
+                      eventId,
+                      data: {
+                        actual: expectedSettlementCash,
+                        actualSecurityQuantity: expectedSettlementSecurities,
+                        actualCurrency: expectedSettlementCurrency,
+                        actualSettlementDate: reconciliation.expectedSettlementDate,
+                        actualAccount: reconciliation.expectedAccount,
+                        note: data.status === "Break identified"
+                          ? "Corrected demo receipt recorded and matched to the deterministic entitlement."
+                          : "Demo custodian receipt recorded and matched to the deterministic entitlement.",
+                      },
+                    })}
+                    disabled={saveReconciliation.isPending}
+                  >
+                    {saveReconciliation.isPending ? "Running settlement match" : "Record receipt and complete settlement"}
+                  </Button>
+                </div>
+              )}
               <p className="mb-3 text-xs leading-5 text-muted-foreground">
                 This settlement check covers account <span className="figure-inline font-semibold text-foreground">{reconciliation.expectedAccount || "not yet assigned"}</span>.
                 {" "}The deterministic impact above covers all <span className="figure-inline">{affectedSchemes.length}</span> affected schemes.

@@ -216,7 +216,7 @@ function BrandLockup({ collapsed = false }: { collapsed?: boolean }) {
       <PwCMark />
       {!collapsed && (
         <span className="min-w-0 border-l border-sidebar-border/70 pl-3 leading-none">
-          <span className="block whitespace-nowrap text-[14px] font-semibold tracking-[-0.02em] text-sidebar-foreground">Corporate Actions</span>
+          <span className="block whitespace-nowrap text-[14px] font-semibold tracking-[-0.02em] text-sidebar-foreground"><span className="text-sidebar-primary">Corporate</span> Actions</span>
           <span className="mt-1 block text-[14px] font-semibold tracking-[-0.02em] text-sidebar-primary">Copilot</span>
         </span>
       )}

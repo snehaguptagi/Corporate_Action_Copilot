@@ -1325,6 +1325,21 @@ export function simulateInstruction(event: EventData, status: string, actor: any
   if (!canIssue) throw new Error(`Instruction is blocked while the event is ${event.status}. Approval and calculation controls must complete first.`);
   if (status !== "SIMULATED - NOT SENT") throw new Error("The POC only supports the explicit status SIMULATED - NOT SENT.");
   const electionLines = event.schemeImpacts.filter((impact: any) => impact.affected).map((impact: any) => `${impact.account}: ${impact.electionDecision?.optionLabel ?? "Mandatory processing"}; quantity ${impact.electionDecision?.quantityElected ?? impact.expectedSecurityQuantity ?? 0}`).join("\n");
+  const affectedImpacts = event.schemeImpacts.filter((impact: any) => impact.affected);
+  const expectedCash = affectedImpacts.reduce((total: number, impact: any) => total + Number(impact.expectedCash ?? impact.cashAmount ?? 0), 0);
+  const expectedSecurityQuantity = affectedImpacts.reduce((total: number, impact: any) => total + Number(impact.expectedSecurityQuantity ?? 0), 0);
+  const settlementAccounts = [...new Set(affectedImpacts.map((impact: any) => impact.account).filter(Boolean))];
+  Object.assign(event.reconciliation, {
+    expected: expectedCash || expectedSecurityQuantity,
+    expectedCash,
+    expectedSecurityQuantity,
+    expectedCurrency: event.currency,
+    actualCurrency: event.currency,
+    expectedAccount: settlementAccounts.length === 1 ? settlementAccounts[0] : "Multiple accounts",
+    status: "Not due",
+    classification: "Not due",
+    note: "Approved instruction prepared. Settlement receipt is now pending.",
+  });
   event.instruction = {
     status,
     destination: "Synthetic custodian instruction gateway",

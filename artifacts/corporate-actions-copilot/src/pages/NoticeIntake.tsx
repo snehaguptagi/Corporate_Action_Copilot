@@ -184,7 +184,10 @@ export default function NoticeIntake() {
       <main className="mx-auto max-w-3xl space-y-4 px-5 py-4 sm:px-8">
         <Card>
           <CardHeader>
-            <CardTitle>What happens when you capture</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              What happens when you capture
+              <InfoHint title="Capture process">The automated extraction pipeline that structures the notice into a working case.</InfoHint>
+            </CardTitle>
             <CardDescription>Four steps, all recorded in the case history. Nothing is acted on until a decision is made and a second person approves it.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -196,7 +199,10 @@ export default function NoticeIntake() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Notice source</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              Notice source
+              <InfoHint title="Notice source">The authoritative document or announcement establishing the corporate action.</InfoHint>
+            </CardTitle>
             <CardDescription>Use the original NSE, BSE, SEBI, or issuer page whenever possible.</CardDescription>
           </CardHeader>
           <CardContent>

@@ -7,14 +7,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatInr } from "@/lib/format";
 import { formatIstDate } from "@/lib/date";
 
-function SectionTitle({ number, children }: { number: string; children: string }) {
-  return <h2 className="mb-3 text-xl font-semibold tracking-tight text-foreground">{number}. {children}</h2>;
+function SectionTitle({ number, children, hint }: { number: string; children: string; hint?: string }) {
+  return (
+    <h2 className="mb-3 flex items-center gap-1.5 text-xl font-semibold tracking-tight text-foreground">
+      {number}. {children}
+      {hint && <InfoHint title={children}>{hint}</InfoHint>}
+    </h2>
+  );
 }
 
-function IssuerFact({ label, value }: { label: string; value: string }) {
+function IssuerFact({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5">
-      <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</dt>
+      <dt className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+        {hint && <InfoHint title={label}>{hint}</InfoHint>}
+      </dt>
       <dd className="figure mt-1 text-left text-base font-semibold tracking-tight text-foreground">{value}</dd>
     </div>
   );
@@ -49,18 +57,18 @@ export default function IssuerDetail() {
 
       <main className="flex-1 space-y-6 p-4 sm:p-6">
         <section aria-labelledby="house-exposure">
-          <SectionTitle number="1">House exposure</SectionTitle>
+          <SectionTitle number="1" hint="Aggregate metrics across the entire Arka fund house.">House exposure</SectionTitle>
           <dl className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            <IssuerFact label="Total position" value={formatInr(issuer.houseExposure.totalAmount)} />
-            <IssuerFact label="Share of house AUM" value={`${issuer.houseExposure.percentOfAum.toFixed(2)}%`} />
-            <IssuerFact label="Schemes holding" value={`${issuer.houseExposure.schemeCount} of ${issuer.houseExposure.totalSchemeCount}`} />
-            <IssuerFact label="Affected by open actions" value={`${issuer.houseExposure.affectedSchemeCount} of ${issuer.houseExposure.schemeCount} holders`} />
-            <IssuerFact label="Largest position" value={`${issuer.houseExposure.largestSchemeName} · ${formatInr(issuer.houseExposure.largestSchemeAmount)}`} />
+            <IssuerFact label="Total position" value={formatInr(issuer.houseExposure.totalAmount)} hint="The combined value of this issuer held across all Arka schemes." />
+            <IssuerFact label="Share of house AUM" value={`${issuer.houseExposure.percentOfAum.toFixed(2)}%`} hint="This issuer's percentage of the total Assets Under Management." />
+            <IssuerFact label="Schemes holding" value={`${issuer.houseExposure.schemeCount} of ${issuer.houseExposure.totalSchemeCount}`} hint="The number of Arka schemes that have a position in this issuer." />
+            <IssuerFact label="Affected by open actions" value={`${issuer.houseExposure.affectedSchemeCount} of ${issuer.houseExposure.schemeCount} holders`} hint="How many holding schemes are touched by active corporate actions." />
+            <IssuerFact label="Largest position" value={`${issuer.houseExposure.largestSchemeName} · ${formatInr(issuer.houseExposure.largestSchemeAmount)}`} hint="The single Arka scheme with the most exposure to this issuer." />
           </dl>
         </section>
 
         <section aria-labelledby="per-scheme">
-          <SectionTitle number="2">Position by scheme</SectionTitle>
+          <SectionTitle number="2" hint="A breakdown of how this issuer is distributed among individual schemes.">Position by scheme</SectionTitle>
           <Card className="overflow-hidden border border-stone-200 shadow-sm">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -70,8 +78,8 @@ export default function IssuerDetail() {
                       <TableHead>Scheme</TableHead>
                       <TableHead className="text-right">Holding</TableHead>
                       <TableHead className="text-right">Value</TableHead>
-                      <TableHead className="text-right">% of scheme NAV</TableHead>
-                      <TableHead className="text-right">Headroom to 10% cap</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">% of scheme NAV<InfoHint title="% of scheme NAV" className="ml-1 align-bottom">The issuer holding as a share of this individual scheme's net asset value.</InfoHint></TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Headroom to 10% cap<InfoHint title="Headroom" className="ml-1 align-bottom">Distance to the SEBI single-issuer limit.</InfoHint></TableHead>
                       <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
@@ -105,7 +113,7 @@ export default function IssuerDetail() {
 
         {showTimeline && (
           <section aria-labelledby="quarter-timeline">
-            <SectionTitle number="3">What this quarter did to the holding</SectionTitle>
+            <SectionTitle number="3" hint="A chronological view of actions affecting this holding in the current quarter.">What this quarter did to the holding</SectionTitle>
             <Card className="border border-stone-200 shadow-sm">
               <CardContent className="p-4 sm:p-5">
                 {issuer.cumulativeNote && <p className="figure-inline mb-4 max-w-3xl text-sm leading-6 text-slate-700">{issuer.cumulativeNote}</p>}
@@ -135,7 +143,7 @@ export default function IssuerDetail() {
         )}
 
         <section aria-labelledby="issuer-actions">
-          <SectionTitle number={actionsSectionNumber}>Corporate actions from this issuer</SectionTitle>
+          <SectionTitle number={actionsSectionNumber} hint="The log of all past and present corporate actions for this issuer.">Corporate actions from this issuer</SectionTitle>
           <Card className="overflow-hidden border border-stone-200 shadow-sm">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -145,7 +153,7 @@ export default function IssuerDetail() {
                       <TableHead>Action</TableHead>
                       <TableHead>Arrived</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Cost or earned</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Cost or earned<InfoHint title="Cost or earned" className="ml-1 align-bottom">Net financial impact of the action.</InfoHint></TableHead>
                       <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
@@ -184,7 +192,7 @@ export default function IssuerDetail() {
         </section>
 
         <section aria-labelledby="issuer-summary">
-          <SectionTitle number={summarySectionNumber}>What this issuer has done to us</SectionTitle>
+          <SectionTitle number={summarySectionNumber} hint="A high-level summary of the financial outcome of this issuer's actions.">What this issuer has done to us</SectionTitle>
           <p className="figure-inline dashboard-panel text-sm leading-6 text-slate-700">{summaryLine}</p>
         </section>
       </main>

@@ -42,7 +42,7 @@ export default function IssuersList() {
                 <TableHeader>
                   <TableRow className="bg-muted hover:bg-muted">
                     <TableHead>Issuer + ISIN</TableHead>
-                    <TableHead className="text-right">House exposure</TableHead>
+                    <TableHead className="text-right whitespace-nowrap"><span className="inline-flex items-center gap-1">House exposure<InfoHint title="House exposure">The total value of this issuer's securities held across all Arka schemes.</InfoHint></span></TableHead>
                     <TableHead className="text-right"><span className="inline-flex items-center gap-1">% of AUM<InfoHint title="% of AUM">AUM is assets under management, everything Arka manages across all schemes. This column shows what share of that total sits in this one company.</InfoHint></span></TableHead>
                     <TableHead className="text-right">Schemes holding</TableHead>
                     <TableHead className="text-right"><span className="inline-flex items-center gap-1">Affected by open actions<InfoHint title="Holding vs affected">A scheme can hold the company without being touched by its open corporate actions. This column counts only the holders that are eligible for an open action, so it is never more than the holders.</InfoHint></span></TableHead>

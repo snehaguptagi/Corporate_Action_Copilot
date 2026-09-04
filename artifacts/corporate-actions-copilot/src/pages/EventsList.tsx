@@ -28,11 +28,12 @@ function cashDirectionLabel(direction?: string) {
 
 function PipelineStep({ index, label, done, hint }: { index: number; label: string; done: boolean; hint: string }) {
   return (
-    <div className="flex items-center gap-2" title={hint}>
+    <div className="flex items-center gap-2">
       <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ${done ? "bg-success text-white" : "border border-slate-300 bg-white text-slate-500"}`}>
         {done ? <Check className="h-3 w-3" /> : index}
       </span>
       <span className={`text-xs font-medium ${done ? "text-slate-900" : "text-slate-500"}`}>{label}</span>
+      <InfoHint title={label}>{hint}</InfoHint>
     </div>
   );
 }
@@ -124,7 +125,10 @@ export default function EventsList() {
               <div>
                 <div className="flex items-center gap-2">
                   <Globe2 className="h-5 w-5 text-amber-700" />
-                  <h2 className="text-lg font-semibold text-slate-900">Fetch public notices</h2>
+                  <h2 className="flex items-center gap-1.5 text-lg font-semibold text-slate-900">
+                    Fetch public notices
+                    <InfoHint title="Fetch public notices">Search the web for corporate action announcements before they arrive through official custodian channels.</InfoHint>
+                  </h2>
                   <Badge variant="warning">Indicative only</Badge>
                 </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Each tab fetches and remembers its own window. Results are classified as they arrive; capture one to pull the original evidence into a case.</p>
@@ -250,7 +254,10 @@ export default function EventsList() {
         <Card>
           <CardHeader className="border-b bg-card">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-semibold text-slate-900">All cases</h2>
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                All cases
+                <InfoHint title="All cases">The complete log of corporate actions, including settled cases and those awaiting custodian confirmation.</InfoHint>
+              </h2>
               <p className="text-xs text-slate-500">Every case on the book, whether it arrived from a feed or you captured it above.</p>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -272,7 +279,7 @@ export default function EventsList() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader><TableRow className="bg-slate-50">
-                  <TableHead>Event</TableHead><TableHead className="text-right">Schemes impacted</TableHead><TableHead>Classification</TableHead><TableHead className="text-right">Materiality</TableHead><TableHead className="text-right">Cash impact</TableHead><TableHead>Attention</TableHead><TableHead className="text-right">Decision deadline</TableHead><TableHead>Status</TableHead><TableHead />
+                  <TableHead>Event</TableHead><TableHead className="text-right">Schemes impacted</TableHead><TableHead>Classification</TableHead><TableHead className="text-right whitespace-nowrap">Materiality<InfoHint title="Materiality" className="ml-1 align-bottom">The per-unit NAV impact expected from this action.</InfoHint></TableHead><TableHead className="text-right whitespace-nowrap">Cash impact<InfoHint title="Cash impact" className="ml-1 align-bottom">Total expected cash inflow or outflow across all holding schemes.</InfoHint></TableHead><TableHead className="whitespace-nowrap">Attention<InfoHint title="Attention" className="ml-1 align-bottom">System flags indicating urgency or blockers.</InfoHint></TableHead><TableHead className="text-right whitespace-nowrap">Decision deadline<InfoHint title="Decision deadline" className="ml-1 align-bottom">The internal Arka deadline, set before the market deadline to allow time for processing.</InfoHint></TableHead><TableHead>Status</TableHead><TableHead />
                 </TableRow></TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (

@@ -205,7 +205,7 @@ function AuthenticatedShell({ children, activeRole, isDesktop, collapsed, setCol
 function PwCMark() {
   return (
     <span className="pwc-mark" aria-label="PwC">
-      <img src={`${import.meta.env.BASE_URL}pwc-logo.jpg`} alt="PwC" className="pwc-logo" />
+      <img src={`${import.meta.env.BASE_URL}pwc-logo-transparent.png`} alt="PwC" className="pwc-logo" />
     </span>
   )
 }

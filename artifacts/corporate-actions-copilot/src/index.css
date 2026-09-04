@@ -234,16 +234,13 @@
     flex: 0 0 auto;
     justify-content: center;
     overflow: hidden;
-    border-radius: 0.15rem;
-    background: #fff7f4;
-    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12);
   }
 
   .pwc-logo {
     display: block;
     height: 100%;
     width: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
   }
 

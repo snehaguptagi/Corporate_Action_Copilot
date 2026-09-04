@@ -26,14 +26,20 @@ export default function Analysis() {
       
       <main className="flex-1 space-y-5 p-4 sm:p-5">
         <section aria-labelledby="analysis-conclusion" className="rounded-md border border-primary/30 bg-accent-soft p-4 sm:p-5">
-          <h2 id="analysis-conclusion" className="text-xs font-bold uppercase tracking-[0.15em] text-primary">The finding</h2>
+          <h2 id="analysis-conclusion" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-primary">
+            The finding
+            <InfoHint title="The finding">AI-synthesized takeaway from analyzing all current cross-event risks and past performance.</InfoHint>
+          </h2>
           <p className="mt-2 max-w-4xl text-sm font-medium leading-6 text-foreground">{analysis.conclusion}</p>
           <p className="mt-2 max-w-4xl text-xs leading-5 text-slate-600">{analysis.purpose}</p>
         </section>
 
         <section aria-labelledby="historical-performance">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 id="historical-performance" className="text-lg font-semibold text-slate-950">Decisions and outcomes</h2>
+            <h2 id="historical-performance" className="flex items-center gap-1.5 text-lg font-semibold text-slate-950">
+              Decisions and outcomes
+              <InfoHint title="Decisions and outcomes">Historical record of choices made and their financial results.</InfoHint>
+            </h2>
             <a
               href={`${import.meta.env.BASE_URL}api/audit/export`}
               download
@@ -46,7 +52,10 @@ export default function Analysis() {
           {analysis.decisions.length > 0 && (
             <Card className="mb-4 overflow-hidden border border-stone-200 shadow-sm">
               <div className="border-b border-stone-200 bg-muted/50 px-5 py-3">
-                <h3 className="text-sm font-semibold text-slate-900">What we decided</h3>
+                <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                  What we decided
+                  <InfoHint title="What we decided">The definitive audit trail of approvals and values captured.</InfoHint>
+                </h3>
                 <p className="mt-0.5 text-xs text-slate-500">Every election on record: the choice, who made it, who approved it, and what it was worth.</p>
               </div>
               <div className="overflow-x-auto">
@@ -58,7 +67,7 @@ export default function Analysis() {
                       <TableHead>Decision</TableHead>
                       <TableHead>Decided by</TableHead>
                       <TableHead>Approved by</TableHead>
-                      <TableHead className="text-right">Value</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Value<InfoHint title="Value" className="ml-1 align-bottom">The realized financial value of this decision.</InfoHint></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -80,19 +89,19 @@ export default function Analysis() {
           
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="rounded border border-stone-200 bg-card p-4 shadow-sm">
-              <div className="mb-1 text-xs font-medium text-slate-500">Value captured</div>
+              <div className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-500">Value captured<InfoHint title="Value captured">Financial value successfully realized from completed corporate-action decisions.</InfoHint></div>
               <div className="figure text-xl font-semibold text-emerald-700">{formatInr(analysis.history.capturedAmount)}</div>
             </div>
             <div className="rounded border border-stone-200 bg-card p-4 shadow-sm">
-              <div className="mb-1 text-xs font-medium text-slate-500">Value forfeited</div>
+              <div className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-500">Value forfeited<InfoHint title="Value forfeited">Financial value lost when an elective entitlement was allowed to lapse or not used.</InfoHint></div>
               <div className="figure text-xl font-semibold text-rose-700">{formatInr(analysis.history.forfeitedAmount)}</div>
             </div>
             <div className="rounded border border-stone-200 bg-card p-4 shadow-sm">
-              <div className="mb-1 text-xs font-medium text-slate-500">Lapsed entitlements</div>
+              <div className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-500">Lapsed entitlements<InfoHint title="Lapsed entitlements">Elective rights or offers that expired without a submitted decision.</InfoHint></div>
               <div className="figure text-xl font-semibold text-slate-900">{analysis.history.lapsedCount}</div>
             </div>
             <div className="rounded border border-stone-200 bg-card p-4 shadow-sm">
-              <div className="mb-1 text-xs font-medium text-slate-500">Deadlines met</div>
+              <div className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-500">Deadlines met<InfoHint title="Deadlines met">The share of completed decisions submitted before Arka's internal deadline.</InfoHint></div>
               <div className="figure text-xl font-semibold text-slate-900">{analysis.history.deadlinesMet} / {analysis.history.deadlinesTotal}</div>
             </div>
           </div>
@@ -103,8 +112,8 @@ export default function Analysis() {
                 <TableHeader>
                   <TableRow className="bg-muted hover:bg-muted">
                     <TableHead>Event</TableHead>
-                    <TableHead className="text-right">Captured</TableHead>
-                    <TableHead className="text-right">Forfeited</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Captured<InfoHint title="Captured" className="ml-1 align-bottom">The value successfully realized from the corporate action.</InfoHint></TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Forfeited<InfoHint title="Forfeited" className="ml-1 align-bottom">Value lost due to inaction or lapsed deadlines.</InfoHint></TableHead>
                     <TableHead>Lapsed</TableHead>
                     <TableHead>Deadline</TableHead>
                     <TableHead>Reconciliation</TableHead>
@@ -143,7 +152,10 @@ export default function Analysis() {
 
         <section aria-labelledby="cross-event-risks">
           <div className="mb-4">
-            <h2 id="cross-event-risks" className="text-lg font-semibold text-slate-950">Cross-event concentration and funding <span className="text-sm font-normal text-slate-500">(10% issuer cap)</span></h2>
+            <h2 id="cross-event-risks" className="flex items-center gap-1.5 text-lg font-semibold text-slate-950">
+              <span>Cross-event concentration and funding <span className="text-sm font-normal text-slate-500">(10% issuer cap)</span></span>
+              <InfoHint title="Cross-event limits">Monitoring for scenarios where multiple simultaneous actions could push a scheme over regulatory limits.</InfoHint>
+            </h2>
           </div>
           
           <div className="space-y-4">
@@ -156,7 +168,10 @@ export default function Analysis() {
                    </div>
                    <div className="flex gap-6 text-sm">
                      <div className="figure">
-                         <span className="mb-0.5 block text-[11px] uppercase tracking-wider text-slate-500">Aggregate funding needed</span>
+                         <span className="mb-0.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-500">
+                           Aggregate funding needed
+                           <InfoHint title="Aggregate funding">The total cash required if every open corporate action executes simultaneously.</InfoHint>
+                         </span>
                         <span className="font-semibold text-slate-900">{formatInr(scheme.aggregateFundingNeeded)}</span>
                          <span className="mt-0.5 block font-sans text-[11px] font-normal text-slate-500">{scheme.aggregateFundingNeeded === scheme.largestSingleEventFunding ? "One funding event" : "Multiple funding events combined"}</span>
                      </div>
@@ -177,11 +192,11 @@ export default function Analysis() {
                        <Table>
                          <TableHeader>
                            <TableRow className="bg-transparent hover:bg-transparent">
-                              <TableHead className="w-1/3">Issuer exposure</TableHead>
-                             <TableHead className="text-right">Current</TableHead>
-                              <TableHead className="text-right">Post-action</TableHead>
-                             <TableHead className="text-right">Headroom</TableHead>
-                             <TableHead>Status</TableHead>
+                              <TableHead className="w-1/3">Issuer exposure<InfoHint title="Issuer exposure" className="ml-1 align-bottom">The company whose combined holding and corporate-action effect is being tested against the scheme limit.</InfoHint></TableHead>
+                             <TableHead className="text-right">Current<InfoHint title="Current exposure" className="ml-1 align-bottom">The issuer's share of scheme assets before the open corporate actions are applied.</InfoHint></TableHead>
+                              <TableHead className="text-right">Post-action<InfoHint title="Post-action exposure" className="ml-1 align-bottom">The projected issuer exposure after all relevant open actions for this scheme are applied.</InfoHint></TableHead>
+                             <TableHead className="text-right">Headroom<InfoHint title="Headroom" className="ml-1 align-bottom">The remaining distance to the scheme's single-issuer concentration cap.</InfoHint></TableHead>
+                             <TableHead>Status<InfoHint title="Exposure status" className="ml-1 align-bottom">Whether the projected exposure remains within the applicable cap.</InfoHint></TableHead>
                            </TableRow>
                          </TableHeader>
                          <TableBody>

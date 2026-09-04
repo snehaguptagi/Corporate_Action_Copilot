@@ -49,8 +49,8 @@ export default function TasksList() {
             <TableHeader>
               <TableRow className="bg-slate-50">
                 <TableHead>Task</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Related Event</TableHead>
+                <TableHead className="whitespace-nowrap">Category<InfoHint title="Category" className="ml-1 align-bottom">The type of approval or review required.</InfoHint></TableHead>
+                <TableHead className="whitespace-nowrap">Related Event<InfoHint title="Related Event" className="ml-1 align-bottom">The corporate action case this task belongs to.</InfoHint></TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>

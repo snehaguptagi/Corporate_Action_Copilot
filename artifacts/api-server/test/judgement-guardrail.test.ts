@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { canonicalNumber, collectStage1Figures, validateJudgementText } from "../src/lib/judgement";
+import {
+  canonicalNumber,
+  collectStage1Figures,
+  parseJudgementSections,
+  validateJudgementSemantics,
+  validateJudgementText,
+} from "../src/lib/judgement";
 
 const allowedFrom = (...values: number[]): Set<string> => {
   const allowed = new Set<string>();
@@ -95,4 +101,102 @@ test("collectStage1Figures harvests scheme impacts, desk cash and options into t
   assert.equal(lines.some((line) => line.includes("Terms still missing")), true);
   assert.equal(validateJudgementText("Exercising all 7,72,993 rights needs 2,51,00,000 INR against 1,80,00,000 available, so sell down to the permitted 4,80,000.", allowed).ok, true);
   assert.equal(validateJudgementText("This frees up 9,99,999 INR.", allowed).ok, false);
+});
+
+const structuredJudgement = [
+  "RECOMMENDATION: Verify the shortfall, recover it, then rerun the match.",
+  "PORTFOLIO IMPACT: Arka Value Fund receives the mandatory cash entitlement.",
+  "RISK AND CONTROLS: The settlement break remains open until the custodian corrects it.",
+  "MISSING INFORMATION: No missing terms were flagged.",
+].join("\n");
+
+test("structured judgement requires four complete labelled sections in order", () => {
+  const parsed = parseJudgementSections(structuredJudgement);
+  assert.equal(parsed.ok, true);
+  if (parsed.ok) {
+    assert.match(parsed.sections.recommendation, /rerun the match/i);
+    assert.match(parsed.sections.portfolioImpact, /Arka Value Fund/);
+  }
+  assert.equal(parseJudgementSections(structuredJudgement.replace(/MISSING INFORMATION:.+/, "")).ok, false);
+  assert.equal(parseJudgementSections(structuredJudgement.replace("PORTFOLIO IMPACT:", "RISK AND CONTROLS:")).ok, false);
+});
+
+test("mandatory judgements reject elective language", () => {
+  const invalid = structuredJudgement.replace(
+    "receives the mandatory cash entitlement",
+    "can accept or reject the cash entitlement",
+  );
+  const verdict = validateJudgementSemantics(invalid, {
+    processingType: "Mandatory",
+    status: "Break identified",
+  });
+  assert.equal(verdict.ok, false);
+  if (!verdict.ok) assert.match(verdict.reason, /cannot be described as an elective action/i);
+});
+
+test("settlement-break judgements must resolve and rematch the discrepancy", () => {
+  const event = { processingType: "Mandatory", status: "Break identified" };
+  assert.equal(validateJudgementSemantics(structuredJudgement, event).ok, true);
+  const wrongStage = structuredJudgement.replace(
+    "Verify the shortfall, recover it, then rerun the match.",
+    "Book the dividend receivable.",
+  );
+  const verdict = validateJudgementSemantics(wrongStage, event);
+  assert.equal(verdict.ok, false);
+  if (!verdict.ok) assert.match(verdict.reason, /lead with identifying and resolving/i);
+
+  const decisionFirst = structuredJudgement.replace(
+    "Verify the shortfall, recover it, then rerun the match.",
+    "Book the dividend, then investigate the shortfall, recover it, and rerun the match.",
+  );
+  assert.equal(validateJudgementSemantics(decisionFirst, event).ok, false);
+});
+
+test("awaiting-settlement judgement cannot return to the original decision", () => {
+  const event = { processingType: "Voluntary", status: "Awaiting settlement" };
+  const valid = structuredJudgement.replace(
+    "Verify the shortfall, recover it, then rerun the match.",
+    "Monitor the custodian receipt and record the settlement.",
+  );
+  assert.equal(validateJudgementSemantics(valid, event).ok, true);
+  const invalid = valid.replace(
+    "Monitor the custodian receipt and record the settlement.",
+    "Decide the election first, then monitor the settlement.",
+  );
+  assert.equal(validateJudgementSemantics(invalid, event).ok, false);
+});
+
+test("Stage 1 snapshot labels settlement-break facts and investigation steps", () => {
+  const event = {
+    issuer: "Bundelkhand Power Ltd",
+    eventType: "Cash dividend",
+    reference: "CA-IN-DIV-008",
+    status: "Break identified",
+    processingType: "Mandatory",
+    internalDeadline: "1 Sep 2026",
+    marketDeadline: "2 Sep 2026",
+    schemeImpacts: [],
+    options: [],
+    validation: { missingTerms: [] },
+    reconciliation: {
+      classification: "Under-settled",
+      note: "Custodian payment is 40,000 INR below expected cash.",
+      expectedCash: 1600000,
+      actualCash: 1560000,
+      difference: -40000,
+      expectedCurrency: "INR",
+      actualCurrency: "INR",
+      expectedSecurityQuantity: 0,
+      actualSecurityQuantity: 0,
+      expectedSettlementDate: "2026-09-01",
+      actualSettlementDate: "2026-09-01",
+      expectedAccount: "ARKA-BF-001",
+      actualAccount: "ARKA-BF-001",
+      investigationSteps: ["Verify eligible quantity.", "Recover the shortfall."],
+    },
+  };
+  const { lines } = collectStage1Figures(event, { schemes: [] });
+  assert.equal(lines.some((line) => line.includes("Settlement classification: Under-settled")), true);
+  assert.equal(lines.some((line) => line.includes("expected 16,00,000 INR, actual 15,60,000 INR")), true);
+  assert.equal(lines.some((line) => line.includes("Required settlement investigation")), true);
 });

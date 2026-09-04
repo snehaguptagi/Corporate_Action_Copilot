@@ -185,6 +185,25 @@ test("seeded events vary meaningfully in schemes impacted", () => {
   assert.ok(counts[Math.floor(counts.length / 2)] >= 2);
 });
 
+test("every seeded demo event exposes deterministic scheme calculations", () => {
+  const supportedTypes = new Set([
+    "Cash dividend",
+    "Stock split",
+    "Bonus issue",
+    "Rights issue",
+    "Tender offer",
+    "Merger / demerger",
+  ]);
+  for (const event of getSeededEventSnapshot()) {
+    assert.ok(supportedTypes.has(event.eventType), `${event.id} uses an unsupported demo event type: ${event.eventType}`);
+    assert.equal(event.schemeImpacts.length, 10, `${event.id} must show a deterministic result for every Arka scheme`);
+    for (const impact of event.schemeImpacts.filter((row: EventData) => row.affected)) {
+      assert.ok(impact.formula, `${event.id}/${impact.schemeId} must explain its deterministic calculation`);
+      assert.ok(Number.isFinite(impact.eligibleQuantity), `${event.id}/${impact.schemeId} must expose the eligible quantity`);
+    }
+  }
+});
+
 test("at least two seeded events explain a source disagreement and its winner", () => {
   const conflicted = getSeededEventSnapshot().filter((event) => event.sourceDisagreements?.length);
   assert.ok(conflicted.length >= 2);

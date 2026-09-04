@@ -201,7 +201,10 @@ export default function Dashboard() {
         <section aria-label="What needs a look" className={`${BAND} dashboard-panel`}>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">What needs a look</h2>
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-foreground">
+                What needs a look
+                <InfoHint title="What needs a look">Open cases sorted by urgency and deadline, showing only those requiring your attention.</InfoHint>
+              </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">Ranked by urgency, then deadline.</p>
             </div>
             <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
@@ -239,7 +242,10 @@ export default function Dashboard() {
         <section aria-label="Concentration risk" className={BAND}>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">Concentration risk</h2>
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-foreground">
+                Concentration risk
+                <InfoHint title="Concentration risk">Monitoring schemes nearing the SEBI 10% single-issuer limit, where a corporate action could push the exposure over the cap.</InfoHint>
+              </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">Where a single company runs close to, or past, the SEBI 10% single-issuer cap.</p>
             </div>
             <Link href="/issuers" className="text-xs font-semibold text-primary hover:underline">All issuers</Link>
@@ -247,14 +253,20 @@ export default function Dashboard() {
           <div className="grid items-start gap-4 lg:grid-cols-2">
             {schemes ? <CapHeadroom schemes={schemes} dense /> : <div className="dashboard-panel text-sm text-muted-foreground">Loading scheme headroom...</div>}
             <div className="dashboard-panel">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Top house exposures</h3>
+              <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Top house exposures
+                <InfoHint title="House exposure">The total holding in an issuer across all Arka schemes combined.</InfoHint>
+              </h3>
               <Table className="mt-2">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="h-8 px-2">Issuer</TableHead>
                     <TableHead className="h-8 px-2 text-right">Exposure</TableHead>
                     <TableHead className="h-8 px-2 text-right">Schemes</TableHead>
-                    <TableHead className="h-8 px-2 text-right">Cap headroom</TableHead>
+                    <TableHead className="h-8 px-2 text-right whitespace-nowrap">
+                      Cap headroom
+                      <InfoHint title="Cap headroom" className="ml-1 align-bottom">Distance to the SEBI 10% limit for the scheme closest to breaching it.</InfoHint>
+                    </TableHead>
                     <TableHead className="h-8 px-2 text-right">Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -293,7 +305,10 @@ export default function Dashboard() {
         <section aria-labelledby="inbound-actions" className={BAND}>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h2 id="inbound-actions" className="text-sm font-semibold tracking-tight text-foreground">Inbound corporate actions</h2>
+              <h2 id="inbound-actions" className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-foreground">
+                Inbound corporate actions
+                <InfoHint title="Inbound corporate actions">The full queue of open cases, including those that do not require your attention.</InfoHint>
+              </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">What arrived, what it touches, and what Arka needs to do.</p>
             </div>
             <Link href="/events" className="text-xs font-semibold text-primary hover:underline">View all</Link>
@@ -308,8 +323,8 @@ export default function Dashboard() {
                     <TableHead>Arrived</TableHead>
                      <TableHead className="text-right">Schemes impacted</TableHead>
                      <TableHead>Impact</TableHead>
-                     <TableHead className="text-right">Materiality</TableHead>
-                     <TableHead>Attention</TableHead>
+                     <TableHead className="text-right whitespace-nowrap">Materiality<InfoHint title="Materiality" className="ml-1 align-bottom">The expected change in Net Asset Value per unit, calculated across the affected schemes.</InfoHint></TableHead>
+                     <TableHead className="whitespace-nowrap">Attention<InfoHint title="Attention" className="ml-1 align-bottom">The current blocker or required action for the case.</InfoHint></TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -366,7 +381,10 @@ export default function Dashboard() {
           <div className="grid gap-4 lg:grid-cols-2">
             <VolumeVersusValue events={sortedEvents} />
             <div className="dashboard-panel">
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">How a corporate action moves</h3>
+              <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                How a corporate action moves
+                <InfoHint title="Workflow">The standard five-step lifecycle of every corporate action case.</InfoHint>
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground">Every case walks the same five steps, left to right. Open a case to see exactly where it stands.</p>
               <JourneyStrip counts={stageCounts} className="mt-3" />
             </div>

@@ -7,14 +7,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatInr, issuerIdFor } from "@/lib/format";
 import { formatIstDate } from "@/lib/date";
 
-function SectionTitle({ number, children }: { number: string; children: string }) {
-  return <h2 className="mb-3 text-xl font-semibold tracking-tight text-foreground">{number}. {children}</h2>;
+function SectionTitle({ number, children, hint }: { number: string; children: string; hint?: string }) {
+  return (
+    <h2 className="mb-3 flex items-center gap-1.5 text-xl font-semibold tracking-tight text-foreground">
+      {number}. {children}
+      {hint && <InfoHint title={children}>{hint}</InfoHint>}
+    </h2>
+  );
 }
 
-function SchemeFact({ label, value }: { label: string; value: string }) {
+function SchemeFact({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5">
-      <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</dt>
+      <dt className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+        {hint && <InfoHint title={label}>{hint}</InfoHint>}
+      </dt>
       <dd className="figure mt-1 text-left text-base font-semibold tracking-tight text-foreground">{value}</dd>
     </div>
   );
@@ -42,18 +50,18 @@ export default function SchemeDetail() {
            </h1>
            <p className="mt-4 max-w-4xl text-base leading-7 text-foreground">{scheme.situation}</p>
           <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <SchemeFact label="Fund size" value={`₹${scheme.aumCrore.toLocaleString("en-IN")} cr`} />
-            <SchemeFact label="NAV per unit" value={`₹${scheme.navRupees.toFixed(2)}`} />
-            <SchemeFact label="Holdings" value={`${scheme.totalHoldings}`} />
-            <SchemeFact label="Open actions" value={`${scheme.contributions.length}`} />
-            <SchemeFact label="Cash available" value={formatInr(scheme.funding.available)} />
+            <SchemeFact label="Fund size" value={`₹${scheme.aumCrore.toLocaleString("en-IN")} cr`} hint="Total Assets Under Management for this scheme." />
+            <SchemeFact label="NAV per unit" value={`₹${scheme.navRupees.toFixed(2)}`} hint="Net Asset Value, updated daily." />
+            <SchemeFact label="Holdings" value={`${scheme.totalHoldings}`} hint="Total number of distinct securities held." />
+            <SchemeFact label="Open actions" value={`${scheme.contributions.length}`} hint="Pending corporate actions requiring attention." />
+            <SchemeFact label="Cash available" value={formatInr(scheme.funding.available)} hint="Liquid cash currently available to fund corporate action choices." />
           </dl>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl space-y-4 px-5 py-4 sm:px-8">
         <section>
-          <SectionTitle number="1">What is moving it</SectionTitle>
+          <SectionTitle number="1" hint="Every open corporate action touching this scheme and its expected per-unit impact.">What is moving it</SectionTitle>
           <Card className="overflow-hidden shadow-sm">
             <CardContent className="p-0">
               {scheme.contributions.length > 0 ? (
@@ -61,7 +69,7 @@ export default function SchemeDetail() {
                   <TableHeader>
                     <TableRow className="bg-muted hover:bg-muted">
                       <TableHead>Corporate action</TableHead>
-                       <TableHead className="text-right">NAV contribution</TableHead>
+                       <TableHead className="text-right whitespace-nowrap">NAV contribution<InfoHint title="NAV contribution" className="ml-1 align-bottom">The expected change to the scheme's NAV from this action.</InfoHint></TableHead>
                        <TableHead className="text-right">Cash</TableHead>
                        <TableHead className="text-right">Deadline</TableHead>
                       <TableHead className="w-12" />
@@ -91,7 +99,7 @@ export default function SchemeDetail() {
         </section>
 
         <section>
-          <SectionTitle number="2">The funding gap</SectionTitle>
+          <SectionTitle number="2" hint="Compares available cash against the total cash required to fully subscribe to all open actions.">The funding gap</SectionTitle>
           <Card className="shadow-sm">
              <CardContent className="figure p-5 text-left text-base font-semibold text-foreground">
               Needs {formatInr(scheme.funding.needed)}. Has {formatInr(scheme.funding.available)}.{" "}
@@ -103,7 +111,7 @@ export default function SchemeDetail() {
         </section>
 
         <section>
-          <SectionTitle number="3">SEBI headroom</SectionTitle>
+          <SectionTitle number="3" hint="Tracks the highest single-issuer concentration against the regulatory 10% maximum.">SEBI headroom</SectionTitle>
           <Card className="shadow-sm">
             <CardContent className="p-5 text-sm leading-7 text-slate-700">
               {scheme.headroom.maximumRights > 0 ? (
@@ -120,7 +128,7 @@ export default function SchemeDetail() {
         </section>
 
         <section>
-          <SectionTitle number="4">Holdings</SectionTitle>
+          <SectionTitle number="4" hint="The exact portfolio positions driving the impact numbers.">Holdings</SectionTitle>
           <Card className="overflow-hidden shadow-sm">
             <CardContent className="p-0">
               <p className="border-b border-stone-200 bg-stone-50 px-5 py-3 text-sm font-medium text-slate-700">
@@ -133,7 +141,7 @@ export default function SchemeDetail() {
                       <TableHead>Security in play</TableHead>
                       <TableHead>ISIN</TableHead>
                       <TableHead className="text-right">Holding</TableHead>
-                       <TableHead className="text-right">Position date</TableHead>
+                       <TableHead className="text-right whitespace-nowrap">Position date<InfoHint title="Position date" className="ml-1 align-bottom">The date of the holding snapshot used for calculations.</InfoHint></TableHead>
                       <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>

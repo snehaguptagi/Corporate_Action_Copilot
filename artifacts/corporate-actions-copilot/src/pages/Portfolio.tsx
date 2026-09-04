@@ -37,9 +37,10 @@ export default function Portfolio() {
       <main className="flex-1 p-4 sm:p-5">
         <section className="dashboard-panel mb-4" aria-labelledby="scheme-control-board">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 id="scheme-control-board" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <h2 id="scheme-control-board" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
               <Layers3 className="h-3.5 w-3.5" />
               Scheme control board
+              <InfoHint title="Scheme control board">A high-level view of funding readiness and risk flags across all Arka schemes.</InfoHint>
             </h2>
             <p className="figure-inline text-xs text-muted-foreground">
               {impactedSchemeCount} of {schemes.length} touched · {openActionCount} open actions · {flaggedSchemeCount} flagged · {totalShortfall > 0 ? `${formatInr(totalShortfall)} short` : "fully funded"}
@@ -63,10 +64,10 @@ export default function Portfolio() {
                 <TableHeader>
                   <TableRow className="bg-muted hover:bg-muted">
                     <TableHead>Scheme</TableHead>
-                    <TableHead className="text-right">Fund Size & NAV</TableHead>
-                    <TableHead>Open Actions & Deadlines</TableHead>
-                    <TableHead className="text-right">Concentration Risk</TableHead>
-                    <TableHead className="text-right">Funding Position</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Fund Size &amp; NAV<InfoHint title="Fund Size & NAV" className="ml-1 align-bottom">Total Assets Under Management and Net Asset Value per unit.</InfoHint></TableHead>
+                    <TableHead className="whitespace-nowrap">Open Actions &amp; Deadlines<InfoHint title="Open Actions" className="ml-1 align-bottom">Corporate actions currently affecting this scheme.</InfoHint></TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Concentration Risk<InfoHint title="Concentration Risk" className="ml-1 align-bottom">The scheme's largest single-issuer exposure compared to the SEBI 10% limit.</InfoHint></TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Funding Position<InfoHint title="Funding Position" className="ml-1 align-bottom">Cash available versus cash required for pending actions.</InfoHint></TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>

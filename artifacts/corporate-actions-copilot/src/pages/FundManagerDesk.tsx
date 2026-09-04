@@ -15,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import {
   AlertTriangle,
+  Check,
   ChevronDown,
   Landmark,
   RefreshCw,
@@ -44,6 +45,7 @@ function Section({
   summary,
   hint,
   status,
+  order,
   defaultOpen = true,
   children,
 }: {
@@ -52,12 +54,13 @@ function Section({
   summary?: string;
   hint?: string;
   status?: React.ReactNode;
+  order?: number;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="overflow-hidden rounded-md border border-border bg-card shadow-sm transition-all duration-200">
+    <section style={{ order }} className="overflow-hidden rounded-md border border-border bg-card shadow-sm transition-all duration-200">
       <div className="flex items-center transition-colors hover:bg-stone-50/60">
         <button
           type="button"
@@ -337,12 +340,12 @@ export default function FundManagerDesk() {
   const nextSection = () => String(++sectionNumber).padStart(2, "0");
   const noticeIndex = nextSection();
   const impactIndex = nextSection();
-  const nextStepsIndex = nextSection();
-  const settlementIndex = showSettlement ? nextSection() : "";
-  const judgementIndex = nextSection();
   const optionsIndex = showOptions ? nextSection() : "";
   const constraintsIndex = showConstraints ? nextSection() : "";
+  const judgementIndex = nextSection();
   const decisionIndex = isMandatory ? "" : nextSection();
+  const nextStepsIndex = nextSection();
+  const settlementIndex = showSettlement ? nextSection() : "";
   const historyIndex = nextSection();
   const rightsRows = arka?.schemes ?? [];
   const rightsOption = (id: string) => rightsChoices[id] ?? "exercise";
@@ -516,7 +519,7 @@ export default function FundManagerDesk() {
           </div>
         </header>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <div className="rounded-md border border-border/60 bg-card px-4 py-3">
             <JourneyStrip activeIndex={journeyStageIndex(data.status, data.isEarlySighting)} />
           </div>
@@ -572,7 +575,7 @@ export default function FundManagerDesk() {
               <strong>Early sighting, indicative only.</strong> {data.decisionBlockedReason}
             </div>
           )}
-          <Section index={noticeIndex} title="Notice Terms & Evidence" summary="Confirmed terms and primary source identifiers" hint="The official announcement, extracted terms, identifiers and source agreement used to establish the case." defaultOpen={false}>
+          <Section order={10} index={noticeIndex} title="Notice Terms & Evidence" summary="Confirmed terms and primary source identifiers" hint="The official announcement, extracted terms, identifiers and source agreement used to establish the case." defaultOpen={false}>
             <div className="space-y-2 text-sm leading-6 text-foreground">
               <p>{statement3}</p>
             </div>
@@ -584,6 +587,7 @@ export default function FundManagerDesk() {
           </Section>
 
           <Section
+            order={20}
             index={impactIndex} 
             title="Deterministic impact"
             hint="Rule-based arithmetic using confirmed notice terms and scheme holdings. It does not depend on AI interpretation."
@@ -686,12 +690,73 @@ export default function FundManagerDesk() {
           </Section>
 
           <Section
+            order={70}
             index={nextStepsIndex}
             title="What happens next"
             hint="The case lifecycle, current stage and immediate action required to move the case forward."
             status={<Badge variant="outline">{isComplete(data.status) ? "Complete" : "Current step highlighted"}</Badge>}
             summary="From confirmed notice to impact, decision, Compliance review and settlement"
           >
+            <div className="mb-3 grid gap-2 sm:grid-cols-2">
+              <div className={`rounded-md border px-4 py-3 ${
+                activeJourneyStage > 3
+                  ? "border-emerald-200 bg-emerald-50/60"
+                  : activeJourneyStage === 3
+                    ? "border-primary/40 bg-accent-soft"
+                    : "border-border/70 bg-stone-50/50"
+              }`}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-foreground">Compliance review</span>
+                  <Badge variant="outline" className={activeJourneyStage > 3 ? "border-emerald-300 bg-white text-emerald-800" : ""}>
+                    {activeJourneyStage > 3 ? "Review complete" : activeJourneyStage === 3 ? "In progress" : "Upcoming"}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {activeJourneyStage > 3
+                    ? "The second-person review is complete and the approved instruction can proceed to settlement."
+                    : activeJourneyStage === 3
+                      ? "Compliance is checking the decision, limits and source evidence."
+                      : "Compliance review begins after the scheme decision is submitted."}
+                </p>
+              </div>
+              <div className={`rounded-md border px-4 py-3 ${
+                isComplete(data.status)
+                  ? "border-emerald-200 bg-emerald-50/60"
+                  : activeJourneyStage === 4
+                    ? data.status === "Break identified"
+                      ? "border-rose-300 bg-rose-50"
+                      : "border-primary/40 bg-accent-soft"
+                    : "border-border/70 bg-stone-50/50"
+              }`}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-foreground">Settlement and reconciliation</span>
+                  <Badge variant="outline" className={
+                    isComplete(data.status)
+                      ? "border-emerald-300 bg-white text-emerald-800"
+                      : data.status === "Break identified"
+                        ? "border-rose-300 bg-white text-rose-700"
+                        : ""
+                  }>
+                    {isComplete(data.status)
+                      ? "Settlement complete"
+                      : data.status === "Break identified"
+                        ? "Break needs action"
+                        : activeJourneyStage === 4
+                          ? "Settlement in progress"
+                          : "Upcoming"}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {isComplete(data.status)
+                    ? "Cash or shares received match the expected entitlement and the case is complete."
+                    : data.status === "Break identified"
+                      ? "The receipt does not match the expected entitlement. Operations must resolve the difference and rerun the match."
+                      : activeJourneyStage === 4
+                        ? "Operations is monitoring the custodian receipt and will match actual cash or shares against the expected entitlement."
+                        : "Settlement monitoring starts after approval or automatic processing."}
+                </p>
+              </div>
+            </div>
             <div className="grid gap-2 lg:grid-cols-5">
               {workflowSteps.map((step, index) => {
                 const complete = activeJourneyStage === 5 || index < activeJourneyStage;
@@ -711,12 +776,16 @@ export default function FundManagerDesk() {
                       <span className={`figure flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                         current ? "bg-primary text-primary-foreground" : complete ? "bg-emerald-700 text-white" : "bg-stone-200 text-stone-700"
                       }`}>
-                        {index + 1}
+                        {complete ? <Check className="h-3 w-3" aria-hidden="true" /> : index + 1}
                       </span>
                       <span className="text-xs font-semibold text-foreground">{step.label}</span>
                     </div>
                     <p className="mt-2 text-xs leading-5 text-muted-foreground">{step.detail}</p>
-                    {current && <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">Current step</p>}
+                    <p className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                      current ? "text-primary" : complete ? "text-emerald-700" : "text-muted-foreground"
+                    }`}>
+                      {current ? "Happening now" : complete ? "Completed" : "Upcoming"}
+                    </p>
                   </div>
                 );
               })}
@@ -728,6 +797,7 @@ export default function FundManagerDesk() {
 
           {showSettlement && (
             <Section
+              order={80}
               index={settlementIndex}
               title={data.status === "Break identified" ? "Settlement break and resolution" : "Settlement check"}
               hint="Compares the cash or shares expected from the custodian with what actually arrived and lists any resolution steps."
@@ -813,6 +883,7 @@ export default function FundManagerDesk() {
           )}
 
           <Section
+            order={50}
             index={judgementIndex}
             title="AI interpretation (optional)"
             hint="A structured recommendation covering portfolio impact, risk, controls and missing information."
@@ -865,7 +936,7 @@ export default function FundManagerDesk() {
           {!isMandatory && (
             <>
               {isRightsHero ? (
-                <Section index={optionsIndex} title="Options" summary="Three ways to treat the rights entitlement" hint="The available treatments for an elective corporate action and the outcome of each choice.">
+                <Section order={30} index={optionsIndex} title="Options" summary="Three ways to treat the rights entitlement" hint="The available treatments for an elective corporate action and the outcome of each choice.">
                   <div className="grid gap-3 text-sm md:grid-cols-3">
                       <div><strong className="text-foreground">Exercise</strong><p className="mt-1 text-muted-foreground">Subscribe at {formatInr(subscriptionPrice)}. Costs cash and keeps your holding whole.</p><p className="figure mt-2 text-left font-semibold">Pay {formatInr(totalEntitlementRights * subscriptionPrice)}, receive {integer.format(totalEntitlementRights)} shares</p></div>
                       <div><strong className="text-foreground">Sell entitlement</strong><p className="mt-1 text-muted-foreground">Sell the RE on NSE/BSE before the RE window closes.</p><p className="figure mt-2 text-left font-semibold">Recover about {formatInr(totalEntitlementRights * rightsValue)}, no funding needed</p></div>
@@ -873,7 +944,7 @@ export default function FundManagerDesk() {
                   </div>
                 </Section>
               ) : data.options && data.options.length > 0 && (
-                <Section index={optionsIndex} title="Options" summary={`${data.options.length} choices · default is ${data.options.find((opt) => opt.default)?.label.toLowerCase() ?? "not set"}`} hint="The available treatments for this elective corporate action, including the default if no choice is submitted.">
+                <Section order={30} index={optionsIndex} title="Options" summary={`${data.options.length} choices · default is ${data.options.find((opt) => opt.default)?.label.toLowerCase() ?? "not set"}`} hint="The available treatments for this elective corporate action, including the default if no choice is submitted.">
                   <div className="grid gap-3 md:grid-cols-2">
                     {data.options.map((opt) => (
                       <div key={opt.id} className={`rounded-md border p-4 ${opt.default ? "border-primary/40 bg-accent-soft" : "border-border/70 bg-stone-50"}`}>
@@ -893,7 +964,7 @@ export default function FundManagerDesk() {
               )}
 
               {isRightsHero ? (
-                <Section index={constraintsIndex} title="Constraints" summary="Headroom and liquidity limits that block full exercise" hint="Funding, concentration and eligibility limits that restrict which decisions can be submitted.">
+                <Section order={40} index={constraintsIndex} title="Constraints" summary="Headroom and liquidity limits that block full exercise" hint="Funding, concentration and eligibility limits that restrict which decisions can be submitted.">
                   <div className="space-y-3 rounded-md border border-warning/40 bg-warning/5 p-4 text-xs">
                       {rightsRows.filter((row: any) => row.blockers.length).map((row: any) => (
                         <div key={row.id} className="text-foreground">
@@ -905,7 +976,7 @@ export default function FundManagerDesk() {
                   </div>
                 </Section>
               ) : constraints.length > 0 && (
-                <Section index={constraintsIndex} title="Constraints" summary={`${constraints.length} scheme${constraints.length === 1 ? "" : "s"} flagged`} hint="Funding, concentration and eligibility limits that require attention before a decision is submitted.">
+                <Section order={40} index={constraintsIndex} title="Constraints" summary={`${constraints.length} scheme${constraints.length === 1 ? "" : "s"} flagged`} hint="Funding, concentration and eligibility limits that require attention before a decision is submitted.">
                   <div className="space-y-2 rounded-md border border-warning/40 bg-warning/5 p-4">
                     {constraints.map(c => (
                       <div key={c.id} className="flex items-center gap-2 text-xs text-destructive font-medium">
@@ -916,7 +987,7 @@ export default function FundManagerDesk() {
                 </Section>
               )}
 
-              <Section index={decisionIndex} title="Decision" summary="Set scheme elections and submit for checker approval" hint="The maker records each scheme choice here and sends the complete package to an independent checker.">
+              <Section order={60} index={decisionIndex} title="Decision" summary="Set scheme elections and submit for checker approval" hint="The maker records each scheme choice here and sends the complete package to an independent checker.">
                 <div className="space-y-4">
                   {!canSubmitDecision && (
                     <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
@@ -1000,7 +1071,7 @@ export default function FundManagerDesk() {
             </>
           )}
 
-          <Section index={historyIndex} title="History" summary={`${(data.audit ?? []).length} recorded step${(data.audit ?? []).length === 1 ? "" : "s"}`} hint="The chronological audit trail of notice updates, calculations, decisions, approvals and settlement activity." defaultOpen={false}>
+          <Section order={90} index={historyIndex} title="History" summary={`${(data.audit ?? []).length} recorded step${(data.audit ?? []).length === 1 ? "" : "s"}`} hint="The chronological audit trail of notice updates, calculations, decisions, approvals and settlement activity." defaultOpen={false}>
             <ol className="space-y-5 border-l-2 border-border/70 pl-5">
               {(data.audit ?? []).map((entry: any) => (
                 <li key={entry.id} className="relative">
